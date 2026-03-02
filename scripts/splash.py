@@ -1,13 +1,20 @@
 import customtkinter as ctk
 from PIL import Image
 import os, threading
+import sys
 
 BG_DARK = "#0F172A"
 ACCENT  = "#3B82F6"
 
+# Hilfsfunktion für PyInstaller
+def resource_path(relative_path):
+    """Gibt den korrekten Pfad für PyInstaller oder normale Ausführung zurück."""
+    if hasattr(sys, "_MEIPASS"):
+        return os.path.join(sys._MEIPASS, relative_path)
+    return os.path.join(os.path.abspath("."), relative_path)
+
 # Pfad relativ zu scripts/ → assets/pictures/logo.png
-BASE_DIR  = os.path.dirname(os.path.abspath(__file__))
-LOGO_PATH = os.path.join(BASE_DIR, "..", "assets", "pictures", "logo.png")
+LOGO_PATH = resource_path("assets/pictures/logo.png")
 
 
 class SplashScreen(ctk.CTkToplevel):

@@ -1,13 +1,19 @@
 @echo off
 title Maczap IntroMaker - Builder
-cd /d "%~dp0.."
+
+REM -------------------------------
+REM Arbeitsverzeichnis auf Projekt-Root setzen
+REM -------------------------------
+cd /d "%~dp0\.."
 
 echo.
 echo  ================================================
 echo    Maczap IntroMaker  --  EXE Builder
 echo  ================================================
-echo.
 
+REM -------------------------------
+REM 1/3: Installiere Abhängigkeiten
+REM -------------------------------
 echo [1/3] Installiere Abhaengigkeiten...
 pip install -r config\requirements.txt
 if errorlevel 1 (
@@ -15,20 +21,30 @@ if errorlevel 1 (
     pause & exit /b 1
 )
 
-echo.
+REM -------------------------------
+REM 2/3: Erstelle EXE
+REM -------------------------------
 echo [2/3] Erstelle EXE (1-3 Minuten)...
-pyinstaller --onefile --windowed ^
+
+python -m PyInstaller --onefile --windowed ^
   --name "IntroMaker" ^
   --distpath "dist" ^
   --workpath "build\_pyinstaller_tmp" ^
   --specpath "build" ^
-  --add-data "assets;assets" ^
-  --add-data "scripts/font_picker.py;." ^
-  --add-data "scripts/video_generator.py;." ^
-  --add-data "scripts/splash.py;." ^
+  --add-data "%CD%\assets;assets" ^
+  --add-data "%CD%\scripts\font_picker.py;." ^
+  --add-data "%CD%\scripts\video_generator.py;." ^
+  --add-data "%CD%\scripts\splash.py;." ^
   scripts\main.py
 
-echo.
+if errorlevel 1 (
+    echo FEHLER beim Erstellen der EXE!
+    pause & exit /b 1
+)
+
+REM -------------------------------
+REM 3/3: Aufräumen
+REM -------------------------------
 echo [3/3] Aufraeumen...
 if exist "build\_pyinstaller_tmp" rmdir /s /q "build\_pyinstaller_tmp"
 

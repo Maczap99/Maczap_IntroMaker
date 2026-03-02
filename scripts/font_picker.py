@@ -1,25 +1,39 @@
 import customtkinter as ctk
 from PIL import Image, ImageDraw, ImageFont
 import os, glob
+import sys
 
 BG_DARK  = "#0F172A"
 BG_CARD  = "#263348"
 ACCENT   = "#3B82F6"
 TEXT_DIM = "#94A3B8"
 
-BASE_DIR   = os.path.dirname(os.path.abspath(__file__))
-FONTS_DIR  = os.path.join(BASE_DIR, "..", "assets", "fonts")
+# Hilfsfunktion für PyInstaller
+def resource_path(relative_path):
+    """Gibt den korrekten Pfad für PyInstaller oder normale Ausführung zurück."""
+    if hasattr(sys, "_MEIPASS"):
+        return os.path.join(sys._MEIPASS, relative_path)
+    return os.path.join(os.path.abspath("."), relative_path)
+
+# Pfad zu Fonts
+BASE_DIR  = os.path.dirname(os.path.abspath(__file__))
+FONTS_DIR = resource_path("assets/fonts")
 
 
 def _load_font_list():
     fonts = []
     if os.path.isdir(FONTS_DIR):
+        seen = set()  # für eindeutige Schriftarten
         for ext in ("*.ttf", "*.otf", "*.TTF", "*.OTF"):
             for p in sorted(glob.glob(os.path.join(FONTS_DIR, ext))):
                 name = os.path.splitext(os.path.basename(p))[0]
-                fonts.append((name, p))
+                if name not in seen:
+                    fonts.append((name, p))
+                    seen.add(name)
     if not fonts:
         fonts = [("Standard (OpenCV)", None)]
+    # alphabetisch sortieren nach Name
+    fonts.sort(key=lambda x: x[0].lower())
     return fonts
 
 
