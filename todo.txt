@@ -1,0 +1,5 @@
+- fate-in beim start
+- untertitel, mehr abstand zu dem Timer
+- beim fate out von den Bildern soll der Timer schon zu sehen sein (Aktuell erst nach dem der fate beendet ist)
+- Timer immer gegen fate zu dem Bilder slider
+- 

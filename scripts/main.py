@@ -932,17 +932,21 @@ class IntroMaker(QMainWindow):
     def _start_render(self):
         if not self._out_path:
             ThemedDialog.error(self, "Fehler", "Bitte einen Speicherort wählen!",
-                               dark=(self._theme == "dark"))
+                            dark=(self._theme == "dark"))
             return
 
         self._save_settings()
         sub_text = self._sub_edit.toPlainText().strip() if self._sub_chk.isChecked() else ""
 
-        self._create_btn.setEnabled(False)
-        self._create_btn.setText("⏳  Wird gerendert …")
-        self._cancel_btn.setVisible(True)
+        # BUTTON WECHSEL
+        self._is_rendering = True
+        self._create_btn.setEnabled(True)
+        self._create_btn.setText("✖  Abbrechen")
+
         self._progress.setValue(0)
-        self._frames_lbl.setText(""); self._eta_lbl.setText(""); self._pct_lbl.setText("")
+        self._frames_lbl.setText("")
+        self._eta_lbl.setText("")
+        self._pct_lbl.setText("")
         self._render_start = time.time()
 
         config = {
