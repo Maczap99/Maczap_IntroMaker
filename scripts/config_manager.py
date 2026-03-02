@@ -1,25 +1,62 @@
 import json, os, sys
 
-def resource_path(relative_path):
-    if hasattr(sys, "_MEIPASS"):
-        return os.path.join(sys._MEIPASS, relative_path)
-    return os.path.join(os.path.abspath("."), relative_path)
+APP_NAME = "MaczapIntroMaker"
 
-# Gespeichert wird neben der EXE bzw. im Projektordner
-def _config_path():
-    if hasattr(sys, "_MEIPASS"):
-        # EXE-Modus: neben der EXE speichern
-        exe_dir = os.path.dirname(sys.executable)
+
+def _config_path() -> str:
+    """
+    Speichert die settings.json im AppData\Roaming Ordner des Benutzers.
+    Pfad: C:\\Users\\<Name>\\AppData\\Roaming\\MaczapIntroMaker\\settings.json
+    Fallback: neben der EXE / im config-Ordner (Entwicklungsmodus)
+    """
+    # APPDATA Umgebungsvariable (Roaming) → %APPDATA%
+    appdata = os.environ.get("APPDATA")
+
+    if appdata:
+        folder = os.path.join(appdata, APP_NAME)
     else:
-        # Entwicklungsmodus: im config/-Ordner
-        base = os.path.dirname(os.path.abspath(__file__))
-        exe_dir = os.path.join(base, "..", "config")
-        os.makedirs(exe_dir, exist_ok=True)
-    return os.path.join(exe_dir, "settings.json")
+        # Fallback falls APPDATA nicht gesetzt ist (z.B. Linux/Mac)
+        if hasattr(sys, "_MEIPASS"):
+            folder = os.path.dirname(sys.executable)
+        else:
+            base   = os.path.dirname(os.path.abspath(__file__))
+            folder = os.path.join(base, "..", "config")
+
+    os.makedirs(folder, exist_ok=True)
+    return os.path.join(folder, "settings.json")
 
 
 DEFAULTS = {
-    "theme": "light",
+    # Erscheinungsbild
+    "theme":            "light",
+
+    # Timer
+    "timer_minutes":    5,
+
+    # Musik
+    "music_loop":       True,
+    "music_fadeout":    True,
+    "music_fade_dur":   4,
+
+    # Slider
+    "slider_from":      4,
+    "slider_until":     1,
+    "img_duration":     10,
+    "timer_between":    15,
+    "slider_loop":      True,
+
+    # Übergänge
+    "fade_duration":    2.0,
+
+    # Schrift
+    "font_color":       "#FFFFFF",
+    "font_name":        None,
+
+    # Untertitel
+    "subtitle_enabled": False,
+    "subtitle_text":    "",
+    "subtitle_size":    40,
+    "subtitle_color":   "#FFFFFF",
 }
 
 
@@ -45,3 +82,19 @@ def save(data: dict):
             json.dump(data, f, indent=2, ensure_ascii=False)
     except Exception as e:
         print(f"[config_manager] Speichern fehlgeschlagen: {e}")
+
+
+def reset() -> dict:
+    """Löscht die settings.json und gibt Defaults zurück."""
+    path = _config_path()
+    try:
+        if os.path.exists(path):
+            os.remove(path)
+    except Exception:
+        pass
+    return dict(DEFAULTS)
+
+
+def get_config_path() -> str:
+    """Gibt den vollständigen Pfad zur settings.json zurück (für Debugging)."""
+    return _config_path()

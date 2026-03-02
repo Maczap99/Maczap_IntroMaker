@@ -1,106 +1,98 @@
-import customtkinter as ctk
-from PIL import Image
-import os, threading, sys
+import sys, os
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QApplication
+from PyQt5.QtCore    import Qt, QTimer, pyqtSignal
+from PyQt5.QtGui     import QPixmap, QPainter, QColor, QPen, QFont
+
 
 def resource_path(relative_path):
     if hasattr(sys, "_MEIPASS"):
         return os.path.join(sys._MEIPASS, relative_path)
     return os.path.join(os.path.abspath("."), relative_path)
 
-LOGO_PATH = resource_path("assets/pictures/logo.png")
 
-# Farben je nach Theme
 THEMES = {
-    "light": {
-        "bg":      "#F1F5F9",
-        "accent":  "#2563EB",
-        "text":    "#0F172A",
-        "subtext": "#64748B",
-        "ring_bg": "#E2E8F0",
-    },
-    "dark": {
-        "bg":      "#0F172A",
-        "accent":  "#3B82F6",
-        "text":    "#FFFFFF",
-        "subtext": "#64748B",
-        "ring_bg": "#1E293B",
-    },
+    "light": {"bg": "#F1F5F9", "accent": "#2563EB", "ring_bg": "#CBD5E1"},
+    "dark":  {"bg": "#0F172A", "accent": "#3B82F6", "ring_bg": "#1E293B"},
 }
 
 
-class SplashScreen(ctk.CTkToplevel):
-    def __init__(self, on_done):
-        super().__init__()
-        self.on_done = on_done
-
-        # Theme auslesen
-        mode   = ctk.get_appearance_mode().lower()   # "light" / "dark"
-        colors = THEMES.get(mode, THEMES["dark"])
-
-        self.overrideredirect(True)
-        self.configure(fg_color=colors["bg"])
-        self.attributes("-topmost", True)
-
-        W, H = 480, 340
-        sw   = self.winfo_screenwidth()
-        sh   = self.winfo_screenheight()
-        self.geometry(f"{W}x{H}+{(sw - W) // 2}+{(sh - H) // 2}")
-
-        # Logo
-        if os.path.exists(LOGO_PATH):
-            try:
-                raw   = Image.open(LOGO_PATH).convert("RGBA")
-                ratio = min(320 / raw.width, 180 / raw.height)
-                new_w = int(raw.width  * ratio)
-                new_h = int(raw.height * ratio)
-                raw   = raw.resize((new_w, new_h), Image.LANCZOS)
-                self._logo_img = ctk.CTkImage(raw, size=(new_w, new_h))
-                ctk.CTkLabel(self, image=self._logo_img, text="",
-                             fg_color=colors["bg"]).pack(pady=(36, 8))
-            except Exception:
-                ctk.CTkLabel(self, text="🎬", font=("Segoe UI", 64),
-                             fg_color=colors["bg"]).pack(pady=(36, 8))
-        else:
-            ctk.CTkLabel(self, text="🎬", font=("Segoe UI", 64),
-                         fg_color=colors["bg"]).pack(pady=(36, 8))
-
-        ctk.CTkLabel(self, text="Intro Maker",
-                     font=("Segoe UI Black", 22, "bold"),
-                     text_color=colors["text"],
-                     fg_color=colors["bg"]).pack()
-
-        ctk.CTkLabel(self, text="Wird geladen …",
-                     font=("Segoe UI", 11),
-                     text_color=colors["subtext"],
-                     fg_color=colors["bg"]).pack(pady=4)
-
-        # Spinner-Canvas
-        self._colors = colors
-        self._canvas = ctk.CTkCanvas(self, width=48, height=48,
-                                      bg=colors["bg"], highlightthickness=0)
-        self._canvas.pack(pady=14)
+class _Spinner(QWidget):
+    def __init__(self, accent, ring_bg, parent=None):
+        super().__init__(parent)
+        self.setFixedSize(52, 52)
         self._angle   = 0
-        self._running = True
-        self._animate()
-        threading.Timer(3.0, self._finish).start()
+        self._accent  = QColor(accent)
+        self._ring_bg = QColor(ring_bg)
+        self._timer   = QTimer(self)
+        self._timer.timeout.connect(self._tick)
+        self._timer.start(16)
 
-    def _animate(self):
-        if not self._running:
-            return
-        self._canvas.delete("all")
-        cx, cy, r = 24, 24, 18
-        self._canvas.create_oval(cx - r, cy - r, cx + r, cy + r,
-                                  outline=self._colors["ring_bg"], width=4)
-        self._canvas.create_arc(cx - r, cy - r, cx + r, cy + r,
-                                 start=self._angle, extent=260,
-                                 outline=self._colors["accent"], width=4, style="arc")
-        self._angle = (self._angle + 8) % 360
-        self.after(16, self._animate)
+    def _tick(self):
+        self._angle = (self._angle - 8) % 360
+        self.update()
+
+    def stop(self):
+        self._timer.stop()
+
+    def paintEvent(self, _):
+        p = QPainter(self)
+        p.setRenderHint(QPainter.Antialiasing)
+        r = 18
+        cx, cy = 26, 26
+        pen = QPen(self._ring_bg, 4, Qt.SolidLine, Qt.RoundCap)
+        p.setPen(pen)
+        p.drawArc(cx - r, cy - r, r * 2, r * 2, 0, 360 * 16)
+        pen2 = QPen(self._accent, 4, Qt.SolidLine, Qt.RoundCap)
+        p.setPen(pen2)
+        p.drawArc(cx - r, cy - r, r * 2, r * 2, self._angle * 16, 260 * 16)
+
+
+class SplashScreen(QWidget):
+    finished = pyqtSignal()
+
+    def __init__(self, theme: str = "light"):
+        super().__init__()
+        colors = THEMES.get(theme, THEMES["light"])
+
+        self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.SplashScreen)
+        self.setFixedSize(420, 280)
+        self.setStyleSheet(f"background-color: {colors['bg']};")
+
+        screen = QApplication.primaryScreen().geometry()
+        self.move((screen.width() - 420) // 2, (screen.height() - 280) // 2)
+
+        layout = QVBoxLayout(self)
+        layout.setAlignment(Qt.AlignCenter)
+        layout.setSpacing(12)
+        layout.setContentsMargins(40, 30, 40, 30)
+
+        # Logo je nach Theme (kein Text mehr)
+        logo_file = "logo_light.png" if theme == "light" else "logo_dark.png"
+        logo_path = resource_path(f"assets/pictures/{logo_file}")
+        logo_lbl  = QLabel()
+        logo_lbl.setAlignment(Qt.AlignCenter)
+        logo_lbl.setStyleSheet("background: transparent;")
+        if os.path.exists(logo_path):
+            pix = QPixmap(logo_path)
+            pix = pix.scaledToHeight(150, Qt.SmoothTransformation)
+            logo_lbl.setPixmap(pix)
+        else:
+            logo_lbl.setText("🎬")
+            logo_lbl.setFont(QFont("Segoe UI", 52))
+        layout.addWidget(logo_lbl)
+
+        # Spinner
+        self._spinner = _Spinner(colors["accent"], colors["ring_bg"])
+        spin_wrap = QWidget()
+        spin_wrap.setStyleSheet("background: transparent;")
+        sw_layout = QVBoxLayout(spin_wrap)
+        sw_layout.setAlignment(Qt.AlignCenter)
+        sw_layout.addWidget(self._spinner)
+        layout.addWidget(spin_wrap)
+
+        QTimer.singleShot(3000, self._finish)
 
     def _finish(self):
-        self._running = False
-        self.after(0, self._close)
-
-    def _close(self):
-        self.destroy()
-        self.on_done()
+        self._spinner.stop()
+        self.finished.emit()
+        self.close()

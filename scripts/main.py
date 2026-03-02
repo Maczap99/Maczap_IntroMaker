@@ -1,23 +1,17 @@
-import customtkinter as ctk
-from tkinter import filedialog, messagebox, colorchooser
-from PIL import Image
-import threading, os, time, sys
+import sys, os, time
+from PyQt5.QtWidgets import (
+    QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
+    QLabel, QPushButton, QFileDialog, QScrollArea, QFrame,
+    QProgressBar, QTextEdit, QMessageBox, QColorDialog, QSizePolicy,
+    QDialog, QDialogButtonBox
+)
+from PyQt5.QtCore import Qt, QThread, pyqtSignal, QObject
+from PyQt5.QtGui  import QPixmap, QFont, QColor, QIcon, QPalette
+
+from splash          import SplashScreen
+from font_picker     import FontPickerWidget
 from video_generator import VideoGenerator
-from splash import SplashScreen
-from font_picker import FontPickerWidget
-from config_manager import load as cfg_load, save as cfg_save
-
-ACCENT   = "#3B82F6"
-BG_DARK  = "#0F172A"
-BG_MID   = "#1E293B"
-BG_CARD  = "#263348"
-TEXT_DIM = "#94A3B8"
-
-ACCENT_L  = "#2563EB"
-BG_DARK_L = "#F1F5F9"
-BG_MID_L  = "#E2E8F0"
-BG_CARD_L = "#FFFFFF"
-TEXT_DIM_L = "#64748B"
+from config_manager  import load as cfg_load, save as cfg_save, reset as cfg_reset, DEFAULTS
 
 
 def resource_path(relative_path):
@@ -26,513 +20,1023 @@ def resource_path(relative_path):
     return os.path.join(os.path.abspath("."), relative_path)
 
 
-def card(parent, **kw):
-    return ctk.CTkFrame(parent, fg_color=(BG_CARD_L, BG_CARD), corner_radius=12, **kw)
+# ── Stylesheets ────────────────────────────────────────────────────────────────
+def _make_style(dark: bool) -> str:
+    if dark:
+        return """
+        QMainWindow, QWidget#root { background: #0F172A; }
+        QScrollArea { background: transparent; border: none; }
+        QScrollArea > QWidget > QWidget { background: transparent; }
+        QWidget { color: #F1F5F9; }
+        QFrame#card { background: #1E293B; border-radius: 12px; border: 1px solid #334155; }
+        QLabel#sectionLabel { color: #3B82F6; font-size: 13px; font-weight: bold; }
+        QLabel#hint  { color: #64748B; font-size: 11px; }
+        QLabel#dim   { color: #94A3B8; }
+        QPushButton#primary {
+            background: #3B82F6; color: white; border-radius: 10px;
+            font-size: 15px; font-weight: bold; padding: 14px 28px; border: none; }
+        QPushButton#primary:hover    { background: #2563EB; }
+        QPushButton#primary:disabled { background: #334155; color: #64748B; }
+        QPushButton#danger {
+            background: #EF4444; color: white; border-radius: 10px;
+            font-size: 13px; font-weight: bold; padding: 14px 20px; border: none; }
+        QPushButton#danger:hover { background: #DC2626; }
+        QPushButton#secondary {
+            background: #1E293B; color: #F1F5F9; border-radius: 8px;
+            font-size: 11px; padding: 5px 14px; border: 1px solid #334155; }
+        QPushButton#secondary:hover    { background: #334155; }
+        QPushButton#secondary:disabled { color: #475569; }
+        QPushButton#iconBtn {
+            background: #334155; color: #F1F5F9; border-radius: 6px;
+            font-size: 13px; padding: 3px 8px; border: none;
+            min-width: 28px; max-width: 28px; min-height: 28px; max-height: 28px; }
+        QPushButton#iconBtn:hover { background: #EF4444; color: white; }
+        QPushButton#stepper {
+            background: #334155; color: #F1F5F9; border-radius: 6px;
+            font-size: 15px; font-weight: bold; padding: 0px; border: none;
+            min-width: 30px; max-width: 30px; min-height: 30px; max-height: 30px; }
+        QPushButton#stepper:hover { background: #3B82F6; }
+        QPushButton#themeBtn {
+            background: #1E293B; color: #F1F5F9; border-radius: 10px;
+            font-size: 12px; font-weight: bold; padding: 8px 18px;
+            border: 1px solid #334155; }
+        QPushButton#themeBtn:hover { background: #3B82F6; border-color: #3B82F6; }
+        QPushButton#saveBtn {
+            background: #1E293B; color: #22C55E; border-radius: 10px;
+            font-size: 11px; font-weight: bold; padding: 8px 14px;
+            border: 1px solid #22C55E; }
+        QPushButton#saveBtn:hover { background: #22C55E; color: white; }
+        QPushButton#resetBtn {
+            background: #1E293B; color: #94A3B8; border-radius: 10px;
+            font-size: 11px; padding: 8px 14px; border: 1px solid #334155; }
+        QPushButton#resetBtn:hover { background: #EF4444; color: white; border-color: #EF4444; }
+        QPushButton#colorBtn {
+            border-radius: 8px; font-size: 11px; font-weight: bold;
+            padding: 5px 14px; border: 1px solid rgba(255,255,255,0.3); }
+        QTextEdit {
+            background: #0F172A; color: #F1F5F9; border-radius: 8px;
+            border: 1px solid #334155; font-size: 12px; padding: 6px; }
+        QProgressBar {
+            background: #0F172A; border-radius: 6px;
+            border: 1px solid #334155; min-height: 14px; max-height: 14px; }
+        QProgressBar::chunk { background: #3B82F6; border-radius: 6px; }
+        QFrame#header    { background: #1E293B; border-bottom: 1px solid #334155; }
+        QFrame#bottomBar { background: #1E293B; border-top:    1px solid #334155; }
+        QLabel#pathLabel {
+            background: #0F172A; color: #94A3B8; border-radius: 6px;
+            border: 1px solid #334155; padding: 0 8px; }
+        FontPickerWidget { background: #1E293B; border-radius: 12px; border: 1px solid #334155; }
+        QComboBox {
+            background: #0F172A; color: #F1F5F9; border-radius: 8px;
+            border: 1px solid #334155; padding: 5px 10px; font-size: 11px; }
+        QComboBox::drop-down { border: none; width: 20px; }
+        QComboBox QAbstractItemView {
+            background: #1E293B; color: #F1F5F9;
+            selection-background-color: #3B82F6; border: 1px solid #334155; }
+
+        /* Scrollbar - schlank und modern */
+        QScrollBar:vertical {
+            background: transparent; width: 6px;
+            margin: 4px 2px 4px 0px; border-radius: 3px; }
+        QScrollBar::handle:vertical {
+            background: #334155; border-radius: 3px; min-height: 40px; }
+        QScrollBar::handle:vertical:hover { background: #3B82F6; }
+        QScrollBar::handle:vertical:pressed { background: #2563EB; }
+        QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0px; }
+        QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: transparent; }
+        QScrollBar:horizontal { height: 0px; }
+        """
+    else:
+        return """
+        QMainWindow, QWidget#root { background: #F8FAFC; }
+        QScrollArea { background: transparent; border: none; }
+        QScrollArea > QWidget > QWidget { background: transparent; }
+        QWidget { color: #0F172A; }
+        QFrame#card { background: #FFFFFF; border-radius: 12px; border: 1px solid #E2E8F0; }
+        QLabel#sectionLabel { color: #2563EB; font-size: 13px; font-weight: bold; }
+        QLabel#hint  { color: #64748B; font-size: 11px; }
+        QLabel#dim   { color: #64748B; }
+        QPushButton#primary {
+            background: #2563EB; color: white; border-radius: 10px;
+            font-size: 15px; font-weight: bold; padding: 14px 28px; border: none; }
+        QPushButton#primary:hover    { background: #1D4ED8; }
+        QPushButton#primary:disabled { background: #CBD5E1; color: #94A3B8; }
+        QPushButton#danger {
+            background: #EF4444; color: white; border-radius: 10px;
+            font-size: 13px; font-weight: bold; padding: 14px 20px; border: none; }
+        QPushButton#danger:hover { background: #DC2626; }
+        QPushButton#secondary {
+            background: #F1F5F9; color: #0F172A; border-radius: 8px;
+            font-size: 11px; padding: 5px 14px; border: 1px solid #CBD5E1; }
+        QPushButton#secondary:hover    { background: #E2E8F0; }
+        QPushButton#secondary:disabled { color: #94A3B8; }
+        QPushButton#iconBtn {
+            background: #E2E8F0; color: #0F172A; border-radius: 6px;
+            font-size: 13px; padding: 3px 8px; border: none;
+            min-width: 28px; max-width: 28px; min-height: 28px; max-height: 28px; }
+        QPushButton#iconBtn:hover { background: #EF4444; color: white; }
+        QPushButton#stepper {
+            background: #E2E8F0; color: #0F172A; border-radius: 6px;
+            font-size: 15px; font-weight: bold; padding: 0px; border: none;
+            min-width: 30px; max-width: 30px; min-height: 30px; max-height: 30px; }
+        QPushButton#stepper:hover { background: #2563EB; color: white; }
+        QPushButton#themeBtn {
+            background: #F1F5F9; color: #0F172A; border-radius: 10px;
+            font-size: 12px; font-weight: bold; padding: 8px 18px;
+            border: 1px solid #CBD5E1; }
+        QPushButton#themeBtn:hover { background: #2563EB; color: white; border-color: #2563EB; }
+        QPushButton#saveBtn {
+            background: #F0FDF4; color: #16A34A; border-radius: 10px;
+            font-size: 11px; font-weight: bold; padding: 8px 14px;
+            border: 1px solid #16A34A; }
+        QPushButton#saveBtn:hover { background: #16A34A; color: white; }
+        QPushButton#resetBtn {
+            background: #F1F5F9; color: #64748B; border-radius: 10px;
+            font-size: 11px; padding: 8px 14px; border: 1px solid #CBD5E1; }
+        QPushButton#resetBtn:hover { background: #EF4444; color: white; border-color: #EF4444; }
+        QPushButton#colorBtn {
+            border-radius: 8px; font-size: 11px; font-weight: bold;
+            padding: 5px 14px; border: 1px solid rgba(0,0,0,0.2); }
+        QTextEdit {
+            background: #F1F5F9; color: #0F172A; border-radius: 8px;
+            border: 1px solid #CBD5E1; font-size: 12px; padding: 6px; }
+        QProgressBar {
+            background: #E2E8F0; border-radius: 6px;
+            border: 1px solid #CBD5E1; min-height: 14px; max-height: 14px; }
+        QProgressBar::chunk { background: #2563EB; border-radius: 6px; }
+        QFrame#header    { background: #F1F5F9; border-bottom: 1px solid #E2E8F0; }
+        QFrame#bottomBar { background: #F1F5F9; border-top:    1px solid #E2E8F0; }
+        QLabel#pathLabel {
+            background: #F1F5F9; color: #64748B; border-radius: 6px;
+            border: 1px solid #E2E8F0; padding: 0 8px; }
+        FontPickerWidget { background: #FFFFFF; border-radius: 12px; border: 1px solid #E2E8F0; }
+        QComboBox {
+            background: #F8FAFC; color: #0F172A; border-radius: 8px;
+            border: 1px solid #CBD5E1; padding: 5px 10px; font-size: 11px; }
+        QComboBox::drop-down { border: none; width: 20px; }
+        QComboBox QAbstractItemView {
+            background: #FFFFFF; color: #0F172A;
+            selection-background-color: #2563EB; selection-color: white;
+            border: 1px solid #E2E8F0; }
+
+        /* Scrollbar - schlank und modern */
+        QScrollBar:vertical {
+            background: transparent; width: 6px;
+            margin: 4px 2px 4px 0px; border-radius: 3px; }
+        QScrollBar::handle:vertical {
+            background: #CBD5E1; border-radius: 3px; min-height: 40px; }
+        QScrollBar::handle:vertical:hover { background: #2563EB; }
+        QScrollBar::handle:vertical:pressed { background: #1D4ED8; }
+        QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0px; }
+        QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: transparent; }
+        QScrollBar:horizontal { height: 0px; }
+        """
 
 
-def section_label(parent, text):
-    ctk.CTkLabel(parent, text=text, font=("Segoe UI", 13, "bold"),
-                 text_color=(ACCENT_L, ACCENT)).pack(anchor="w", padx=16, pady=(14, 4))
+# ── Eigener Dialog (theme-bewusst) ─────────────────────────────────────────────
+class ThemedDialog(QDialog):
+    """Ersetzt QMessageBox — passt sich dem aktuellen Theme an."""
+
+    @staticmethod
+    def info(parent, title: str, message: str, dark: bool):
+        d = ThemedDialog(parent, title, message, dark, mode="info")
+        d.exec_()
+
+    @staticmethod
+    def error(parent, title: str, message: str, dark: bool):
+        d = ThemedDialog(parent, title, message, dark, mode="error")
+        d.exec_()
+
+    @staticmethod
+    def question(parent, title: str, message: str, dark: bool) -> bool:
+        d = ThemedDialog(parent, title, message, dark, mode="question")
+        return d.exec_() == QDialog.Accepted
+
+    def __init__(self, parent, title, message, dark, mode="info"):
+        super().__init__(parent)
+        self.setWindowTitle(title)
+        self.setMinimumWidth(420)
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
+
+        if dark:
+            bg, fg, border, btn_bg, btn_fg, btn_hover = (
+                "#1E293B", "#F1F5F9", "#334155",
+                "#3B82F6", "white",   "#2563EB")
+            btn_cancel_bg = "#334155"; btn_cancel_fg = "#94A3B8"
+        else:
+            bg, fg, border, btn_bg, btn_fg, btn_hover = (
+                "#FFFFFF", "#0F172A", "#E2E8F0",
+                "#2563EB", "white",   "#1D4ED8")
+            btn_cancel_bg = "#F1F5F9"; btn_cancel_fg = "#64748B"
+
+        self.setStyleSheet(f"""
+            QDialog {{ background: {bg}; border-radius: 12px; }}
+            QLabel  {{ color: {fg}; background: transparent; }}
+            QPushButton {{
+                border-radius: 8px; padding: 8px 20px;
+                font-size: 12px; font-weight: bold; border: none; }}
+        """)
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(28, 24, 28, 20)
+        layout.setSpacing(16)
+
+        # Icon + Titel
+        hdr = QWidget(); hl = QHBoxLayout(hdr); hl.setContentsMargins(0,0,0,0); hl.setSpacing(12)
+        icon_map = {"info": "✅", "error": "❌", "question": "↺"}
+        icon_lbl = QLabel(icon_map.get(mode, "ℹ️"))
+        icon_lbl.setFont(QFont("Segoe UI", 22))
+        title_lbl = QLabel(title)
+        title_lbl.setFont(QFont("Segoe UI", 14, QFont.Bold))
+        title_lbl.setStyleSheet(f"color: {fg};")
+        hl.addWidget(icon_lbl); hl.addWidget(title_lbl); hl.addStretch()
+        layout.addWidget(hdr)
+
+        # Trennlinie
+        line = QFrame(); line.setFrameShape(QFrame.HLine)
+        line.setStyleSheet(f"background: {border}; max-height: 1px;")
+        layout.addWidget(line)
+
+        # Nachricht
+        msg_lbl = QLabel(message)
+        msg_lbl.setFont(QFont("Segoe UI", 11))
+        msg_lbl.setWordWrap(True)
+        msg_lbl.setStyleSheet(f"color: {fg};")
+        layout.addWidget(msg_lbl)
+
+        # Buttons
+        btn_row = QWidget(); bl = QHBoxLayout(btn_row)
+        bl.setContentsMargins(0,0,0,0); bl.setSpacing(10)
+        bl.addStretch()
+
+        if mode == "question":
+            cancel_btn = QPushButton("Abbrechen")
+            cancel_btn.setStyleSheet(f"background:{btn_cancel_bg}; color:{btn_cancel_fg};")
+            cancel_btn.clicked.connect(self.reject)
+            bl.addWidget(cancel_btn)
+
+            ok_btn = QPushButton("Ja, zurücksetzen")
+            ok_btn.setStyleSheet(f"background:#EF4444; color:white;")
+            ok_btn.clicked.connect(self.accept)
+            bl.addWidget(ok_btn)
+        else:
+            ok_btn = QPushButton("OK")
+            ok_btn.setStyleSheet(f"background:{btn_bg}; color:{btn_fg};")
+            ok_btn.setMinimumWidth(90)
+            ok_btn.clicked.connect(self.accept)
+            bl.addWidget(ok_btn)
+
+        layout.addWidget(btn_row)
 
 
-def hint(parent, text):
-    ctk.CTkLabel(parent, text=text, font=("Segoe UI", 11),
-                 text_color=(TEXT_DIM_L, TEXT_DIM)).pack(anchor="w", padx=16, pady=(0, 8))
+# ── StyledCheckBox ─────────────────────────────────────────────────────────────
+class StyledCheckBox(QWidget):
+    stateChanged = pyqtSignal(int)
+
+    def __init__(self, text: str, parent=None):
+        super().__init__(parent)
+        self._checked = False
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0); layout.setSpacing(10)
+        self._box = QPushButton()
+        self._box.setFixedSize(22, 22)
+        self._box.setCursor(Qt.PointingHandCursor)
+        self._box.clicked.connect(self._toggle)
+        self._label = QLabel(text)
+        self._label.setFont(QFont("Segoe UI", 12))
+        self._label.setCursor(Qt.PointingHandCursor)
+        self._label.mousePressEvent = lambda _: self._toggle()
+        layout.addWidget(self._box); layout.addWidget(self._label); layout.addStretch()
+        self._refresh()
+
+    def _toggle(self):
+        self._checked = not self._checked
+        self._refresh()
+        self.stateChanged.emit(2 if self._checked else 0)
+
+    def _refresh(self):
+        if self._checked:
+            self._box.setText("✕")
+            self._box.setStyleSheet("""
+                QPushButton { background:#3B82F6; color:white; border:none;
+                    border-radius:5px; font-size:13px; font-weight:bold; }
+                QPushButton:hover { background:#2563EB; }""")
+        else:
+            self._box.setText("")
+            self._box.setStyleSheet("""
+                QPushButton { background:transparent; color:transparent;
+                    border:2px solid #475569; border-radius:5px; }
+                QPushButton:hover { border-color:#3B82F6; }""")
+
+    def isChecked(self):    return self._checked
+    def setChecked(self, v):
+        if self._checked != v:
+            self._checked = v; self._refresh()
+
+    def update_theme(self, dark: bool):
+        if not self._checked:
+            border = "#475569" if dark else "#CBD5E1"
+            hover  = "#3B82F6" if dark else "#2563EB"
+            self._box.setStyleSheet(f"""
+                QPushButton {{ background:transparent; color:transparent;
+                    border:2px solid {border}; border-radius:5px; }}
+                QPushButton:hover {{ border-color:{hover}; }}""")
 
 
-class Stepper(ctk.CTkFrame):
-    def __init__(self, parent, variable, min_val, max_val, step=1,
-                 width=60, fmt="{}", **kw):
-        super().__init__(parent, fg_color="transparent", **kw)
-        self._var  = variable
-        self._min  = min_val
-        self._max  = max_val
-        self._step = step
-        self._fmt  = fmt
-        ctk.CTkButton(self, text="−", width=30, height=30, corner_radius=6,
-                      command=self._dec).pack(side="left")
-        self._lbl = ctk.CTkLabel(self, text=fmt.format(variable.get()),
-                                  font=("Segoe UI", 13, "bold"), width=width)
-        self._lbl.pack(side="left")
-        ctk.CTkButton(self, text="+", width=30, height=30, corner_radius=6,
-                      command=self._inc).pack(side="left")
+# ── RenderWorker ───────────────────────────────────────────────────────────────
+class RenderWorker(QObject):
+    progress = pyqtSignal(float, str, int, int)
+    finished = pyqtSignal(bool, str)
+
+    def __init__(self, config):
+        super().__init__()
+        self._config = config
+
+    def run(self):
+        def cb(value, msg, frame_info=None):
+            cur, total = frame_info if frame_info else (0, 0)
+            self.progress.emit(value, msg, cur, total)
+        gen = VideoGenerator(self._config, cb,
+                             lambda ok, msg: self.finished.emit(ok, msg))
+        gen.generate()
+
+
+# ── Stepper ────────────────────────────────────────────────────────────────────
+class Stepper(QWidget):
+    def __init__(self, min_val, max_val, value, step=1, fmt="{}", parent=None):
+        super().__init__(parent)
+        self._min = min_val; self._max = max_val
+        self._val = value;   self._step = step; self._fmt = fmt
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0); layout.setSpacing(4)
+        self._dec_btn = QPushButton("−"); self._dec_btn.setObjectName("stepper")
+        self._dec_btn.clicked.connect(self._dec)
+        self._lbl = QLabel(fmt.format(value))
+        self._lbl.setAlignment(Qt.AlignCenter)
+        self._lbl.setFont(QFont("Segoe UI", 12, QFont.Bold))
+        self._lbl.setMinimumWidth(72)
+        self._inc_btn = QPushButton("+"); self._inc_btn.setObjectName("stepper")
+        self._inc_btn.clicked.connect(self._inc)
+        layout.addWidget(self._dec_btn); layout.addWidget(self._lbl); layout.addWidget(self._inc_btn)
 
     def _dec(self):
-        v = max(self._min, round(self._var.get() - self._step, 4))
-        self._var.set(v); self._lbl.configure(text=self._fmt.format(v))
+        self._val = max(self._min, round(self._val - self._step, 4))
+        self._lbl.setText(self._fmt.format(self._val))
 
     def _inc(self):
-        v = min(self._max, round(self._var.get() + self._step, 4))
-        self._var.set(v); self._lbl.configure(text=self._fmt.format(v))
+        self._val = min(self._max, round(self._val + self._step, 4))
+        self._lbl.setText(self._fmt.format(self._val))
+
+    def value(self):        return self._val
+    def set_value(self, v):
+        self._val = max(self._min, min(self._max, v))
+        self._lbl.setText(self._fmt.format(self._val))
 
 
-class IntroMaker(ctk.CTk):
+# ── Helpers ────────────────────────────────────────────────────────────────────
+def make_card():
+    f = QFrame(); f.setObjectName("card"); return f
+
+def sec_lbl(t):
+    l = QLabel(t); l.setObjectName("sectionLabel")
+    l.setFont(QFont("Segoe UI", 11, QFont.Bold)); return l
+
+def hint_lbl(t):
+    l = QLabel(t); l.setObjectName("hint")
+    l.setWordWrap(True); l.setFont(QFont("Segoe UI", 10)); return l
+
+def dim_lbl(t):
+    l = QLabel(t); l.setObjectName("dim")
+    l.setFont(QFont("Segoe UI", 11)); return l
+
+
+# ── FileRow ────────────────────────────────────────────────────────────────────
+class FileRow(QWidget):
+    def __init__(self, btn_text, on_pick, on_clear, parent=None):
+        super().__init__(parent)
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(0, 2, 0, 2); layout.setSpacing(6)
+        self._lbl = QLabel("Nichts ausgewählt")
+        self._lbl.setObjectName("pathLabel")
+        self._lbl.setFont(QFont("Segoe UI", 10))
+        self._lbl.setFixedHeight(28)
+        self._lbl.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        pick_btn = QPushButton(btn_text)
+        pick_btn.setObjectName("secondary"); pick_btn.setFixedHeight(28)
+        pick_btn.clicked.connect(on_pick)
+        self._clear_btn = QPushButton("✕")
+        self._clear_btn.setObjectName("iconBtn")
+        self._clear_btn.setToolTip("Auswahl entfernen")
+        self._clear_btn.clicked.connect(on_clear)
+        self._clear_btn.setVisible(False)
+        layout.addWidget(self._lbl, 1)
+        layout.addWidget(pick_btn)
+        layout.addWidget(self._clear_btn)
+
+    def set_path(self, path):
+        if path:
+            self._lbl.setText(os.path.basename(path))
+            self._clear_btn.setVisible(True)
+        else:
+            self._lbl.setText("Nichts ausgewählt")
+            self._clear_btn.setVisible(False)
+
+
+# ── Hauptfenster ───────────────────────────────────────────────────────────────
+class IntroMaker(QMainWindow):
     def __init__(self):
-        self._settings = cfg_load()
-        theme = self._settings.get("theme", "light")
-        ctk.set_appearance_mode(theme)
-        ctk.set_default_color_theme("blue")
-
         super().__init__()
-        self.withdraw()
-        self.title("Intro Maker")
-        self.geometry("1020x920")
-        self.minsize(920, 780)
-        self.configure(fg_color=(BG_DARK_L, BG_DARK))
+        self._settings     = cfg_load()
+        self._theme        = self._settings.get("theme", "light")
+        self._font_color   = self._settings.get("font_color",    "#FFFFFF")
+        self._sub_color    = self._settings.get("subtitle_color","#FFFFFF")
+        self._image_paths  = []
+        self._render_start = 0.0
+        self._thread       = None
+        self._worker       = None
+        self._bg_video_path = None
+        self._bg_image_path = None
+        self._music_path    = None
+        self._out_path      = None
 
-        # ── Fenster-Performance: kein Live-Redraw beim Verschieben ────
-        self.resizable(True, True)
+        self.setWindowTitle("Intro Maker")
+        self.setMinimumSize(960, 780)
+        self.resize(1060, 920)
 
-        # State
-        self.bg_video_path  = ctk.StringVar()
-        self.bg_image_path  = ctk.StringVar()
-        self.music_path     = ctk.StringVar()
-        self.out_path       = ctk.StringVar()
-        self.image_paths    = []
-        self.font_color     = "#FFFFFF"
-        self.subtitle_color = "#FFFFFF"
-
-        self.timer_min        = ctk.IntVar(value=5)
-        self.slider_from      = ctk.IntVar(value=4)
-        self.slider_until     = ctk.IntVar(value=1)
-        self.img_duration     = ctk.IntVar(value=20)
-        self.fade_duration    = ctk.DoubleVar(value=2.0)
-        self.music_loop       = ctk.BooleanVar(value=True)
-        self.music_fadeout    = ctk.BooleanVar(value=True)
-        self.music_fade_dur   = ctk.IntVar(value=4)
-        self.subtitle_enabled = ctk.BooleanVar(value=False)
-        self.subtitle_text    = ctk.StringVar(value="")
-        self.subtitle_size    = ctk.IntVar(value=40)
-
-        self._theme_var = ctk.StringVar(value=theme)
+        # ── App-Icon (icon.png) ───────────────────────────────────────
+        icon_path = resource_path("assets/pictures/icon.png")
+        if os.path.exists(icon_path):
+            self.setWindowIcon(QIcon(icon_path))
+            QApplication.instance().setWindowIcon(QIcon(icon_path))
 
         self._build_ui()
-        self.after(100, self._show_splash)
+        self._restore_settings()
+        self._apply_theme(self._theme, save=False)
 
-    # ── SPLASH ────────────────────────────────────────────────────────
-    def _show_splash(self):
-        SplashScreen(on_done=self._after_splash)
-
-    def _after_splash(self):
-        self.deiconify()
-        self.lift()
-        self.focus_force()
-
-    # ── UI ────────────────────────────────────────────────────────────
+    # ── UI ─────────────────────────────────────────────────────────────────────
     def _build_ui(self):
-        # ── Header ────────────────────────────────────────────────────
-        hdr = ctk.CTkFrame(self, fg_color=(BG_MID_L, BG_MID), corner_radius=0, height=72)
-        hdr.pack(fill="x")
-        hdr.pack_propagate(False)
+        root = QWidget(); root.setObjectName("root")
+        self.setCentralWidget(root)
+        ml = QVBoxLayout(root)
+        ml.setContentsMargins(0, 0, 0, 0); ml.setSpacing(0)
+        ml.addWidget(self._make_header())
+        body = QWidget(); bl = QHBoxLayout(body)
+        bl.setContentsMargins(20, 12, 20, 12); bl.setSpacing(16)
+        bl.addWidget(self._make_scroll(self._build_left),  1)
+        bl.addWidget(self._make_scroll(self._build_right), 1)
+        ml.addWidget(body, 1)
+        ml.addWidget(self._make_bottom())
 
-        # Logo (logo_header.png)
-        logo_path = resource_path("assets/pictures/logo_header.png")
-        if os.path.exists(logo_path):
-            try:
-                raw   = Image.open(logo_path).convert("RGBA")
-                ratio = min(220 / raw.width, 52 / raw.height)
-                new_w = int(raw.width  * ratio)
-                new_h = int(raw.height * ratio)
-                raw   = raw.resize((new_w, new_h), Image.LANCZOS)
-                self._header_logo = ctk.CTkImage(raw, size=(new_w, new_h))
-                ctk.CTkLabel(hdr, image=self._header_logo, text="",
-                             fg_color="transparent").pack(side="left", padx=20, pady=10)
-            except Exception:
-                pass
+    def _make_scroll(self, fn):
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.NoFrame)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        inner = QWidget(); inner.setObjectName("root")
+        il = QVBoxLayout(inner)
+        il.setContentsMargins(0, 0, 8, 0); il.setSpacing(10)
+        fn(il); il.addStretch()
+        scroll.setWidget(inner)
+        return scroll
 
-        # Theme-Toggle rechts
-        theme_frame = ctk.CTkFrame(hdr, fg_color="transparent")
-        theme_frame.pack(side="right", padx=20)
-        ctk.CTkLabel(theme_frame, text="☀️", font=("Segoe UI", 16)).pack(side="left", padx=(0, 4))
-        self._theme_switch = ctk.CTkSwitch(
-            theme_frame, text="", variable=self._theme_var,
-            onvalue="dark", offvalue="light", width=46,
-            command=self._toggle_theme)
-        self._theme_switch.pack(side="left")
-        if self._theme_var.get() == "dark":
-            self._theme_switch.select()
-        else:
-            self._theme_switch.deselect()
-        ctk.CTkLabel(theme_frame, text="🌙", font=("Segoe UI", 16)).pack(side="left", padx=(4, 0))
+    # ── HEADER ─────────────────────────────────────────────────────────────────
+    def _make_header(self):
+        hdr = QFrame(); hdr.setObjectName("header"); hdr.setFixedHeight(72)
+        layout = QHBoxLayout(hdr)
+        layout.setContentsMargins(24, 0, 24, 0); layout.setSpacing(10)
 
-        # Body
-        body = ctk.CTkFrame(self, fg_color="transparent")
-        body.pack(fill="both", expand=True, padx=20, pady=12)
+        self._header_logo_lbl = QLabel()
+        self._header_logo_lbl.setStyleSheet("background: transparent;")
+        layout.addWidget(self._header_logo_lbl)
+        layout.addStretch()
 
-        left  = ctk.CTkScrollableFrame(body, fg_color="transparent", width=480)
-        left.pack(side="left", fill="both", expand=True, padx=(0, 8))
-        right = ctk.CTkScrollableFrame(body, fg_color="transparent", width=460)
-        right.pack(side="right", fill="both", expand=True, padx=(8, 0))
+        # Speichern-Button
+        self._save_btn = QPushButton("💾  Speichern")
+        self._save_btn.setObjectName("saveBtn")
+        self._save_btn.setFont(QFont("Segoe UI", 11, QFont.Bold))
+        self._save_btn.setFixedHeight(38)
+        self._save_btn.setToolTip("Einstellungen jetzt speichern")
+        self._save_btn.clicked.connect(self._manual_save)
+        layout.addWidget(self._save_btn)
 
-        self._col_left(left)
-        self._col_right(right)
-        self._build_bottom()
+        # Reset-Button
+        self._reset_btn = QPushButton("↺  Zurücksetzen")
+        self._reset_btn.setObjectName("resetBtn")
+        self._reset_btn.setFont(QFont("Segoe UI", 11))
+        self._reset_btn.setFixedHeight(38)
+        self._reset_btn.setToolTip("Alle Einstellungen auf Standard zurücksetzen")
+        self._reset_btn.clicked.connect(self._confirm_reset)
+        layout.addWidget(self._reset_btn)
 
-    # ── THEME TOGGLE ──────────────────────────────────────────────────
-    def _toggle_theme(self):
-        new_theme = self._theme_var.get()
-        ctk.set_appearance_mode(new_theme)
-        self._settings["theme"] = new_theme
-        cfg_save(self._settings)
-        # Font-Vorschau neu rendern damit Hintergrundfarbe stimmt
-        if hasattr(self, "font_picker"):
-            self.font_picker.refresh_preview_theme()
+        # Theme-Button
+        self._theme_btn = QPushButton()
+        self._theme_btn.setObjectName("themeBtn")
+        self._theme_btn.setFont(QFont("Segoe UI", 11, QFont.Bold))
+        self._theme_btn.setFixedHeight(38)
+        self._theme_btn.clicked.connect(self._toggle_theme)
+        layout.addWidget(self._theme_btn)
 
-    # ── LINKE SPALTE ──────────────────────────────────────────────────
-    def _col_left(self, p):
+        return hdr
+
+    def _update_header_logo(self):
+        suffix = "dark" if self._theme == "dark" else "light"
+        path   = resource_path(f"assets/pictures/logo_header_{suffix}.png")
+        if os.path.exists(path):
+            pix = QPixmap(path).scaledToHeight(52, Qt.SmoothTransformation)
+            self._header_logo_lbl.setPixmap(pix)
+
+    # ── LINKE SPALTE ───────────────────────────────────────────────────────────
+    def _build_left(self, layout):
         # Timer
-        c = card(p); c.pack(fill="x", pady=(0, 10))
-        section_label(c, "⏱  Timer-Dauer")
-        hint(c, "Gesamtlänge des Countdown-Videos")
-        row = ctk.CTkFrame(c, fg_color="transparent")
-        row.pack(padx=16, pady=(0, 14))
-        Stepper(row, self.timer_min, 1, 120, step=1, width=60, fmt="{} min").pack(side="left")
+        c = make_card(); cl = QVBoxLayout(c); cl.setContentsMargins(16,10,16,14); cl.setSpacing(6)
+        cl.addWidget(sec_lbl("⏱  Timer-Dauer"))
+        cl.addWidget(hint_lbl("Gesamtlänge des Countdown-Videos"))
+        self._timer_step = Stepper(1, 120, 5, step=1, fmt="{} min")
+        cl.addWidget(self._timer_step)
+        layout.addWidget(c)
 
         # Hintergrund
-        c2 = card(p); c2.pack(fill="x", pady=(0, 10))
-        section_label(c2, "🎨  Hintergrund")
-        hint(c2, "Video hat Vorrang vor Bild — beide optional (Standard: Weiß)")
-        self._file_row(c2, "🎬  Video wählen", self.bg_video_path,
-                       [("Video", "*.mp4 *.mov *.avi *.mkv")], self._pick_bg_video)
-        self._file_row(c2, "🖼  Bild wählen", self.bg_image_path,
-                       [("Bild", "*.png *.jpg *.jpeg *.bmp")], self._pick_bg_image)
-        ctk.CTkFrame(c2, fg_color="transparent", height=6).pack()
+        c2 = make_card(); cl2 = QVBoxLayout(c2); cl2.setContentsMargins(16,10,16,14); cl2.setSpacing(6)
+        cl2.addWidget(sec_lbl("🎨  Hintergrund"))
+        cl2.addWidget(hint_lbl("Video hat Vorrang vor Bild — beide optional (Standard: Weiß)"))
+        self._bg_video_row = FileRow("🎬  Video wählen", self._pick_bg_video, self._clear_bg_video)
+        self._bg_image_row = FileRow("🖼  Bild wählen",  self._pick_bg_image, self._clear_bg_image)
+        cl2.addWidget(self._bg_video_row); cl2.addWidget(self._bg_image_row)
+        layout.addWidget(c2)
 
         # Musik
-        c3 = card(p); c3.pack(fill="x", pady=(0, 10))
-        section_label(c3, "🎵  Hintergrundmusik")
-        hint(c3, "Optional — MP3, WAV, OGG")
-        self._file_row(c3, "🎵  Musikdatei wählen", self.music_path,
-                       [("Audio", "*.mp3 *.wav *.ogg *.aac")], self._pick_music)
-        opt = ctk.CTkFrame(c3, fg_color="transparent")
-        opt.pack(fill="x", padx=16, pady=(4, 4))
-        ctk.CTkSwitch(opt, text="Loop (wiederholen)", variable=self.music_loop,
-                      font=("Segoe UI", 12)).pack(side="left", padx=(0, 20))
-        ctk.CTkSwitch(opt, text="Fade-out am Ende", variable=self.music_fadeout,
-                      font=("Segoe UI", 12)).pack(side="left")
-        fade = ctk.CTkFrame(c3, fg_color="transparent")
-        fade.pack(fill="x", padx=16, pady=(4, 14))
-        ctk.CTkLabel(fade, text="Fade-out Dauer:", font=("Segoe UI", 12),
-                     text_color=(TEXT_DIM_L, TEXT_DIM)).pack(side="left", padx=(0, 10))
-        Stepper(fade, self.music_fade_dur, 1, 30, step=1, width=50, fmt="{} s").pack(side="left")
+        c3 = make_card(); cl3 = QVBoxLayout(c3); cl3.setContentsMargins(16,10,16,14); cl3.setSpacing(6)
+        cl3.addWidget(sec_lbl("🎵  Hintergrundmusik"))
+        cl3.addWidget(hint_lbl("Optional — MP3, WAV, OGG"))
+        self._music_row = FileRow("🎵  Musikdatei wählen", self._pick_music, self._clear_music)
+        cl3.addWidget(self._music_row)
+        self._music_loop_chk    = StyledCheckBox("Loop (wiederholen)")
+        self._music_fadeout_chk = StyledCheckBox("Fade-out am Ende")
+        self._music_loop_chk.setChecked(True); self._music_fadeout_chk.setChecked(True)
+        chk_row = QWidget(); cr_l = QHBoxLayout(chk_row)
+        cr_l.setContentsMargins(0,0,0,0); cr_l.setSpacing(20)
+        cr_l.addWidget(self._music_loop_chk); cr_l.addWidget(self._music_fadeout_chk); cr_l.addStretch()
+        cl3.addWidget(chk_row)
+        fade_r = QWidget(); fl = QHBoxLayout(fade_r); fl.setContentsMargins(0,0,0,0); fl.setSpacing(10)
+        fl.addWidget(dim_lbl("Fade-out Dauer:"))
+        self._music_fade_step = Stepper(1, 30, 4, step=1, fmt="{} s")
+        fl.addWidget(self._music_fade_step); fl.addStretch()
+        cl3.addWidget(fade_r)
+        layout.addWidget(c3)
 
         # Ausgabe
-        c7 = card(p); c7.pack(fill="x", pady=(0, 10))
-        section_label(c7, "💾  Ausgabedatei")
-        self._file_row(c7, "📁  Speicherort wählen", self.out_path, [], self._pick_output, save=True)
-        ctk.CTkFrame(c7, fg_color="transparent", height=6).pack()
+        c7 = make_card(); cl7 = QVBoxLayout(c7); cl7.setContentsMargins(16,10,16,14); cl7.setSpacing(6)
+        cl7.addWidget(sec_lbl("💾  Ausgabedatei"))
+        self._out_row = FileRow("📁  Speicherort wählen", self._pick_output, self._clear_output)
+        cl7.addWidget(self._out_row)
+        layout.addWidget(c7)
 
-    # ── RECHTE SPALTE ─────────────────────────────────────────────────
-    def _col_right(self, p):
+    # ── RECHTE SPALTE ──────────────────────────────────────────────────────────
+    def _build_right(self, layout):
         # Slider-Bilder
-        c4 = card(p); c4.pack(fill="x", pady=(0, 10))
-        section_label(c4, "🖼  Slider-Bilder")
-        hint(c4, "Werden zwischen Countdown-Abschnitten eingeblendet")
-        btn_row = ctk.CTkFrame(c4, fg_color="transparent")
-        btn_row.pack(fill="x", padx=16, pady=(0, 6))
-        ctk.CTkButton(btn_row, text="+ Bilder hinzufügen", width=180,
-                      command=self._add_images).pack(side="left", padx=(0, 10))
-        ctk.CTkButton(btn_row, text="Liste leeren", width=120,
-                      fg_color=("#CBD5E1", "#374151"), hover_color=("#94A3B8", "#4B5563"),
-                      command=self._clear_images).pack(side="left")
-        self.img_list_box = ctk.CTkTextbox(c4, height=80, font=("Segoe UI", 11),
-                                            fg_color=("#E2E8F0", "#1a2535"), state="disabled")
-        self.img_list_box.pack(fill="x", padx=16, pady=(0, 8))
-        for label, var, fmt in [
-            ("Slider erst ab:",  self.slider_from,  "{} min"),
-            ("Slider bis max.:", self.slider_until, "{} min"),
-            ("Dauer pro Bild:",  self.img_duration, "{} s"),
+        c4 = make_card(); cl4 = QVBoxLayout(c4); cl4.setContentsMargins(16,10,16,14); cl4.setSpacing(6)
+        cl4.addWidget(sec_lbl("🖼  Slider-Bilder"))
+        cl4.addWidget(hint_lbl("Werden zwischen Countdown-Abschnitten eingeblendet"))
+        br = QWidget(); brl = QHBoxLayout(br); brl.setContentsMargins(0,0,0,0); brl.setSpacing(8)
+        add_btn = QPushButton("+ Bilder hinzufügen"); add_btn.setObjectName("secondary"); add_btn.clicked.connect(self._add_images)
+        clr_btn = QPushButton("Liste leeren");        clr_btn.setObjectName("secondary"); clr_btn.clicked.connect(self._clear_images)
+        brl.addWidget(add_btn); brl.addWidget(clr_btn); brl.addStretch()
+        cl4.addWidget(br)
+        self._img_list = QTextEdit()
+        self._img_list.setReadOnly(True); self._img_list.setFixedHeight(80)
+        self._img_list.setPlainText("  Keine Bilder ausgewählt")
+        cl4.addWidget(self._img_list)
+        self._slider_from_step   = Stepper(1, 120, 4,  step=1, fmt="{} min")
+        self._slider_until_step  = Stepper(0, 120, 1,  step=1, fmt="{} min")
+        self._img_dur_step       = Stepper(5, 120, 10, step=5, fmt="{} s")
+        self._timer_between_step = Stepper(0, 120, 15, step=5, fmt="{} s")
+        for label, widget, suffix in [
+            ("Slider erst ab:",         self._slider_from_step,   "verbleibend"),
+            ("Slider bis max.:",        self._slider_until_step,  "verbleibend"),
+            ("Dauer pro Bild:",         self._img_dur_step,       ""),
+            ("Timer zwischen Bildern:", self._timer_between_step, ""),
         ]:
-            r = ctk.CTkFrame(c4, fg_color="transparent")
-            r.pack(fill="x", padx=16, pady=3)
-            ctk.CTkLabel(r, text=label, font=("Segoe UI", 12),
-                         text_color=(TEXT_DIM_L, TEXT_DIM),
-                         width=130, anchor="w").pack(side="left")
-            Stepper(r, var, 1 if "bis" not in label else 0,
-                    120, step=1, width=55, fmt=fmt).pack(side="left")
-            ctk.CTkLabel(r, text="verbleibend" if "min" in fmt else "",
-                         font=("Segoe UI", 11),
-                         text_color=(TEXT_DIM_L, TEXT_DIM)).pack(side="left", padx=6)
-        ctk.CTkFrame(c4, fg_color="transparent", height=6).pack()
+            row = QWidget(); rl = QHBoxLayout(row); rl.setContentsMargins(0,2,0,2); rl.setSpacing(8)
+            lw = dim_lbl(label); lw.setFixedWidth(160)
+            rl.addWidget(lw); rl.addWidget(widget)
+            if suffix: rl.addWidget(dim_lbl(suffix))
+            rl.addStretch(); cl4.addWidget(row)
+        self._slider_loop_chk = StyledCheckBox("Loop  (Bilder wiederholen bis Slider-Ende)")
+        self._slider_loop_chk.setChecked(True)
+        cl4.addWidget(self._slider_loop_chk)
+        cl4.addWidget(hint_lbl("Loop aus: alle Bilder einmal → weiter mit Timer\nLoop an: Bild → Timer → Bild → ... bis Slider-Ende"))
+        layout.addWidget(c4)
 
         # Übergänge
-        c5 = card(p); c5.pack(fill="x", pady=(0, 10))
-        section_label(c5, "✨  Übergänge")
-        fr = ctk.CTkFrame(c5, fg_color="transparent")
-        fr.pack(fill="x", padx=16, pady=(0, 14))
-        ctk.CTkLabel(fr, text="Fade-Dauer:", font=("Segoe UI", 12),
-                     text_color=(TEXT_DIM_L, TEXT_DIM), width=100).pack(side="left")
-        Stepper(fr, self.fade_duration, 0, 8, step=0.5, width=60, fmt="{} s").pack(side="left")
+        c5 = make_card(); cl5 = QVBoxLayout(c5); cl5.setContentsMargins(16,10,16,14); cl5.setSpacing(6)
+        cl5.addWidget(sec_lbl("✨  Übergänge"))
+        fr = QWidget(); fl = QHBoxLayout(fr); fl.setContentsMargins(0,0,0,0); fl.setSpacing(10)
+        fl.addWidget(dim_lbl("Fade-Dauer:"))
+        self._fade_step = Stepper(0, 8, 2, step=0.5, fmt="{} s")
+        fl.addWidget(self._fade_step); fl.addStretch()
+        cl5.addWidget(fr)
+        layout.addWidget(c5)
 
         # Font-Picker
-        self.font_picker = FontPickerWidget(p, on_change=None)
-        self.font_picker.pack(fill="x", pady=(0, 10))
+        self._font_picker = FontPickerWidget(theme=self._theme)
+        layout.addWidget(self._font_picker)
 
         # Schriftfarbe Timer
-        c6 = card(p); c6.pack(fill="x", pady=(0, 10))
-        section_label(c6, "🎨  Schriftfarbe Timer")
-        cr = ctk.CTkFrame(c6, fg_color="transparent")
-        cr.pack(fill="x", padx=16, pady=(0, 14))
-        ctk.CTkLabel(cr, text="Farbe:", font=("Segoe UI", 12),
-                     text_color=(TEXT_DIM_L, TEXT_DIM)).pack(side="left", padx=(0, 12))
-        self.color_btn = ctk.CTkButton(cr, text="  #FFFFFF  ",
-                                        fg_color="#FFFFFF", text_color="#000000",
-                                        hover_color="#DDDDDD", width=130,
-                                        command=self._pick_color)
-        self.color_btn.pack(side="left")
+        c6 = make_card(); cl6 = QVBoxLayout(c6); cl6.setContentsMargins(16,10,16,14); cl6.setSpacing(6)
+        cl6.addWidget(sec_lbl("🎨  Schriftfarbe Timer"))
+        cr_w = QWidget(); crl = QHBoxLayout(cr_w); crl.setContentsMargins(0,0,0,0); crl.setSpacing(10)
+        crl.addWidget(dim_lbl("Farbe:"))
+        self._color_btn = QPushButton("  #FFFFFF  ")
+        self._color_btn.setObjectName("colorBtn"); self._color_btn.setFixedHeight(32)
+        self._color_btn.setStyleSheet("background:#FFFFFF;color:#000000;border-radius:8px;padding:4px 14px;border:1px solid rgba(0,0,0,0.2);")
+        self._color_btn.clicked.connect(self._pick_color)
+        crl.addWidget(self._color_btn); crl.addStretch()
+        cl6.addWidget(cr_w)
+        layout.addWidget(c6)
 
-        # ── Untertitel ────────────────────────────────────────────────
-        c8 = card(p); c8.pack(fill="x", pady=(0, 10))
-        section_label(c8, "💬  Untertitel")
-        hint(c8, "Wird unterhalb des Timers im Video angezeigt")
+        # Untertitel
+        c8 = make_card(); cl8 = QVBoxLayout(c8); cl8.setContentsMargins(16,10,16,14); cl8.setSpacing(6)
+        cl8.addWidget(sec_lbl("💬  Untertitel"))
+        cl8.addWidget(hint_lbl("Wird unterhalb des Timers im Video angezeigt"))
+        self._sub_chk = StyledCheckBox("Untertitel aktivieren")
+        self._sub_chk.stateChanged.connect(self._toggle_subtitle)
+        cl8.addWidget(self._sub_chk)
+        self._sub_edit = QTextEdit()
+        self._sub_edit.setFixedHeight(70)
+        self._sub_edit.setPlaceholderText("z. B. Willkommen zur Veranstaltung\nBitte nehmt eure Plätze ein")
+        self._sub_edit.setEnabled(False)
+        cl8.addWidget(self._sub_edit)
+        so = QWidget(); sol = QHBoxLayout(so); sol.setContentsMargins(0,0,0,0); sol.setSpacing(10)
+        sol.addWidget(dim_lbl("Schriftgröße:"))
+        self._sub_size_step = Stepper(10, 120, 40, step=2, fmt="{} pt")
+        self._sub_size_step.setEnabled(False)
+        sol.addWidget(self._sub_size_step); sol.addSpacing(10); sol.addWidget(dim_lbl("Farbe:"))
+        self._sub_color_btn = QPushButton("  #FFFFFF  ")
+        self._sub_color_btn.setObjectName("colorBtn"); self._sub_color_btn.setFixedHeight(32)
+        self._sub_color_btn.setStyleSheet("background:#FFFFFF;color:#000000;border-radius:8px;padding:4px 14px;border:1px solid rgba(0,0,0,0.2);")
+        self._sub_color_btn.setEnabled(False)
+        self._sub_color_btn.clicked.connect(self._pick_sub_color)
+        sol.addWidget(self._sub_color_btn); sol.addStretch()
+        cl8.addWidget(so)
+        layout.addWidget(c8)
 
-        sw_row = ctk.CTkFrame(c8, fg_color="transparent")
-        sw_row.pack(fill="x", padx=16, pady=(0, 8))
-        ctk.CTkSwitch(sw_row, text="Untertitel aktivieren",
-                      variable=self.subtitle_enabled,
-                      font=("Segoe UI", 12),
-                      command=self._toggle_subtitle).pack(side="left")
+    # ── BOTTOM BAR ─────────────────────────────────────────────────────────────
+    def _make_bottom(self):
+        bar = QFrame(); bar.setObjectName("bottomBar"); bar.setFixedHeight(110)
+        layout = QHBoxLayout(bar)
+        layout.setContentsMargins(20, 0, 24, 0); layout.setSpacing(12)
+        info = QWidget(); il = QVBoxLayout(info)
+        il.setContentsMargins(0, 14, 0, 10); il.setSpacing(5)
+        self._status_lbl = QLabel("Bereit")
+        self._status_lbl.setObjectName("dim"); self._status_lbl.setFont(QFont("Segoe UI", 11))
+        il.addWidget(self._status_lbl)
+        self._progress = QProgressBar()
+        self._progress.setRange(0, 1000); self._progress.setValue(0)
+        self._progress.setTextVisible(False)
+        self._progress.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        il.addWidget(self._progress)
+        det = QWidget(); dl = QHBoxLayout(det); dl.setContentsMargins(0,0,0,0); dl.setSpacing(0)
+        self._frames_lbl = QLabel(""); self._frames_lbl.setObjectName("dim"); self._frames_lbl.setFont(QFont("Segoe UI", 10))
+        self._eta_lbl    = QLabel(""); self._eta_lbl.setObjectName("dim");    self._eta_lbl.setFont(QFont("Segoe UI", 10))
+        self._pct_lbl    = QLabel(""); self._pct_lbl.setFont(QFont("Segoe UI", 11, QFont.Bold))
+        dl.addWidget(self._frames_lbl); dl.addSpacing(20)
+        dl.addWidget(self._eta_lbl);    dl.addSpacing(20)
+        dl.addWidget(self._pct_lbl);    dl.addStretch()
+        il.addWidget(det)
+        layout.addWidget(info, 1)
+        btn_col = QWidget(); bcl = QVBoxLayout(btn_col)
+        bcl.setContentsMargins(0, 16, 0, 16); bcl.setSpacing(8)
+        self._create_btn = QPushButton("🎬  Video erstellen")
+        self._create_btn.setObjectName("primary"); self._create_btn.setFixedSize(230, 52)
+        self._create_btn.clicked.connect(self._start_render)
+        self._cancel_btn = QPushButton("✕  Abbrechen")
+        self._cancel_btn.setObjectName("danger"); self._cancel_btn.setFixedSize(230, 36)
+        self._cancel_btn.setVisible(False); self._cancel_btn.clicked.connect(self._cancel_render)
+        bcl.addWidget(self._create_btn); bcl.addWidget(self._cancel_btn)
+        layout.addWidget(btn_col)
+        return bar
 
-        # Einzige große Textbox
-        self._subtitle_frame = ctk.CTkFrame(c8, fg_color="transparent")
-        self._subtitle_frame.pack(fill="x", padx=16, pady=(0, 4))
-
-        self._subtitle_entry = ctk.CTkTextbox(
-            self._subtitle_frame,
-            height=70,
-            font=("Segoe UI", 13),
-            fg_color=("#E2E8F0", "#1a2535"),
-            wrap="word")
-        self._subtitle_entry.pack(fill="x", pady=(0, 6))
-        self._subtitle_entry.insert("1.0", "")
-
-        # Optionen-Zeile unter der Textbox
-        opt_row = ctk.CTkFrame(self._subtitle_frame, fg_color="transparent")
-        opt_row.pack(fill="x", pady=(2, 0))
-        ctk.CTkLabel(opt_row, text="Schriftgröße:", font=("Segoe UI", 12),
-                     text_color=(TEXT_DIM_L, TEXT_DIM)).pack(side="left", padx=(0, 8))
-        Stepper(opt_row, self.subtitle_size, 10, 120, step=2,
-                width=50, fmt="{} pt").pack(side="left", padx=(0, 20))
-        ctk.CTkLabel(opt_row, text="Farbe:", font=("Segoe UI", 12),
-                     text_color=(TEXT_DIM_L, TEXT_DIM)).pack(side="left", padx=(0, 8))
-        self.subtitle_color_btn = ctk.CTkButton(
-            opt_row, text="  #FFFFFF  ",
-            fg_color="#FFFFFF", text_color="#000000",
-            hover_color="#DDDDDD", width=120,
-            command=self._pick_subtitle_color)
-        self.subtitle_color_btn.pack(side="left")
-
-        ctk.CTkFrame(c8, fg_color="transparent", height=10).pack()
-        # Initial deaktiviert
-        self._set_subtitle_state("disabled")
-
-    # ── BOTTOM BAR ────────────────────────────────────────────────────
-    def _build_bottom(self):
-        bar = ctk.CTkFrame(self, fg_color=(BG_MID_L, BG_MID), corner_radius=0, height=110)
-        bar.pack(fill="x", side="bottom")
-        bar.pack_propagate(False)
-
-        info = ctk.CTkFrame(bar, fg_color="transparent")
-        info.pack(side="left", padx=20, fill="y")
-        self.status_label = ctk.CTkLabel(info, text="Bereit", font=("Segoe UI", 12),
-                                          text_color=(TEXT_DIM_L, TEXT_DIM))
-        self.status_label.pack(anchor="w", pady=(14, 2))
-        self.progress = ctk.CTkProgressBar(info, width=650, height=12, corner_radius=6,
-                                            progress_color=(ACCENT_L, ACCENT))
-        self.progress.pack(anchor="w")
-        self.progress.set(0)
-        det = ctk.CTkFrame(info, fg_color="transparent")
-        det.pack(anchor="w", pady=(4, 0))
-        self.frames_label = ctk.CTkLabel(det, text="", font=("Segoe UI", 10),
-                                          text_color="#475569")
-        self.frames_label.pack(side="left", padx=(0, 20))
-        self.eta_label = ctk.CTkLabel(det, text="", font=("Segoe UI", 10),
-                                       text_color="#475569")
-        self.eta_label.pack(side="left")
-        self.pct_label = ctk.CTkLabel(det, text="", font=("Segoe UI Bold", 11, "bold"),
-                                       text_color=(ACCENT_L, ACCENT))
-        self.pct_label.pack(side="left", padx=(20, 0))
-
-        self.create_btn = ctk.CTkButton(bar, text="🎬  Video erstellen",
-                                         font=("Segoe UI", 15, "bold"),
-                                         height=52, width=230, corner_radius=10,
-                                         fg_color=(ACCENT_L, ACCENT),
-                                         hover_color="#1D4ED8",
-                                         command=self._start)
-        self.create_btn.pack(side="right", padx=24, pady=28)
-
-    # ── FILE ROW ──────────────────────────────────────────────────────
-    def _file_row(self, parent, btn_text, var, filetypes, cmd, save=False):
-        row = ctk.CTkFrame(parent, fg_color="transparent")
-        row.pack(fill="x", padx=16, pady=(0, 8))
-        lbl = ctk.CTkLabel(row, text=var.get() or "Nichts ausgewählt",
-                            font=("Segoe UI", 11), text_color=(TEXT_DIM_L, TEXT_DIM),
-                            fg_color=("#E2E8F0", "#1a2535"), corner_radius=6,
-                            width=260, height=28, anchor="w")
-        lbl.pack(side="left", padx=(0, 8))
-        var.trace_add("write", lambda *_: lbl.configure(
-            text=os.path.basename(var.get()) if var.get() else "Nichts ausgewählt"))
-        ctk.CTkButton(row, text=btn_text, width=190, height=28,
-                      fg_color=("#CBD5E1", "#374151"),
-                      hover_color=("#94A3B8", "#4B5563"),
-                      command=cmd).pack(side="left")
-
-    # ── SUBTITLE TOGGLE ───────────────────────────────────────────────
-    def _toggle_subtitle(self):
-        state = "normal" if self.subtitle_enabled.get() else "disabled"
-        self._set_subtitle_state(state)
-
-    def _set_subtitle_state(self, state):
-        try:
-            self._subtitle_entry.configure(state=state)
-        except Exception:
-            pass
-        for widget in self._subtitle_frame.winfo_children():
-            if widget == self._subtitle_entry:
-                continue
-            try:
-                widget.configure(state=state)
-            except Exception:
-                pass
-            for child in widget.winfo_children():
-                try:
-                    child.configure(state=state)
-                except Exception:
-                    pass
-
-    # ── FILE PICKERS ──────────────────────────────────────────────────
-    def _pick_bg_video(self):
-        p = filedialog.askopenfilename(filetypes=[("Video", "*.mp4 *.mov *.avi *.mkv")])
-        if p: self.bg_video_path.set(p)
-
-    def _pick_bg_image(self):
-        p = filedialog.askopenfilename(filetypes=[("Bild", "*.png *.jpg *.jpeg *.bmp")])
-        if p: self.bg_image_path.set(p)
-
-    def _pick_music(self):
-        p = filedialog.askopenfilename(filetypes=[("Audio", "*.mp3 *.wav *.ogg *.aac")])
-        if p: self.music_path.set(p)
-
-    def _pick_output(self):
-        p = filedialog.asksaveasfilename(defaultextension=".mp4",
-                                          filetypes=[("MP4", "*.mp4")],
-                                          initialfile="intro_output.mp4")
-        if p: self.out_path.set(p)
-
-    def _pick_color(self):
-        c = colorchooser.askcolor(color=self.font_color, title="Timer Schriftfarbe")
-        if c[1]:
-            self.font_color = c[1]
-            light = self._is_light(c[1])
-            self.color_btn.configure(fg_color=c[1], text=f"  {c[1].upper()}  ",
-                                      text_color="black" if light else "white",
-                                      hover_color="#CCCCCC" if light else "#333333")
-
-    def _pick_subtitle_color(self):
-        c = colorchooser.askcolor(color=self.subtitle_color, title="Untertitel Farbe")
-        if c[1]:
-            self.subtitle_color = c[1]
-            light = self._is_light(c[1])
-            self.subtitle_color_btn.configure(fg_color=c[1], text=f"  {c[1].upper()}  ",
-                                               text_color="black" if light else "white",
-                                               hover_color="#CCCCCC" if light else "#333333")
-
-    def _is_light(self, h):
-        h = h.lstrip("#")
-        r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
-        return (r * 299 + g * 587 + b * 114) / 1000 > 128
-
-    def _add_images(self):
-        paths = filedialog.askopenfilenames(
-            filetypes=[("Bilder", "*.png *.jpg *.jpeg *.bmp *.webp")])
-        if paths:
-            self.image_paths.extend(paths)
-            self._refresh_images()
-
-    def _clear_images(self):
-        self.image_paths = []
-        self._refresh_images()
-
-    def _refresh_images(self):
-        self.img_list_box.configure(state="normal")
-        self.img_list_box.delete("1.0", "end")
-        if self.image_paths:
-            for p in self.image_paths:
-                self.img_list_box.insert("end", f"  • {os.path.basename(p)}\n")
-        else:
-            self.img_list_box.insert("end", "  Keine Bilder ausgewählt")
-        self.img_list_box.configure(state="disabled")
-
-    # ── GENERIERUNG ───────────────────────────────────────────────────
-    def _start(self):
-        if not self.out_path.get():
-            messagebox.showerror("Fehler", "Bitte einen Speicherort wählen!")
-            return
-
-        # Untertitel-Text aus Textbox lesen
-        sub_text = ""
-        if self.subtitle_enabled.get():
-            sub_text = self._subtitle_entry.get("1.0", "end").strip()
-
-        self.create_btn.configure(state="disabled", text="⏳  Wird gerendert …")
-        self.progress.set(0)
-        self.frames_label.configure(text="")
-        self.eta_label.configure(text="")
-        self.pct_label.configure(text="")
-        self._render_start_time = time.time()
-
-        config = {
-            "bg_video":         self.bg_video_path.get() or None,
-            "bg_image":         self.bg_image_path.get() or None,
-            "music_path":       self.music_path.get() or None,
-            "music_loop":       self.music_loop.get(),
-            "music_fadeout":    self.music_fadeout.get(),
-            "music_fade_dur":   self.music_fade_dur.get(),
-            "timer_minutes":    self.timer_min.get(),
-            "image_paths":      list(self.image_paths),
-            "img_duration":     self.img_duration.get(),
-            "slider_from":      self.slider_from.get(),
-            "slider_until":     self.slider_until.get(),
-            "fade_duration":    self.fade_duration.get(),
-            "font_path":        self.font_picker.get_font_path(),
-            "font_color":       self.font_color,
-            "output_path":      self.out_path.get(),
-            "subtitle_enabled": self.subtitle_enabled.get(),
-            "subtitle_text":    sub_text,
-            "subtitle_size":    self.subtitle_size.get(),
-            "subtitle_color":   self.subtitle_color,
-            "subtitle_font":    self.font_picker.get_font_path(),
+    # ── EINSTELLUNGEN ──────────────────────────────────────────────────────────
+    def _collect_settings(self) -> dict:
+        return {
+            "theme":            self._theme,
+            "timer_minutes":    self._timer_step.value(),
+            "music_loop":       self._music_loop_chk.isChecked(),
+            "music_fadeout":    self._music_fadeout_chk.isChecked(),
+            "music_fade_dur":   self._music_fade_step.value(),
+            "slider_from":      self._slider_from_step.value(),
+            "slider_until":     self._slider_until_step.value(),
+            "img_duration":     self._img_dur_step.value(),
+            "timer_between":    self._timer_between_step.value(),
+            "slider_loop":      self._slider_loop_chk.isChecked(),
+            "fade_duration":    self._fade_step.value(),
+            "font_color":       self._font_color,
+            "font_name":        self._font_picker._combo.currentText(),
+            "subtitle_enabled": self._sub_chk.isChecked(),
+            "subtitle_text":    self._sub_edit.toPlainText(),
+            "subtitle_size":    self._sub_size_step.value(),
+            "subtitle_color":   self._sub_color,
         }
 
-        gen = VideoGenerator(config, self._on_progress, self._on_done)
-        threading.Thread(target=gen.generate, daemon=True).start()
+    def _restore_settings(self):
+        s = self._settings
+        self._timer_step.set_value(s.get("timer_minutes", 5))
+        self._music_loop_chk.setChecked(s.get("music_loop", True))
+        self._music_fadeout_chk.setChecked(s.get("music_fadeout", True))
+        self._music_fade_step.set_value(s.get("music_fade_dur", 4))
+        self._slider_from_step.set_value(s.get("slider_from", 4))
+        self._slider_until_step.set_value(s.get("slider_until", 1))
+        self._img_dur_step.set_value(s.get("img_duration", 10))
+        self._timer_between_step.set_value(s.get("timer_between", 15))
+        self._slider_loop_chk.setChecked(s.get("slider_loop", True))
+        self._fade_step.set_value(s.get("fade_duration", 2.0))
+        font_name = s.get("font_name")
+        if font_name:
+            idx = self._font_picker._combo.findText(font_name)
+            if idx >= 0:
+                self._font_picker._combo.setCurrentIndex(idx)
+        fc = s.get("font_color", "#FFFFFF")
+        self._font_color = fc
+        self._update_color_btn(self._color_btn, fc)
+        sub_on = s.get("subtitle_enabled", False)
+        self._sub_chk.setChecked(sub_on)
+        self._sub_edit.setPlainText(s.get("subtitle_text", ""))
+        self._sub_size_step.set_value(s.get("subtitle_size", 40))
+        sc = s.get("subtitle_color", "#FFFFFF")
+        self._sub_color = sc
+        self._update_color_btn(self._sub_color_btn, sc)
+        self._sub_edit.setEnabled(sub_on)
+        self._sub_size_step.setEnabled(sub_on)
+        self._sub_color_btn.setEnabled(sub_on)
 
-    def _on_progress(self, value, msg, frame_info=None):
-        self.progress.set(value)
-        self.status_label.configure(text=msg)
-        self.pct_label.configure(text=f"{int(value * 100)}%")
-        if frame_info:
-            cur, total = frame_info
-            self.frames_label.configure(text=f"Frame {cur:,} / {total:,}")
+    def _save_settings(self):
+        data = self._collect_settings()
+        cfg_save(data)
+        self._settings = data
+
+    def _manual_save(self):
+        self._save_settings()
+        # Kurzes visuelles Feedback am Button
+        self._save_btn.setText("✓  Gespeichert")
+        self._save_btn.setStyleSheet(
+            "background:#16A34A; color:white; border-radius:10px;"
+            "font-size:11px; font-weight:bold; padding:8px 14px; border:none;")
+        QApplication.processEvents()
+        from PyQt5.QtCore import QTimer
+        QTimer.singleShot(1800, self._reset_save_btn)
+
+    def _reset_save_btn(self):
+        self._save_btn.setText("💾  Speichern")
+        self._save_btn.setStyleSheet("")   # zurück auf Stylesheet-Klasse
+        self._save_btn.setObjectName("saveBtn")
+        # Stylesheet neu anwenden damit objectName greift
+        QApplication.instance().setStyleSheet(
+            QApplication.instance().styleSheet())
+
+    # ── THEME ──────────────────────────────────────────────────────────────────
+    def _apply_theme(self, theme: str, save=True):
+        self._theme = theme
+        QApplication.instance().setStyleSheet(_make_style(theme == "dark"))
+        self._theme_btn.setText("🌙  Dark Mode" if theme == "light" else "☀️  Light Mode")
+        self._update_header_logo()
+        accent = "#3B82F6" if theme == "dark" else "#2563EB"
+        self._pct_lbl.setStyleSheet(f"color: {accent};")
+        if hasattr(self, "_font_picker"):
+            self._font_picker.set_theme(theme)
+        dark = (theme == "dark")
+        for chk in [self._music_loop_chk, self._music_fadeout_chk,
+                    self._sub_chk, self._slider_loop_chk]:
+            try: chk.update_theme(dark)
+            except: pass
+        # Farb-Buttons border anpassen
+        self._update_color_btn(self._color_btn, self._font_color)
+        self._update_color_btn(self._sub_color_btn, self._sub_color)
+        if save:
+            self._save_settings()
+
+    def _toggle_theme(self):
+        self._apply_theme("dark" if self._theme == "light" else "light")
+
+    # ── RESET ──────────────────────────────────────────────────────────────────
+    def _confirm_reset(self):
+        if ThemedDialog.question(self, "Einstellungen zurücksetzen",
+                                  "Alle Einstellungen auf Standard zurücksetzen?\n\nDies kann nicht rückgängig gemacht werden.",
+                                  dark=(self._theme == "dark")):
+            self._settings = cfg_reset()
+            self._restore_settings()
+            self._apply_theme(self._settings.get("theme", "light"), save=False)
+
+    # ── COLOR BUTTON HELPER ────────────────────────────────────────────────────
+    def _update_color_btn(self, btn, hex_color: str):
+        c      = QColor(hex_color)
+        dark   = (self._theme == "dark")
+        border = "rgba(255,255,255,0.3)" if dark else "rgba(0,0,0,0.2)"
+        tc     = "white" if c.lightness() < 128 else "black"
+        btn.setStyleSheet(
+            f"background:{hex_color}; color:{tc}; border-radius:8px;"
+            f"padding:4px 14px; border:1px solid {border};")
+        btn.setText(f"  {hex_color.upper()}  ")
+
+    # ── FARBAUSWAHL (native Dialog deaktiviert, eigener Wrapper) ──────────────
+    def _open_color_dialog(self, current: str, title: str) -> str | None:
+        dialog = QColorDialog(QColor(current), self)
+        dialog.setWindowTitle(title)
+        # Nativen Dialog deaktivieren → Qt zeichnet ihn selbst (theme-neutral)
+        dialog.setOption(QColorDialog.DontUseNativeDialog, True)
+        # Dark-Mode Palette setzen wenn nötig
+        if self._theme == "dark":
+            pal = dialog.palette()
+            pal.setColor(QPalette.Window,      QColor("#1E293B"))
+            pal.setColor(QPalette.WindowText,  QColor("#F1F5F9"))
+            pal.setColor(QPalette.Base,        QColor("#0F172A"))
+            pal.setColor(QPalette.AlternateBase, QColor("#263348"))
+            pal.setColor(QPalette.Text,        QColor("#F1F5F9"))
+            pal.setColor(QPalette.Button,      QColor("#334155"))
+            pal.setColor(QPalette.ButtonText,  QColor("#F1F5F9"))
+            pal.setColor(QPalette.Highlight,   QColor("#3B82F6"))
+            pal.setColor(QPalette.HighlightedText, QColor("white"))
+            dialog.setPalette(pal)
+        if dialog.exec_() == QColorDialog.Accepted:
+            return dialog.selectedColor().name()
+        return None
+
+    # ── FILE PICKERS ───────────────────────────────────────────────────────────
+    def _pick_bg_video(self):
+        p, _ = QFileDialog.getOpenFileName(self, "Hintergrundvideo", "", "Video (*.mp4 *.mov *.avi *.mkv)")
+        if p:
+            self._bg_video_path = p; self._bg_video_row.set_path(p)
+            self._bg_image_row.setEnabled(False)
+
+    def _clear_bg_video(self):
+        self._bg_video_path = None; self._bg_video_row.set_path(None)
+        self._bg_image_row.setEnabled(True)
+
+    def _pick_bg_image(self):
+        p, _ = QFileDialog.getOpenFileName(self, "Hintergrundbild", "", "Bild (*.png *.jpg *.jpeg *.bmp)")
+        if p:
+            self._bg_image_path = p; self._bg_image_row.set_path(p)
+            self._bg_video_row.setEnabled(False)
+
+    def _clear_bg_image(self):
+        self._bg_image_path = None; self._bg_image_row.set_path(None)
+        self._bg_video_row.setEnabled(True)
+
+    def _pick_music(self):
+        p, _ = QFileDialog.getOpenFileName(self, "Musikdatei", "", "Audio (*.mp3 *.wav *.ogg *.aac)")
+        if p: self._music_path = p; self._music_row.set_path(p)
+
+    def _clear_music(self):
+        self._music_path = None; self._music_row.set_path(None)
+
+    def _pick_output(self):
+        p, _ = QFileDialog.getSaveFileName(self, "Speicherort", "intro_output.mp4", "MP4 (*.mp4)")
+        if p: self._out_path = p; self._out_row.set_path(p)
+
+    def _clear_output(self):
+        self._out_path = None; self._out_row.set_path(None)
+
+    def _pick_color(self):
+        result = self._open_color_dialog(self._font_color, "Timer Schriftfarbe")
+        if result:
+            self._font_color = result
+            self._update_color_btn(self._color_btn, result)
+
+    def _pick_sub_color(self):
+        result = self._open_color_dialog(self._sub_color, "Untertitel Farbe")
+        if result:
+            self._sub_color = result
+            self._update_color_btn(self._sub_color_btn, result)
+
+    # ── BILDER ─────────────────────────────────────────────────────────────────
+    def _add_images(self):
+        paths, _ = QFileDialog.getOpenFileNames(self, "Bilder", "", "Bilder (*.png *.jpg *.jpeg *.bmp *.webp)")
+        if paths:
+            self._image_paths.extend(paths); self._refresh_imgs()
+
+    def _clear_images(self):
+        self._image_paths = []; self._refresh_imgs()
+
+    def _refresh_imgs(self):
+        self._img_list.setPlainText(
+            "\n".join(f"  • {os.path.basename(p)}" for p in self._image_paths)
+            if self._image_paths else "  Keine Bilder ausgewählt")
+
+    # ── UNTERTITEL ─────────────────────────────────────────────────────────────
+    def _toggle_subtitle(self, state):
+        on = (state == 2)
+        self._sub_edit.setEnabled(on)
+        self._sub_size_step.setEnabled(on)
+        self._sub_color_btn.setEnabled(on)
+
+    # ── RENDER ─────────────────────────────────────────────────────────────────
+    def _start_render(self):
+        if not self._out_path:
+            ThemedDialog.error(self, "Fehler", "Bitte einen Speicherort wählen!",
+                               dark=(self._theme == "dark"))
+            return
+
+        self._save_settings()
+        sub_text = self._sub_edit.toPlainText().strip() if self._sub_chk.isChecked() else ""
+
+        self._create_btn.setEnabled(False)
+        self._create_btn.setText("⏳  Wird gerendert …")
+        self._cancel_btn.setVisible(True)
+        self._progress.setValue(0)
+        self._frames_lbl.setText(""); self._eta_lbl.setText(""); self._pct_lbl.setText("")
+        self._render_start = time.time()
+
+        config = {
+            "bg_video":         self._bg_video_path,
+            "bg_image":         self._bg_image_path,
+            "music_path":       self._music_path,
+            "music_loop":       self._music_loop_chk.isChecked(),
+            "music_fadeout":    self._music_fadeout_chk.isChecked(),
+            "music_fade_dur":   self._music_fade_step.value(),
+            "timer_minutes":    self._timer_step.value(),
+            "image_paths":      list(self._image_paths),
+            "img_duration":     self._img_dur_step.value(),
+            "timer_between":    self._timer_between_step.value(),
+            "slider_loop":      self._slider_loop_chk.isChecked(),
+            "slider_from":      self._slider_from_step.value(),
+            "slider_until":     self._slider_until_step.value(),
+            "fade_duration":    self._fade_step.value(),
+            "font_path":        self._font_picker.get_font_path(),
+            "font_color":       self._font_color,
+            "output_path":      self._out_path,
+            "subtitle_enabled": self._sub_chk.isChecked(),
+            "subtitle_text":    sub_text,
+            "subtitle_size":    self._sub_size_step.value(),
+            "subtitle_color":   self._sub_color,
+            "subtitle_font":    self._font_picker.get_font_path(),
+        }
+
+        self._worker = RenderWorker(config)
+        self._thread = QThread()
+        self._worker.moveToThread(self._thread)
+        self._thread.started.connect(self._worker.run)
+        self._worker.progress.connect(self._on_progress)
+        self._worker.finished.connect(self._on_done)
+        self._worker.finished.connect(self._thread.quit)
+        self._thread.start()
+
+    def _cancel_render(self):
+        if self._thread and self._thread.isRunning():
+            self._thread.requestInterruption()
+            self._thread.quit()
+            self._thread.wait(3000)
+        self._on_done(False, "Abgebrochen")
+
+    def _on_progress(self, value, msg, cur, total):
+        self._progress.setValue(int(value * 1000))
+        self._status_lbl.setText(msg)
+        self._pct_lbl.setText(f"{int(value * 100)}%")
+        if total > 0:
+            self._frames_lbl.setText(f"Frame {cur:,} / {total:,}")
         if value > 0.01:
-            elapsed = time.time() - self._render_start_time
-            eta_sec = (elapsed / value) * (1 - value)
-            m, s    = divmod(int(eta_sec), 60)
-            self.eta_label.configure(text=f"⏳ ETA: {m:02d}:{s:02d}")
+            elapsed = time.time() - self._render_start
+            eta = (elapsed / value) * (1 - value)
+            m, s = divmod(int(eta), 60)
+            self._eta_lbl.setText(f"⏳ ETA: {m:02d}:{s:02d}")
 
     def _on_done(self, ok, msg):
-        self.create_btn.configure(state="normal", text="🎬  Video erstellen")
-        self.eta_label.configure(text="")
+        self._create_btn.setEnabled(True)
+        self._create_btn.setText("🎬  Video erstellen")
+        self._cancel_btn.setVisible(False)
+        self._eta_lbl.setText("")
+        dark = (self._theme == "dark")
         if ok:
-            self.progress.set(1.0)
-            self.pct_label.configure(text="100%")
-            self.status_label.configure(text="✅  Fertig!")
-            messagebox.showinfo("🎉 Fertig!", f"Video gespeichert:\n{self.out_path.get()}")
+            self._progress.setValue(1000)
+            self._pct_lbl.setText("100%")
+            self._status_lbl.setText("✅  Fertig!")
+            ThemedDialog.info(self, "🎉 Fertig!",
+                              f"Video wurde erfolgreich gespeichert:\n\n{self._out_path}", dark=dark)
         else:
-            self.status_label.configure(text="❌  Fehler!")
-            messagebox.showerror("Fehler beim Rendern", msg[:800])
+            if "Abgebrochen" in msg:
+                self._progress.setValue(0); self._pct_lbl.setText("")
+                self._status_lbl.setText("⛔  Abgebrochen")
+            else:
+                self._status_lbl.setText("❌  Fehler!")
+                ThemedDialog.error(self, "Fehler beim Rendern", msg[:600], dark=dark)
+
+
+# ── Entry Point ────────────────────────────────────────────────────────────────
+def main():
+    app = QApplication(sys.argv)
+    app.setFont(QFont("Segoe UI", 10))
+
+    # App-Icon auch für die Taskleiste
+    icon_path = resource_path("assets/pictures/icon.png")
+    if os.path.exists(icon_path):
+        app.setWindowIcon(QIcon(icon_path))
+
+    settings = cfg_load()
+    theme    = settings.get("theme", "light")
+    splash   = SplashScreen(theme=theme)
+    splash.show()
+    window   = IntroMaker()
+    splash.finished.connect(lambda: (window.show(), window.raise_(), window.activateWindow()))
+    sys.exit(app.exec_())
 
 
 if __name__ == "__main__":
-    app = IntroMaker()
-    app.mainloop()
+    main()

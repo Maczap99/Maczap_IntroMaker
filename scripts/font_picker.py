@@ -1,16 +1,17 @@
-import customtkinter as ctk
-from PIL import Image, ImageDraw, ImageFont
-import os, glob, sys
+import sys, os, glob
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QComboBox, QFrame
+from PyQt5.QtGui     import QPixmap, QImage, QFont
+from PyQt5.QtCore    import Qt, pyqtSignal
+from PIL             import Image, ImageDraw, ImageFont
+
 
 def resource_path(relative_path):
     if hasattr(sys, "_MEIPASS"):
         return os.path.join(sys._MEIPASS, relative_path)
     return os.path.join(os.path.abspath("."), relative_path)
 
-FONTS_DIR = resource_path("assets/fonts")
 
-ACCENT   = "#3B82F6"
-ACCENT_L = "#2563EB"
+FONTS_DIR = resource_path("assets/fonts")
 
 
 def _load_font_list():
@@ -29,79 +30,72 @@ def _load_font_list():
     return fonts
 
 
-def _render_preview(font_path, text="04:32", size=(320, 80)):
-    """Rendert Vorschau passend zum aktuellen Theme."""
-    mode = ctk.get_appearance_mode()   # "Light" oder "Dark"
-    if mode == "Light":
-        bg_col   = (240, 245, 250)
-        text_col = (15,  23,  42)
-        shd_col  = (180, 180, 180)
-    else:
-        bg_col   = (15,  23,  42)
-        text_col = (255, 255, 255)
-        shd_col  = (0,   0,   0)
-
+def _render_preview(font_path, theme="light", text="04:32", size=(320, 80)):
     W, H = size
+    if theme == "dark":
+        bg_col, text_col, shd_col = (15, 23, 42), (255, 255, 255), (0, 0, 0)
+    else:
+        bg_col, text_col, shd_col = (240, 245, 250), (15, 23, 42), (180, 180, 180)
     img  = Image.new("RGB", (W, H), color=bg_col)
     draw = ImageDraw.Draw(img)
-
     try:
-        pil_font = ImageFont.truetype(font_path, size=52) if font_path else ImageFont.load_default()
+        font = ImageFont.truetype(font_path, 52) if font_path else ImageFont.load_default()
     except Exception:
-        pil_font = ImageFont.load_default()
-
-    bbox = draw.textbbox((0, 0), text, font=pil_font)
-    tw   = bbox[2] - bbox[0]
-    th   = bbox[3] - bbox[1]
-    x    = (W - tw) // 2 - bbox[0]
-    y    = (H - th) // 2 - bbox[1]
-
-    draw.text((x + 2, y + 2), text, font=pil_font, fill=shd_col)
-    draw.text((x,     y    ), text, font=pil_font, fill=text_col)
-
-    return ctk.CTkImage(img, size=(W, H))
+        font = ImageFont.load_default()
+    bbox = draw.textbbox((0, 0), text, font=font)
+    tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
+    x = (W - tw) // 2 - bbox[0]
+    y = (H - th) // 2 - bbox[1]
+    draw.text((x + 2, y + 2), text, font=font, fill=shd_col)
+    draw.text((x, y),         text, font=font, fill=text_col)
+    data = img.tobytes("raw", "RGB")
+    qi   = QImage(data, W, H, W * 3, QImage.Format_RGB888)
+    return QPixmap.fromImage(qi)
 
 
-class FontPickerWidget(ctk.CTkFrame):
-    def __init__(self, parent, on_change=None, **kw):
-        super().__init__(parent, fg_color=("white", "#263348"), corner_radius=10, **kw)
-        self.on_change  = on_change
+class FontPickerWidget(QFrame):
+    font_changed = pyqtSignal(object)
+
+    def __init__(self, parent=None, theme="light"):
+        super().__init__(parent)
         self._font_list = _load_font_list()
-        self._names     = [f[0] for f in self._font_list]
-        self._selected  = ctk.StringVar(value=self._names[0])
+        self._theme     = theme
+        self.setObjectName("FontPickerWidget")
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(14, 12, 14, 12)
+        layout.setSpacing(8)
 
-        ctk.CTkLabel(self, text="🔤  Schriftart",
-                     font=("Segoe UI", 13, "bold"),
-                     text_color=(ACCENT_L, ACCENT)).pack(anchor="w", padx=14, pady=(12, 4))
+        title = QLabel("🔤  Schriftart")
+        title.setFont(QFont("Segoe UI", 11, QFont.Bold))
+        title.setObjectName("sectionLabel")
+        layout.addWidget(title)
 
-        ctk.CTkOptionMenu(self, variable=self._selected, values=self._names,
-                          width=320, font=("Segoe UI", 12),
-                          command=self._on_select).pack(anchor="w", padx=14, pady=(0, 8))
+        self._combo = QComboBox()
+        self._combo.setFont(QFont("Segoe UI", 11))
+        self._combo.setFixedWidth(320)
+        for name, _ in self._font_list:
+            self._combo.addItem(name)
+        self._combo.currentIndexChanged.connect(self._on_change)
+        layout.addWidget(self._combo)
 
-        self._preview_lbl = ctk.CTkLabel(self, text="")
-        self._preview_lbl.pack(padx=14, pady=(0, 12))
+        self._preview = QLabel()
+        self._preview.setFixedSize(320, 80)
+        self._preview.setAlignment(Qt.AlignCenter)
+        layout.addWidget(self._preview)
 
         self._refresh_preview()
 
-    def _on_select(self, name):
+    def _on_change(self, _):
         self._refresh_preview()
-        if self.on_change:
-            self.on_change(self._get_path(name))
+        self.font_changed.emit(self.get_font_path())
 
     def _refresh_preview(self):
-        img = _render_preview(self._get_path(self._selected.get()))
-        self._preview_lbl.configure(image=img, text="")
-        self._preview_lbl._image = img
+        self._preview.setPixmap(_render_preview(self.get_font_path(), self._theme))
 
-    def _get_path(self, name):
-        for n, p in self._font_list:
-            if n == name:
-                return p
-        return None
+    def set_theme(self, theme):
+        self._theme = theme
+        self._refresh_preview()
 
     def get_font_path(self):
-        return self._get_path(self._selected.get())
-
-    def refresh_preview_theme(self):
-        """Wird von main.py aufgerufen wenn Theme wechselt."""
-        self._refresh_preview()
+        idx = self._combo.currentIndex()
+        return self._font_list[idx][1] if 0 <= idx < len(self._font_list) else None
