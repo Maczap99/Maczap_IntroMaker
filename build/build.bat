@@ -35,6 +35,7 @@ python -m PyInstaller --onefile --windowed ^
   --add-data "%CD%\scripts\font_picker.py;." ^
   --add-data "%CD%\scripts\video_generator.py;." ^
   --add-data "%CD%\scripts\splash.py;." ^
+  --add-data "%CD%\scripts\config_manager.py;." ^
   scripts\main.py
 
 if errorlevel 1 (
