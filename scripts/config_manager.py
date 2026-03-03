@@ -31,15 +31,15 @@ DEFAULTS = {
     "music_fade_dur":     4,
 
     # Video fade
-    "intro_fade_enabled": False,
+    "intro_fade_enabled": True,
     "intro_fade_dur":     3,
-    "outro_fade_enabled": False,
+    "outro_fade_enabled": True,
     "outro_fade_dur":     3,
 
     # Slider timing
     "slider_from":        4,
     "slider_until":       1,
-    "img_duration":       10,
+    "img_duration":       15,
     "timer_between":      15,
     "slider_loop":        True,
 
