@@ -110,13 +110,19 @@ class VideoGenerator:
             slider_imgs, img_dur, timer_between, slider_loop)
         total_frames = int(total_sec * fps)
 
-        # ── Frames mit OpenCV als verlustfreies AVI schreiben ─────────
-        # "png " = verlustfreie PNG-Kompression pro Frame, kein Rauschen
-        # Funktioniert auf allen Windows-Systemen ohne extra Codec
+        # ── Frames als unkomprimiertes AVI schreiben ──────────────────
+        # Kein Codec nötig — rohe BGR-Pixel, verlustfrei, überall verfügbar
         tmp_raw   = out_path.replace(".mp4", "_raw.avi")
         tmp_video = out_path.replace(".mp4", "_noaudio.mp4")
-        fourcc    = cv2.VideoWriter_fourcc(*"png ")
+        fourcc    = cv2.VideoWriter_fourcc(*"I420")
         writer    = cv2.VideoWriter(tmp_raw, fourcc, fps, (w, h))
+        if not writer.isOpened():
+            # Fallback 1: YUY2
+            fourcc = cv2.VideoWriter_fourcc(*"YUY2")
+            writer = cv2.VideoWriter(tmp_raw, fourcc, fps, (w, h))
+        if not writer.isOpened():
+            # Fallback 2: kein Fourcc (OpenCV wählt selbst)
+            writer = cv2.VideoWriter(tmp_raw, 0, fps, (w, h))
 
         bg_frame_idx = 0
         elapsed      = 0.0
@@ -183,7 +189,7 @@ class VideoGenerator:
                 "-c:v", "libx264",
                 "-preset", "fast",
                 "-crf", "18",
-                "-pix_fmt", "yuv420p",
+                "-vf", "format=yuv420p",   # robuster als -pix_fmt bei verschiedenen AVI-Quellen
                 tmp_video
             ])
             try:
