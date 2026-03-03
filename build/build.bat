@@ -11,7 +11,7 @@ if errorlevel 1 ( echo FEHLER bei pip install! & pause & exit /b 1 )
 echo [2/3] Erstelle EXE...
 python -m PyInstaller --onefile --windowed ^
   --name "IntroMaker" ^
-  --icon "%CD%\assets\pictures\icon.ico" ^
+  --icon "%CD%\assets\pictures\favicon.ico" ^
   --distpath "dist" ^
   --workpath "build\_pyinstaller_tmp" ^
   --specpath "build" ^
