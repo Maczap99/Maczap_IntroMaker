@@ -4,11 +4,6 @@ APP_NAME = "MaczapIntroMaker"
 
 
 def _config_path() -> str:
-    """
-    Speichert die settings.json im AppData\Roaming Ordner des Benutzers.
-    Pfad: C:\\Users\\<Name>\\AppData\\Roaming\\MaczapIntroMaker\\settings.json
-    Fallback: neben der EXE / im config-Ordner (Entwicklungsmodus)
-    """
     # APPDATA Umgebungsvariable (Roaming) → %APPDATA%
     appdata = os.environ.get("APPDATA")
 
