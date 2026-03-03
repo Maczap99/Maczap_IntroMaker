@@ -126,106 +126,111 @@ class VideoGenerator:
             slider_imgs, img_dur, timer_between, slider_loop)
         total_frames = int(total_sec * fps)
 
-        # ── Frames als unkomprimiertes AVI schreiben ──────────────────
-        # Kein Codec nötig — rohe BGR-Pixel, verlustfrei, überall verfügbar
-        tmp_raw   = out_path.replace(".mp4", "_raw.avi")
+        # ── FFmpeg-Prozess starten — Frames direkt per Pipe, kein AVI ──
+        # Popen mit _STARTUPINFO → kein CMD-Fenster auf Windows
         tmp_video = out_path.replace(".mp4", "_noaudio.mp4")
-        fourcc    = cv2.VideoWriter_fourcc(*"I420")
-        writer    = cv2.VideoWriter(tmp_raw, fourcc, fps, (w, h))
-        if not writer.isOpened():
-            # Fallback 1: YUY2
-            fourcc = cv2.VideoWriter_fourcc(*"YUY2")
-            writer = cv2.VideoWriter(tmp_raw, fourcc, fps, (w, h))
-        if not writer.isOpened():
-            # Fallback 2: kein Fourcc (OpenCV wählt selbst)
-            writer = cv2.VideoWriter(tmp_raw, 0, fps, (w, h))
+        ffmpeg_path = _get_ffmpeg()
+
+        if ffmpeg_path:
+            ff_cmd = [
+                ffmpeg_path, "-y",
+                "-f", "rawvideo",
+                "-vcodec", "rawvideo",
+                "-pix_fmt", "bgr24",
+                "-s", f"{w}x{h}",
+                "-r", str(fps),
+                "-i", "pipe:0",
+                "-c:v", "libx264",
+                "-preset", "fast",
+                "-crf", "18",
+                "-pix_fmt", "yuv420p",
+                tmp_video
+            ]
+            ff_proc = subprocess.Popen(
+                ff_cmd,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                startupinfo=_STARTUPINFO   # ← kein CMD-Fenster
+            )
+            write_frame = lambda f: ff_proc.stdin.write(f.tobytes())
+        else:
+            # Fallback ohne FFmpeg
+            ff_proc = None
+            fourcc  = cv2.VideoWriter_fourcc(*"mp4v")
+            writer  = cv2.VideoWriter(tmp_video, fourcc, fps, (w, h))
+            write_frame = lambda f: writer.write(f)
 
         bg_frame_idx = 0
         elapsed      = 0.0
 
-        for seg_type, seg_dur in segments:
-            seg_frames = int(seg_dur * fps)
+        try:
+            for seg_type, seg_dur in segments:
+                seg_frames = int(seg_dur * fps)
 
-            for f in range(seg_frames):
-                time_left = max(0.0, total_sec - elapsed)
+                for f in range(seg_frames):
+                    time_left = max(0.0, total_sec - elapsed)
 
-                if bg_cap:
-                    if bg_frame_idx >= bg_total - 1:
-                        bg_cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
-                        bg_frame_idx = 0
-                    ret, bg = bg_cap.read()
-                    if not ret:
-                        bg_cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+                    if bg_cap:
+                        if bg_frame_idx >= bg_total - 1:
+                            bg_cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+                            bg_frame_idx = 0
                         ret, bg = bg_cap.read()
-                    bg_frame_idx += 1
-                else:
-                    bg = bg_static.copy()
-
-                if seg_type == "timer":
-                    frame = self._draw_timer_and_subtitle(
-                        bg.copy(), time_left, cfg, w, h,
-                        get_font, font_path, sub_font_path)
-                else:
-                    img_idx    = seg_type % len(slider_imgs)
-                    slide      = slider_imgs[img_idx]
-                    pos_in_seg = f / fps
-
-                    if fade_dur > 0 and pos_in_seg < fade_dur:
-                        a = pos_in_seg / fade_dur
-                        frame = cv2.addWeighted(slide, a, bg, 1 - a, 0)
-                    elif fade_dur > 0 and pos_in_seg > seg_dur - fade_dur:
-                        a = (seg_dur - pos_in_seg) / fade_dur
-                        frame = cv2.addWeighted(slide, a, bg, 1 - a, 0)
+                        if not ret:
+                            bg_cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+                            ret, bg = bg_cap.read()
+                        bg_frame_idx += 1
                     else:
-                        frame = slide.copy()
+                        bg = bg_static.copy()
 
-                writer.write(frame)
-                elapsed += 1.0 / fps
+                    if seg_type == "timer":
+                        frame = self._draw_timer_and_subtitle(
+                            bg.copy(), time_left, cfg, w, h,
+                            get_font, font_path, sub_font_path)
+                    else:
+                        img_idx    = seg_type % len(slider_imgs)
+                        slide      = slider_imgs[img_idx]
+                        pos_in_seg = f / fps
 
-                frame_idx = int(elapsed * fps)
-                if frame_idx % 15 == 0:
-                    pct = elapsed / total_sec
-                    m   = int(time_left // 60)
-                    s   = int(time_left % 60)
-                    self.cb(min(pct, 0.95),
-                            f"⏳ Rendere … {m:02d}:{s:02d}  ({int(pct*100)}%)",
-                            frame_info=(frame_idx, total_frames))
+                        if fade_dur > 0 and pos_in_seg < fade_dur:
+                            a = pos_in_seg / fade_dur
+                            frame = cv2.addWeighted(slide, a, bg, 1 - a, 0)
+                        elif fade_dur > 0 and pos_in_seg > seg_dur - fade_dur:
+                            a = (seg_dur - pos_in_seg) / fade_dur
+                            frame = cv2.addWeighted(slide, a, bg, 1 - a, 0)
+                        else:
+                            frame = slide.copy()
 
-        writer.release()
-        if bg_cap:
-            bg_cap.release()
+                    write_frame(frame)
+                    elapsed += 1.0 / fps
 
-        # ── FFmpeg: AVI → H.264 MP4 ───────────────────────────────────
-        ffmpeg_path = _get_ffmpeg()
-        if ffmpeg_path:
-            self.cb(0.96, "🔧 Kodiere H.264 …", frame_info=(total_frames, total_frames))
-            _run_ffmpeg([
-                ffmpeg_path, "-y",
-                "-i", tmp_raw,
-                "-c:v", "libx264",
-                "-preset", "fast",
-                "-crf", "18",
-                "-vf", "format=yuv420p",   # robuster als -pix_fmt bei verschiedenen AVI-Quellen
-                tmp_video
-            ])
+                    frame_idx = int(elapsed * fps)
+                    if frame_idx % 15 == 0:
+                        pct = elapsed / total_sec
+                        m   = int(time_left // 60)
+                        s   = int(time_left % 60)
+                        self.cb(min(pct, 0.95),
+                                f"⏳ Rendere … {m:02d}:{s:02d}  ({int(pct*100)}%)",
+                                frame_info=(frame_idx, total_frames))
+        finally:
+            if ff_proc:
+                ff_proc.stdin.close()
+                ff_proc.wait()
+            else:
+                writer.release()
+            if bg_cap:
+                bg_cap.release()
+
+        # ── Audio einmischen ───────────────────────────────────────────
+        if cfg.get("music_path") and ffmpeg_path:
+            self.cb(0.98, "🎵 Mische Audio …", frame_info=(total_frames, total_frames))
+            self._mix_audio(tmp_video, out_path, total_sec, cfg, ffmpeg_path)
             try:
-                os.remove(tmp_raw)
+                os.remove(tmp_video)
             except:
                 pass
-
-            # ── FFmpeg: Audio einmischen ───────────────────────────────
-            if cfg.get("music_path"):
-                self.cb(0.98, "🎵 Mische Audio …", frame_info=(total_frames, total_frames))
-                self._mix_audio(tmp_video, out_path, total_sec, cfg, ffmpeg_path)
-                try:
-                    os.remove(tmp_video)
-                except:
-                    pass
-            else:
-                os.replace(tmp_video, out_path)
         else:
-            # Kein FFmpeg → raw AVI direkt umbenennen (Fallback)
-            os.replace(tmp_raw, out_path)
+            os.replace(tmp_video, out_path)
 
         self.cb(1.0, "✅ Fertig!", frame_info=(total_frames, total_frames))
 
