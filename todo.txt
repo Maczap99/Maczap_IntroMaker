@@ -6,3 +6,4 @@
 - Timer soll immer schon auf dem Hintergrund sein, wenn der fate zu dem Bilder slider beginnt
 - einfacher Modus / erweiterter Modus
 - end screnen hinzufügen (Herzlich wilkommen)
+- ausgabe datei soll so benannt sein: "Intro - dd.mm.yyyy"

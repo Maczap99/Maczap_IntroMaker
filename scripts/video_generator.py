@@ -3,7 +3,6 @@ from PIL import Image, ImageDraw, ImageFont
 
 
 def _get_ffmpeg() -> str | None:
-
     if hasattr(sys, "_MEIPASS"):
         base = sys._MEIPASS
     else:
@@ -88,89 +87,110 @@ class VideoGenerator:
             return self._pil_fonts[key]
 
         # ── Zeitplan berechnen ────────────────────────────────────────
-        segments = self._build_segments(
+        segments     = self._build_segments(
             total_sec, slider_from, slider_until,
             slider_imgs, img_dur, timer_between, slider_loop)
-
         total_frames = int(total_sec * fps)
 
-        # ── Frames rendern → rohes AVI ────────────────────────────────
-        tmp_raw   = out_path.replace(".mp4", "_raw.avi")
-        tmp_video = out_path.replace(".mp4", "_noaudio.mp4")
-        fourcc    = cv2.VideoWriter_fourcc(*"MJPG")
-        writer    = cv2.VideoWriter(tmp_raw, fourcc, fps, (w, h))
+        # ── FFmpeg-Prozess starten (nimmt rohe BGR-Frames per Pipe) ───
+        ffmpeg_path = _get_ffmpeg()
+        tmp_video   = out_path.replace(".mp4", "_noaudio.mp4")
 
+        if ffmpeg_path:
+            # Frames werden als rohes BGR24 direkt in FFmpeg gepiped →
+            # FFmpeg kodiert in einem Schritt zu H.264, kein Zwischendatei nötig
+            ff_cmd = [
+                ffmpeg_path, "-y",
+                "-f", "rawvideo",
+                "-vcodec", "rawvideo",
+                "-pix_fmt", "bgr24",       # OpenCV liefert BGR
+                "-s", f"{w}x{h}",
+                "-r", str(fps),
+                "-i", "pipe:0",            # Eingabe kommt von stdin
+                "-c:v", "libx264",
+                "-preset", "fast",
+                "-crf", "18",
+                "-pix_fmt", "yuv420p",     # Maximale Player-Kompatibilität
+                tmp_video
+            ]
+            ff_proc = subprocess.Popen(
+                ff_cmd,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL
+            )
+            write_frame = lambda f: ff_proc.stdin.write(f.tobytes())
+        else:
+            # Kein FFmpeg verfügbar → Fallback auf OpenCV mp4v
+            fourcc  = cv2.VideoWriter_fourcc(*"mp4v")
+            writer  = cv2.VideoWriter(tmp_video, fourcc, fps, (w, h))
+            ff_proc = None
+            write_frame = lambda f: writer.write(f)
+
+        # ── Frames rendern ────────────────────────────────────────────
         bg_frame_idx = 0
         elapsed      = 0.0
 
-        for seg_type, seg_dur in segments:
-            seg_frames = int(seg_dur * fps)
+        try:
+            for seg_type, seg_dur in segments:
+                seg_frames = int(seg_dur * fps)
 
-            for f in range(seg_frames):
-                time_left = max(0.0, total_sec - elapsed)
+                for f in range(seg_frames):
+                    time_left = max(0.0, total_sec - elapsed)
 
-                if bg_cap:
-                    if bg_frame_idx >= bg_total - 1:
-                        bg_cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
-                        bg_frame_idx = 0
-                    ret, bg = bg_cap.read()
-                    if not ret:
-                        bg_cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+                    if bg_cap:
+                        if bg_frame_idx >= bg_total - 1:
+                            bg_cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+                            bg_frame_idx = 0
                         ret, bg = bg_cap.read()
-                    bg_frame_idx += 1
-                else:
-                    bg = bg_static.copy()
-
-                if seg_type == "timer":
-                    frame = bg.copy()
-                    frame = self._draw_timer_and_subtitle(
-                        frame, time_left, cfg, w, h, get_font, font_path, sub_font_path)
-                else:
-                    img_idx    = seg_type % len(slider_imgs)
-                    slide      = slider_imgs[img_idx]
-                    pos_in_seg = f / fps
-
-                    if fade_dur > 0 and pos_in_seg < fade_dur:
-                        a = pos_in_seg / fade_dur
-                        frame = cv2.addWeighted(slide, a, bg, 1 - a, 0)
-                    elif fade_dur > 0 and pos_in_seg > seg_dur - fade_dur:
-                        a = (seg_dur - pos_in_seg) / fade_dur
-                        frame = cv2.addWeighted(slide, a, bg, 1 - a, 0)
+                        if not ret:
+                            bg_cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+                            ret, bg = bg_cap.read()
+                        bg_frame_idx += 1
                     else:
-                        frame = slide.copy()
+                        bg = bg_static.copy()
 
-                writer.write(frame)
-                elapsed += 1.0 / fps
+                    if seg_type == "timer":
+                        frame = self._draw_timer_and_subtitle(
+                            bg.copy(), time_left, cfg, w, h,
+                            get_font, font_path, sub_font_path)
+                    else:
+                        img_idx    = seg_type % len(slider_imgs)
+                        slide      = slider_imgs[img_idx]
+                        pos_in_seg = f / fps
 
-                frame_idx = int(elapsed * fps)
-                if frame_idx % 15 == 0:
-                    pct = elapsed / total_sec
-                    m   = int(time_left // 60)
-                    s   = int(time_left % 60)
-                    self.cb(min(pct, 1.0),
-                            f"⏳ Rendere … {m:02d}:{s:02d}  ({int(pct*100)}%)",
-                            frame_info=(frame_idx, total_frames))
+                        if fade_dur > 0 and pos_in_seg < fade_dur:
+                            a = pos_in_seg / fade_dur
+                            frame = cv2.addWeighted(slide, a, bg, 1 - a, 0)
+                        elif fade_dur > 0 and pos_in_seg > seg_dur - fade_dur:
+                            a = (seg_dur - pos_in_seg) / fade_dur
+                            frame = cv2.addWeighted(slide, a, bg, 1 - a, 0)
+                        else:
+                            frame = slide.copy()
 
-        writer.release()
-        if bg_cap:
-            bg_cap.release()
+                    write_frame(frame)
+                    elapsed += 1.0 / fps
 
-        # ── Video mit FFmpeg zu H.264 konvertieren ─────────────────────
-        ffmpeg_path = _get_ffmpeg()
-        if ffmpeg_path:
-            self.cb(0.97, "🔧 Kodiere Video (H.264) …", frame_info=(total_frames, total_frames))
-            self._encode_video(tmp_raw, tmp_video, ffmpeg_path)
-            try:
-                os.remove(tmp_raw)
-            except:
-                pass
-        else:
-            # Kein FFmpeg → AVI direkt verwenden (eingeschränkte Kompatibilität)
-            tmp_video = tmp_raw
+                    frame_idx = int(elapsed * fps)
+                    if frame_idx % 15 == 0:
+                        pct = elapsed / total_sec
+                        m   = int(time_left // 60)
+                        s   = int(time_left % 60)
+                        self.cb(min(pct, 0.95),
+                                f"⏳ Rendere … {m:02d}:{s:02d}  ({int(pct*100)}%)",
+                                frame_info=(frame_idx, total_frames))
+        finally:
+            if ff_proc:
+                ff_proc.stdin.close()
+                ff_proc.wait()
+            else:
+                writer.release()
+            if bg_cap:
+                bg_cap.release()
 
         # ── Audio einmischen ───────────────────────────────────────────
         if cfg.get("music_path") and ffmpeg_path:
-            self.cb(0.99, "🎵 Mische Audio …", frame_info=(total_frames, total_frames))
+            self.cb(0.97, "🎵 Mische Audio …", frame_info=(total_frames, total_frames))
             self._mix_audio(tmp_video, out_path, total_sec, cfg, ffmpeg_path)
             try:
                 os.remove(tmp_video)
@@ -191,9 +211,8 @@ class VideoGenerator:
 
         zone_dur = slider_from - slider_until
         if zone_dur > 0 and slider_imgs:
-            slider_segs = self._build_slider_zone(
-                zone_dur, slider_imgs, img_dur, timer_between, slider_loop)
-            segs.extend(slider_segs)
+            segs.extend(self._build_slider_zone(
+                zone_dur, slider_imgs, img_dur, timer_between, slider_loop))
         elif zone_dur > 0:
             segs.append(("timer", zone_dur))
 
@@ -204,9 +223,9 @@ class VideoGenerator:
 
     def _build_slider_zone(self, zone_dur, slider_imgs,
                             img_dur, timer_between, slider_loop):
-        segs    = []
-        n       = len(slider_imgs)
-        used    = 0.0
+        segs  = []
+        n     = len(slider_imgs)
+        used  = 0.0
 
         if not slider_loop:
             for i in range(n):
@@ -310,20 +329,6 @@ class VideoGenerator:
 
         return cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
 
-    # ── VIDEO ENCODE (AVI → H.264 MP4) ───────────────────────────────
-    def _encode_video(self, src_avi, out_mp4, ffmpeg_path):
-        cmd = [
-            ffmpeg_path, "-y",
-            "-i", src_avi,
-            "-c:v", "libx264",      # H.264 — überall kompatibel
-            "-preset", "fast",      # Gute Balance aus Geschwindigkeit & Qualität
-            "-crf", "18",           # Qualität: 0=verlustfrei, 51=schlecht (18=sehr gut)
-            "-pix_fmt", "yuv420p",  # Pflicht für maximale Player-Kompatibilität
-            out_mp4
-        ]
-        subprocess.run(cmd, check=True,
-                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-
     # ── AUDIO ─────────────────────────────────────────────────────────
     def _mix_audio(self, tmp_video, out_path, total_sec, cfg, ffmpeg_path):
         music      = cfg["music_path"]
@@ -345,7 +350,8 @@ class VideoGenerator:
             *loop_flag, "-i", music,
             "-filter_complex", f"[1:a]{af_str}[aout]",
             "-map", "0:v", "-map", "[aout]",
-            "-c:v", "copy", "-c:a", "aac",
+            "-c:v", "copy",   # Video wird nur kopiert, nicht neu kodiert!
+            "-c:a", "aac",
             "-shortest", out_path
         ]
         subprocess.run(cmd, check=True,
