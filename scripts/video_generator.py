@@ -3,27 +3,17 @@ from PIL import Image, ImageDraw, ImageFont
 
 
 def _get_ffmpeg() -> str | None:
-    """
-    Sucht ffmpeg.exe in folgender Reihenfolge:
-      1. assets/bin/ffmpeg.exe  (mitgeliefert, auch in der EXE)
-      2. System-PATH             (falls der User ffmpeg global installiert hat)
-    Gibt den Pfad zurück oder None wenn nicht gefunden.
-    """
-    # 1) Mitgeliefertes ffmpeg neben der EXE / im _MEIPASS-Ordner
+
     if hasattr(sys, "_MEIPASS"):
         base = sys._MEIPASS
     else:
-        base = os.path.dirname(os.path.abspath(__file__))
-        # Im Entwicklungsmodus liegt assets/ eine Ebene höher (scripts/../assets)
-        base = os.path.join(base, "..")
+        base = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 
     bundled = os.path.join(base, "assets", "bin", "ffmpeg.exe")
     if os.path.isfile(bundled):
         return os.path.normpath(bundled)
 
-    # 2) System-PATH als Fallback
-    found = shutil.which("ffmpeg")
-    return found  # None wenn gar nicht vorhanden
+    return shutil.which("ffmpeg")
 
 
 class VideoGenerator:
@@ -73,12 +63,12 @@ class VideoGenerator:
                 pass
 
         # ── Einstellungen ─────────────────────────────────────────────
-        slider_from    = cfg["slider_from"]  * 60
-        slider_until   = cfg["slider_until"] * 60
-        img_dur        = float(cfg["img_duration"])
-        timer_between  = float(cfg.get("timer_between", 0))
-        slider_loop    = cfg.get("slider_loop", True)
-        fade_dur       = float(cfg["fade_duration"])
+        slider_from   = cfg["slider_from"]  * 60
+        slider_until  = cfg["slider_until"] * 60
+        img_dur       = float(cfg["img_duration"])
+        timer_between = float(cfg.get("timer_between", 0))
+        slider_loop   = cfg.get("slider_loop", True)
+        fade_dur      = float(cfg["fade_duration"])
 
         # ── Fonts ─────────────────────────────────────────────────────
         font_path     = cfg.get("font_path")
@@ -104,13 +94,12 @@ class VideoGenerator:
 
         total_frames = int(total_sec * fps)
 
-        # ── Output ────────────────────────────────────────────────────
-        # Rohe Frames als AVI zwischenspeichern (verlustfrei, kein Codec-Problem)
-        # FFmpeg übernimmt danach die finale H.264-Kodierung
+        # ── Frames rendern → rohes AVI ────────────────────────────────
         tmp_raw   = out_path.replace(".mp4", "_raw.avi")
         tmp_video = out_path.replace(".mp4", "_noaudio.mp4")
         fourcc    = cv2.VideoWriter_fourcc(*"MJPG")
         writer    = cv2.VideoWriter(tmp_raw, fourcc, fps, (w, h))
+
         bg_frame_idx = 0
         elapsed      = 0.0
 
@@ -169,17 +158,19 @@ class VideoGenerator:
         # ── Video mit FFmpeg zu H.264 konvertieren ─────────────────────
         ffmpeg_path = _get_ffmpeg()
         if ffmpeg_path:
+            self.cb(0.97, "🔧 Kodiere Video (H.264) …", frame_info=(total_frames, total_frames))
             self._encode_video(tmp_raw, tmp_video, ffmpeg_path)
             try:
                 os.remove(tmp_raw)
             except:
                 pass
         else:
-            # Fallback: AVI direkt umbenennen (kein H.264, aber besser als mp4v)
+            # Kein FFmpeg → AVI direkt verwenden (eingeschränkte Kompatibilität)
             tmp_video = tmp_raw
 
         # ── Audio einmischen ───────────────────────────────────────────
         if cfg.get("music_path") and ffmpeg_path:
+            self.cb(0.99, "🎵 Mische Audio …", frame_info=(total_frames, total_frames))
             self._mix_audio(tmp_video, out_path, total_sec, cfg, ffmpeg_path)
             try:
                 os.remove(tmp_video)
@@ -213,9 +204,9 @@ class VideoGenerator:
 
     def _build_slider_zone(self, zone_dur, slider_imgs,
                             img_dur, timer_between, slider_loop):
-        segs  = []
-        n     = len(slider_imgs)
-        used  = 0.0
+        segs    = []
+        n       = len(slider_imgs)
+        used    = 0.0
 
         if not slider_loop:
             for i in range(n):
@@ -266,12 +257,13 @@ class VideoGenerator:
 
         sub_enabled = cfg.get("subtitle_enabled", False)
         sub_lines   = []
+        sub_font    = None
+        sub_size    = cfg.get("subtitle_size", 40)
 
         if sub_enabled:
             raw = cfg.get("subtitle_text", "").strip()
             if raw:
-                sub_size = cfg.get("subtitle_size", 40)
-                sub_font = get_font(sub_font_path, sub_size)
+                sub_font  = get_font(sub_font_path, sub_size)
                 sub_lines = [ln for ln in raw.splitlines() if ln.strip()]
 
         gap          = int(min(w, h) * 0.03)
@@ -318,6 +310,20 @@ class VideoGenerator:
 
         return cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
 
+    # ── VIDEO ENCODE (AVI → H.264 MP4) ───────────────────────────────
+    def _encode_video(self, src_avi, out_mp4, ffmpeg_path):
+        cmd = [
+            ffmpeg_path, "-y",
+            "-i", src_avi,
+            "-c:v", "libx264",      # H.264 — überall kompatibel
+            "-preset", "fast",      # Gute Balance aus Geschwindigkeit & Qualität
+            "-crf", "18",           # Qualität: 0=verlustfrei, 51=schlecht (18=sehr gut)
+            "-pix_fmt", "yuv420p",  # Pflicht für maximale Player-Kompatibilität
+            out_mp4
+        ]
+        subprocess.run(cmd, check=True,
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
     # ── AUDIO ─────────────────────────────────────────────────────────
     def _mix_audio(self, tmp_video, out_path, total_sec, cfg, ffmpeg_path):
         music      = cfg["music_path"]
@@ -334,7 +340,7 @@ class VideoGenerator:
 
         loop_flag = ["-stream_loop", "-1"] if loop else []
         cmd = [
-            ffmpeg_path, "-y",       # ← dynamischer Pfad statt hartkodiertem "ffmpeg"
+            ffmpeg_path, "-y",
             "-i", tmp_video,
             *loop_flag, "-i", music,
             "-filter_complex", f"[1:a]{af_str}[aout]",
