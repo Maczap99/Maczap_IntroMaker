@@ -28,7 +28,6 @@ def _run_ffmpeg(cmd: list):
     return result
 
 
-
 class VideoGenerator:
     def __init__(self, config, progress_cb, done_cb):
         self.cfg  = config
@@ -42,14 +41,14 @@ class VideoGenerator:
         except Exception:
             self.done(False, traceback.format_exc())
 
-    # ── HAUPT-RENDER ──────────────────────────────────────────────────
+    # ── Main render loop ──────────────────────────────────────────────────────
     def _run(self):
         cfg       = self.cfg
         fps       = 30
         total_sec = cfg["timer_minutes"] * 60
         out_path  = cfg["output_path"]
 
-        # ── Hintergrund ───────────────────────────────────────────────
+        # ── Background ────────────────────────────────────────────────────────
         bg_cap    = None
         bg_static = None
         w, h      = 1920, 1080
@@ -66,7 +65,7 @@ class VideoGenerator:
         else:
             bg_static = np.ones((h, w, 3), dtype=np.uint8) * 255
 
-        # ── Slider-Bilder laden ───────────────────────────────────────
+        # ── Slider images ─────────────────────────────────────────────────────
         slider_imgs = []
         for p in cfg.get("image_paths", []):
             try:
@@ -75,7 +74,7 @@ class VideoGenerator:
             except:
                 pass
 
-        # ── Einstellungen ─────────────────────────────────────────────
+        # ── Settings ──────────────────────────────────────────────────────────
         slider_from   = cfg["slider_from"]  * 60
         slider_until  = cfg["slider_until"] * 60
         img_dur       = float(cfg["img_duration"])
@@ -83,13 +82,13 @@ class VideoGenerator:
         slider_loop   = cfg.get("slider_loop", True)
         fade_dur      = float(cfg["fade_duration"])
 
-        # Start/Ende Fade
-        intro_fade    = cfg.get("intro_fade_enabled", False)
-        outro_fade    = cfg.get("outro_fade_enabled", False)
+        # Start/end fades
+        intro_fade     = cfg.get("intro_fade_enabled", False)
+        outro_fade     = cfg.get("outro_fade_enabled", False)
         intro_fade_dur = float(cfg.get("intro_fade_dur", 3.0))
         outro_fade_dur = float(cfg.get("outro_fade_dur", 3.0))
 
-        # ── Fonts ─────────────────────────────────────────────────────
+        # ── Fonts ─────────────────────────────────────────────────────────────
         font_path     = cfg.get("font_path")
         sub_font_path = cfg.get("subtitle_font") or font_path
         self._pil_fonts = {}
@@ -106,13 +105,13 @@ class VideoGenerator:
                     self._pil_fonts[key] = ImageFont.load_default()
             return self._pil_fonts[key]
 
-        # ── Zeitplan ──────────────────────────────────────────────────
+        # ── Timeline ──────────────────────────────────────────────────────────
         segments     = self._build_segments(
             total_sec, slider_from, slider_until,
             slider_imgs, img_dur, timer_between, slider_loop)
         total_frames = int(total_sec * fps)
 
-        # ── FFmpeg-Prozess starten ────────────────────────────────────
+        # ── Start FFmpeg process ──────────────────────────────────────────────
         tmp_video   = out_path.replace(".mp4", "_noaudio.mp4")
         ffmpeg_path = _get_ffmpeg()
 
@@ -140,10 +139,10 @@ class VideoGenerator:
             writer  = cv2.VideoWriter(tmp_video, fourcc, fps, (w, h))
             write_frame = lambda f: writer.write(f)
 
-        # schwarzer Frame für Fades
+        # Black frame used for fades
         black = np.zeros((h, w, 3), dtype=np.uint8)
 
-        # ── Frames rendern ────────────────────────────────────────────
+        # ── Render frames ─────────────────────────────────────────────────────
         bg_frame_idx = 0
         elapsed      = 0.0
 
@@ -166,7 +165,7 @@ class VideoGenerator:
                     else:
                         bg = bg_static.copy()
 
-                    # ── Frame-Inhalt ───────────────────────────────────
+                    # ── Frame content ─────────────────────────────────────────
                     if seg_type == "timer":
                         frame = self._draw_timer_and_subtitle(
                             bg.copy(), time_left, cfg, w, h,
@@ -176,14 +175,14 @@ class VideoGenerator:
                         slide      = slider_imgs[img_idx]
                         pos_in_seg = f / fps
 
-                        # Fade-in: Timer bleibt im Hintergrund sichtbar
+                        # Crossfade in — timer stays visible underneath
                         if fade_dur > 0 and pos_in_seg < fade_dur:
                             a = pos_in_seg / fade_dur
                             timer_bg = self._draw_timer_and_subtitle(
                                 bg.copy(), time_left, cfg, w, h,
                                 get_font, font_path, sub_font_path)
                             frame = cv2.addWeighted(slide, a, timer_bg, 1 - a, 0)
-                        # Fade-out: Timer bleibt im Hintergrund sichtbar
+                        # Crossfade out — timer stays visible underneath
                         elif fade_dur > 0 and pos_in_seg > seg_dur - fade_dur:
                             a = (seg_dur - pos_in_seg) / fade_dur
                             timer_bg = self._draw_timer_and_subtitle(
@@ -193,12 +192,12 @@ class VideoGenerator:
                         else:
                             frame = slide.copy()
 
-                    # ── Start-Fade (Fade-in von Schwarz) ──────────────
+                    # ── Intro fade from black ─────────────────────────────────
                     if intro_fade and elapsed < intro_fade_dur:
                         a = elapsed / intro_fade_dur
                         frame = cv2.addWeighted(frame, a, black, 1 - a, 0)
 
-                    # ── Ende-Fade (Fade-out zu Schwarz) ───────────────
+                    # ── Outro fade to black ───────────────────────────────────
                     if outro_fade and elapsed > total_sec - outro_fade_dur:
                         a = (total_sec - elapsed) / outro_fade_dur
                         a = max(0.0, min(1.0, a))
@@ -224,7 +223,7 @@ class VideoGenerator:
             if bg_cap:
                 bg_cap.release()
 
-        # ── Audio einmischen ──────────────────────────────────────────
+        # ── Mix audio ─────────────────────────────────────────────────────────
         if cfg.get("music_path") and ffmpeg_path:
             self.cb(0.98, "🎵 Mische Audio …", frame_info=(total_frames, total_frames))
             self._mix_audio(tmp_video, out_path, total_sec, cfg, ffmpeg_path)
@@ -237,7 +236,7 @@ class VideoGenerator:
 
         self.cb(1.0, "✅ Fertig!", frame_info=(total_frames, total_frames))
 
-    # ── ZEITPLAN BUILDER ──────────────────────────────────────────────
+    # ── Timeline builder ──────────────────────────────────────────────────────
     def _build_segments(self, total_sec, slider_from, slider_until,
                          slider_imgs, img_dur, timer_between, slider_loop):
         segs = []
@@ -287,12 +286,12 @@ class VideoGenerator:
                 img_idx += 1
         return segs
 
-    # ── TIMER + UNTERTITEL ZEICHNEN ───────────────────────────────────
+    # ── Draw timer + subtitle ─────────────────────────────────────────────────
     def _draw_timer_and_subtitle(self, frame_bgr, time_left, cfg,
                                   w, h, get_font, font_path, sub_font_path):
-        time_left  = max(0, time_left)
-        m          = int(time_left // 60)
-        s          = int(time_left % 60)
+        time_left = max(0, time_left)
+        m         = int(time_left // 60)
+        s         = int(time_left % 60)
 
         timer_size = int(min(w, h) * 0.18)
         timer_font = get_font(font_path, timer_size)
@@ -300,11 +299,9 @@ class VideoGenerator:
         pil_img = Image.fromarray(cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB))
         draw    = ImageDraw.Draw(pil_img)
 
-        # ── Timer zentriert mit festem Colon ──────────────────────────
-        # Jede Sektion (MM, :, SS) wird separat gemessen und positioniert,
-        # sodass der Doppelpunkt immer exakt in der Mitte sitzt.
-        mm_str = f"{m:02d}"
-        ss_str = f"{s:02d}"
+        # ── Measure timer digits ──────────────────────────────────────────────
+        mm_str  = f"{m:02d}"
+        ss_str  = f"{s:02d}"
         col_str = ":"
 
         bbox_mm  = draw.textbbox((0, 0), mm_str,  font=timer_font)
@@ -314,20 +311,22 @@ class VideoGenerator:
         mm_w  = bbox_mm[2]  - bbox_mm[0]
         col_w = bbox_col[2] - bbox_col[0]
         ss_w  = bbox_ss[2]  - bbox_ss[0]
-        th    = bbox_mm[3]  - bbox_mm[1]   # Höhe (alle gleich)
+        th    = bbox_mm[3]  - bbox_mm[1]   # timer height
 
-        total_w   = mm_w + col_w + ss_w
-        start_x   = (w - total_w) // 2
+        total_w = mm_w + col_w + ss_w
+        start_x = (w - total_w) // 2
+        mm_x    = start_x
+        col_x   = start_x + mm_w
+        ss_x    = start_x + mm_w + col_w
 
-        mm_x  = start_x
-        col_x = start_x + mm_w
-        ss_x  = start_x + mm_w + col_w
-
-        # Untertitel-Daten sammeln
+        # ── Subtitle metrics ──────────────────────────────────────────────────
         sub_enabled = cfg.get("subtitle_enabled", False)
         sub_lines   = []
         sub_font    = None
         sub_size    = cfg.get("subtitle_size", 40)
+        # subtitle_offset = number of extra line-heights to push subtitle down
+        # the timer always stays vertically centered regardless of this value
+        sub_offset_lines = int(cfg.get("subtitle_offset", 2))
 
         if sub_enabled:
             raw = cfg.get("subtitle_text", "").strip()
@@ -335,49 +334,55 @@ class VideoGenerator:
                 sub_font  = get_font(sub_font_path, sub_size)
                 sub_lines = [ln for ln in raw.splitlines() if ln.strip()]
 
-        # Gesamthöhe berechnen für vertikale Zentrierung
-        gap          = int(min(w, h) * 0.11)   # Abstand Timer → Untertitel
         line_spacing = int(min(w, h) * 0.012)
-        total_height = th
         sub_data     = []
+        sub_block_h  = 0   # total pixel height of the subtitle block
 
         if sub_lines:
-            total_height += gap
             for i, line in enumerate(sub_lines):
                 bbox_s = draw.textbbox((0, 0), line, font=sub_font)
                 lh     = bbox_s[3] - bbox_s[1]
                 sub_data.append((line, bbox_s, lh))
-                total_height += lh
+                sub_block_h += lh
                 if i < len(sub_lines) - 1:
-                    total_height += line_spacing
+                    sub_block_h += line_spacing
 
-        # Y-Position: alles vertikal zentrieren
-        start_y = (h - total_height) // 2
-        ty      = start_y - bbox_mm[1]   # Korrektur des textbbox-Offsets
+        # ── Vertical layout ───────────────────────────────────────────────────
+        # The timer is always placed at the true vertical center of the frame.
+        # The subtitle is drawn below it, pushed down by (sub_offset_lines × sub_size).
+        # Nothing shifts the timer itself.
+        timer_y = (h - th) // 2          # pixel Y where the timer block starts
+        ty      = timer_y - bbox_mm[1]   # corrected for textbbox top offset
 
-        # Farbe
+        # Gap = base gap + extra lines × subtitle font size
+        base_gap  = int(min(w, h) * 0.04)
+        extra_gap = sub_offset_lines * sub_size
+        gap       = base_gap + extra_gap
+
+        # ── Timer color & shadow ──────────────────────────────────────────────
         hx_t        = cfg["font_color"].lstrip("#")
         rt, gt, bt  = int(hx_t[0:2], 16), int(hx_t[2:4], 16), int(hx_t[4:6], 16)
         timer_color = (rt, gt, bt)
         shadow      = max(3, timer_size // 30)
 
-        # MM zeichnen
+        # Draw MM
         draw.text((mm_x  - bbox_mm[0]  + shadow, ty + shadow), mm_str,  font=timer_font, fill=(0,0,0,180))
         draw.text((mm_x  - bbox_mm[0],            ty),          mm_str,  font=timer_font, fill=timer_color)
-        # : zeichnen
+        # Draw :
         draw.text((col_x - bbox_col[0] + shadow, ty + shadow), col_str, font=timer_font, fill=(0,0,0,180))
         draw.text((col_x - bbox_col[0],           ty),          col_str, font=timer_font, fill=timer_color)
-        # SS zeichnen
+        # Draw SS
         draw.text((ss_x  - bbox_ss[0]  + shadow, ty + shadow), ss_str,  font=timer_font, fill=(0,0,0,180))
         draw.text((ss_x  - bbox_ss[0],            ty),          ss_str,  font=timer_font, fill=timer_color)
 
-        # Untertitel zeichnen
+        # ── Subtitle ──────────────────────────────────────────────────────────
         if sub_data:
             hx_s       = cfg.get("subtitle_color", "#FFFFFF").lstrip("#")
             rs, gs, bs = int(hx_s[0:2], 16), int(hx_s[2:4], 16), int(hx_s[4:6], 16)
             sub_color  = (rs, gs, bs)
             sub_shadow = max(2, sub_size // 20)
-            cur_y = start_y + th + gap
+            # Subtitle starts below the timer block, offset controlled by gap
+            cur_y = timer_y + th + gap
             for i, (line, bbox_s, lh) in enumerate(sub_data):
                 lw  = bbox_s[2] - bbox_s[0]
                 lx  = (w - lw) // 2 - bbox_s[0]
@@ -388,7 +393,7 @@ class VideoGenerator:
 
         return cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
 
-    # ── AUDIO ─────────────────────────────────────────────────────────
+    # ── Audio mix ─────────────────────────────────────────────────────────────
     def _mix_audio(self, tmp_video, out_path, total_sec, cfg, ffmpeg_path):
         music      = cfg["music_path"]
         loop       = cfg["music_loop"]

@@ -369,6 +369,10 @@ class IntroMaker(QMainWindow):
         self._sub_size_step = Stepper(10, 120, 40, step=2, fmt="{} pt")
         self._sub_size_step.setEnabled(False)
 
+        # Subtitle offset — number of line-heights of extra distance below timer
+        self._sub_offset_step = Stepper(0, 20, 2, step=1, fmt="{} Zeilen")
+        self._sub_offset_step.setEnabled(False)
+
     # ── UI build ───────────────────────────────────────────────────────────────
     def _build_ui(self):
         root = QWidget(); root.setObjectName("root")
@@ -423,6 +427,7 @@ class IntroMaker(QMainWindow):
         self._reset_btn.setVisible(False)
         layout.addWidget(self._reset_btn)
 
+        # Mode toggle button
         self._mode_btn = QPushButton()
         self._mode_btn.setObjectName("themeBtn")
         self._mode_btn.setFont(QFont("Segoe UI", 11, QFont.Bold))
@@ -430,6 +435,7 @@ class IntroMaker(QMainWindow):
         self._mode_btn.clicked.connect(self._toggle_mode)
         layout.addWidget(self._mode_btn)
 
+        # Theme toggle button
         self._theme_btn = QPushButton()
         self._theme_btn.setObjectName("themeBtn")
         self._theme_btn.setFont(QFont("Segoe UI", 11, QFont.Bold))
@@ -689,6 +695,8 @@ class IntroMaker(QMainWindow):
         layout.addWidget(self._settings_block("💬", "Untertitel", [
             self._settings_row("Schriftgröße", self._sub_size_step,
                                "Größe des Untertiteltextes im Video"),
+            self._settings_row("Abstand zum Timer", self._sub_offset_step,
+                               "Wie viele Zeilen Abstand zwischen Timer und Untertitel"),
         ]))
 
     # ── Bottom bar ─────────────────────────────────────────────────────────────
@@ -751,6 +759,7 @@ class IntroMaker(QMainWindow):
             "subtitle_enabled":   self._sub_chk.isChecked(),
             "subtitle_text":      self._sub_edit.toPlainText(),
             "subtitle_size":      self._sub_size_step.value(),
+            "subtitle_offset":    self._sub_offset_step.value(),
             "subtitle_color":     self._sub_color,
         }
 
@@ -791,6 +800,8 @@ class IntroMaker(QMainWindow):
         self._sub_edit.setPlainText(s.get("subtitle_text", ""))
         self._sub_size_step.set_value(s.get("subtitle_size", 40))
         self._sub_size_step.setEnabled(sub_on)
+        self._sub_offset_step.set_value(s.get("subtitle_offset", 2))
+        self._sub_offset_step.setEnabled(sub_on)
         sc = s.get("subtitle_color", "#FFFFFF")
         self._sub_color = sc
         self._update_color_btn(self._sub_color_btn, sc)
@@ -975,6 +986,7 @@ class IntroMaker(QMainWindow):
         on = (state == 2)
         self._sub_edit.setEnabled(on)
         self._sub_size_step.setEnabled(on)
+        self._sub_offset_step.setEnabled(on)
         self._sub_color_btn.setEnabled(on)
 
     def _toggle_intro_fade(self, state):
@@ -1030,6 +1042,7 @@ class IntroMaker(QMainWindow):
             "subtitle_enabled":   self._sub_chk.isChecked(),
             "subtitle_text":      sub_text,
             "subtitle_size":      self._sub_size_step.value(),
+            "subtitle_offset":    self._sub_offset_step.value(),
             "subtitle_color":     self._sub_color,
             "subtitle_font":      self._font_picker.get_font_path(),
         }
