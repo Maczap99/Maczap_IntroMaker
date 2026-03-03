@@ -1,18 +1,19 @@
 import sys, os, time
+from datetime import datetime
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QPushButton, QFileDialog, QScrollArea, QFrame,
     QProgressBar, QTextEdit, QMessageBox, QColorDialog, QSizePolicy,
     QDialog, QDialogButtonBox
 )
-from PyQt5.QtCore import Qt, QThread, pyqtSignal, QObject
+from PyQt5.QtCore import Qt, QThread, pyqtSignal, QObject, QTimer
 from PyQt5.QtGui  import QPixmap, QFont, QColor, QIcon, QPalette
 
 from splash          import SplashScreen
 from font_picker     import FontPickerWidget
-from video_generator import VideoGenerator
+from video_generator import VideoGenerator, _get_ffmpeg
 from config_manager  import load as cfg_load, save as cfg_save, reset as cfg_reset, DEFAULTS
-from video_generator import _get_ffmpeg
+from styles          import make_style
 
 
 def resource_path(relative_path):
@@ -21,197 +22,19 @@ def resource_path(relative_path):
     return os.path.join(os.path.abspath("."), relative_path)
 
 
-# ── Stylesheets ────────────────────────────────────────────────────────────────
-def _make_style(dark: bool) -> str:
-    if dark:
-        return """
-        QMainWindow, QWidget#root { background: #0F172A; }
-        QScrollArea { background: transparent; border: none; }
-        QScrollArea > QWidget > QWidget { background: transparent; }
-        QWidget { color: #F1F5F9; }
-        QFrame#card { background: #1E293B; border-radius: 12px; border: 1px solid #334155; }
-        QLabel#sectionLabel { color: #3B82F6; font-size: 13px; font-weight: bold; }
-        QLabel#hint  { color: #64748B; font-size: 11px; }
-        QLabel#dim   { color: #94A3B8; }
-        QPushButton#primary {
-            background: #3B82F6; color: white; border-radius: 10px;
-            font-size: 15px; font-weight: bold; padding: 14px 28px; border: none; }
-        QPushButton#primary:hover    { background: #2563EB; }
-        QPushButton#primary:disabled { background: #334155; color: #64748B; }
-        QPushButton#danger {
-            background: #EF4444; color: white; border-radius: 10px;
-            font-size: 13px; font-weight: bold; padding: 14px 20px; border: none; }
-        QPushButton#danger:hover { background: #DC2626; }
-        QPushButton#secondary {
-            background: #1E293B; color: #F1F5F9; border-radius: 8px;
-            font-size: 11px; padding: 5px 14px; border: 1px solid #334155; }
-        QPushButton#secondary:hover    { background: #334155; }
-        QPushButton#secondary:disabled { color: #475569; }
-        QPushButton#iconBtn {
-            background: #334155; color: #F1F5F9; border-radius: 6px;
-            font-size: 13px; padding: 3px 8px; border: none;
-            min-width: 28px; max-width: 28px; min-height: 28px; max-height: 28px; }
-        QPushButton#iconBtn:hover { background: #EF4444; color: white; }
-        QPushButton#stepper {
-            background: #334155; color: #F1F5F9; border-radius: 6px;
-            font-size: 15px; font-weight: bold; padding: 0px; border: none;
-            min-width: 30px; max-width: 30px; min-height: 30px; max-height: 30px; }
-        QPushButton#stepper:hover { background: #3B82F6; }
-        QPushButton#themeBtn {
-            background: #1E293B; color: #F1F5F9; border-radius: 10px;
-            font-size: 12px; font-weight: bold; padding: 8px 18px;
-            border: 1px solid #334155; }
-        QPushButton#themeBtn:hover { background: #3B82F6; border-color: #3B82F6; }
-        QPushButton#saveBtn {
-            background: #1E293B; color: #22C55E; border-radius: 10px;
-            font-size: 11px; font-weight: bold; padding: 8px 14px;
-            border: 1px solid #22C55E; }
-        QPushButton#saveBtn:hover { background: #22C55E; color: white; }
-        QPushButton#resetBtn {
-            background: #1E293B; color: #94A3B8; border-radius: 10px;
-            font-size: 11px; padding: 8px 14px; border: 1px solid #334155; }
-        QPushButton#resetBtn:hover { background: #EF4444; color: white; border-color: #EF4444; }
-        QPushButton#colorBtn {
-            border-radius: 8px; font-size: 11px; font-weight: bold;
-            padding: 5px 14px; border: 1px solid rgba(255,255,255,0.3); }
-        QTextEdit {
-            background: #0F172A; color: #F1F5F9; border-radius: 8px;
-            border: 1px solid #334155; font-size: 12px; padding: 6px; }
-        QProgressBar {
-            background: #0F172A; border-radius: 6px;
-            border: 1px solid #334155; min-height: 14px; max-height: 14px; }
-        QProgressBar::chunk { background: #3B82F6; border-radius: 6px; }
-        QFrame#header    { background: #1E293B; border-bottom: 1px solid #334155; }
-        QFrame#bottomBar { background: #1E293B; border-top:    1px solid #334155; }
-        QLabel#pathLabel {
-            background: #0F172A; color: #94A3B8; border-radius: 6px;
-            border: 1px solid #334155; padding: 0 8px; }
-        FontPickerWidget { background: #1E293B; border-radius: 12px; border: 1px solid #334155; }
-        QComboBox {
-            background: #0F172A; color: #F1F5F9; border-radius: 8px;
-            border: 1px solid #334155; padding: 5px 10px; font-size: 11px; }
-        QComboBox::drop-down { border: none; width: 20px; }
-        QComboBox QAbstractItemView {
-            background: #1E293B; color: #F1F5F9;
-            selection-background-color: #3B82F6; border: 1px solid #334155; }
-
-        /* Scrollbar - schlank und modern */
-        QScrollBar:vertical {
-            background: transparent; width: 6px;
-            margin: 4px 2px 4px 0px; border-radius: 3px; }
-        QScrollBar::handle:vertical {
-            background: #334155; border-radius: 3px; min-height: 40px; }
-        QScrollBar::handle:vertical:hover { background: #3B82F6; }
-        QScrollBar::handle:vertical:pressed { background: #2563EB; }
-        QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0px; }
-        QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: transparent; }
-        QScrollBar:horizontal { height: 0px; }
-        """
-    else:
-        return """
-        QMainWindow, QWidget#root { background: #F8FAFC; }
-        QScrollArea { background: transparent; border: none; }
-        QScrollArea > QWidget > QWidget { background: transparent; }
-        QWidget { color: #0F172A; }
-        QFrame#card { background: #FFFFFF; border-radius: 12px; border: 1px solid #E2E8F0; }
-        QLabel#sectionLabel { color: #2563EB; font-size: 13px; font-weight: bold; }
-        QLabel#hint  { color: #64748B; font-size: 11px; }
-        QLabel#dim   { color: #64748B; }
-        QPushButton#primary {
-            background: #2563EB; color: white; border-radius: 10px;
-            font-size: 15px; font-weight: bold; padding: 14px 28px; border: none; }
-        QPushButton#primary:hover    { background: #1D4ED8; }
-        QPushButton#primary:disabled { background: #CBD5E1; color: #94A3B8; }
-        QPushButton#danger {
-            background: #EF4444; color: white; border-radius: 10px;
-            font-size: 13px; font-weight: bold; padding: 14px 20px; border: none; }
-        QPushButton#danger:hover { background: #DC2626; }
-        QPushButton#secondary {
-            background: #F1F5F9; color: #0F172A; border-radius: 8px;
-            font-size: 11px; padding: 5px 14px; border: 1px solid #CBD5E1; }
-        QPushButton#secondary:hover    { background: #E2E8F0; }
-        QPushButton#secondary:disabled { color: #94A3B8; }
-        QPushButton#iconBtn {
-            background: #E2E8F0; color: #0F172A; border-radius: 6px;
-            font-size: 13px; padding: 3px 8px; border: none;
-            min-width: 28px; max-width: 28px; min-height: 28px; max-height: 28px; }
-        QPushButton#iconBtn:hover { background: #EF4444; color: white; }
-        QPushButton#stepper {
-            background: #E2E8F0; color: #0F172A; border-radius: 6px;
-            font-size: 15px; font-weight: bold; padding: 0px; border: none;
-            min-width: 30px; max-width: 30px; min-height: 30px; max-height: 30px; }
-        QPushButton#stepper:hover { background: #2563EB; color: white; }
-        QPushButton#themeBtn {
-            background: #F1F5F9; color: #0F172A; border-radius: 10px;
-            font-size: 12px; font-weight: bold; padding: 8px 18px;
-            border: 1px solid #CBD5E1; }
-        QPushButton#themeBtn:hover { background: #2563EB; color: white; border-color: #2563EB; }
-        QPushButton#saveBtn {
-            background: #F0FDF4; color: #16A34A; border-radius: 10px;
-            font-size: 11px; font-weight: bold; padding: 8px 14px;
-            border: 1px solid #16A34A; }
-        QPushButton#saveBtn:hover { background: #16A34A; color: white; }
-        QPushButton#resetBtn {
-            background: #F1F5F9; color: #64748B; border-radius: 10px;
-            font-size: 11px; padding: 8px 14px; border: 1px solid #CBD5E1; }
-        QPushButton#resetBtn:hover { background: #EF4444; color: white; border-color: #EF4444; }
-        QPushButton#colorBtn {
-            border-radius: 8px; font-size: 11px; font-weight: bold;
-            padding: 5px 14px; border: 1px solid rgba(0,0,0,0.2); }
-        QTextEdit {
-            background: #F1F5F9; color: #0F172A; border-radius: 8px;
-            border: 1px solid #CBD5E1; font-size: 12px; padding: 6px; }
-        QProgressBar {
-            background: #E2E8F0; border-radius: 6px;
-            border: 1px solid #CBD5E1; min-height: 14px; max-height: 14px; }
-        QProgressBar::chunk { background: #2563EB; border-radius: 6px; }
-        QFrame#header    { background: #F1F5F9; border-bottom: 1px solid #E2E8F0; }
-        QFrame#bottomBar { background: #F1F5F9; border-top:    1px solid #E2E8F0; }
-        QLabel#pathLabel {
-            background: #F1F5F9; color: #64748B; border-radius: 6px;
-            border: 1px solid #E2E8F0; padding: 0 8px; }
-        FontPickerWidget { background: #FFFFFF; border-radius: 12px; border: 1px solid #E2E8F0; }
-        QComboBox {
-            background: #F8FAFC; color: #0F172A; border-radius: 8px;
-            border: 1px solid #CBD5E1; padding: 5px 10px; font-size: 11px; }
-        QComboBox::drop-down { border: none; width: 20px; }
-        QComboBox QAbstractItemView {
-            background: #FFFFFF; color: #0F172A;
-            selection-background-color: #2563EB; selection-color: white;
-            border: 1px solid #E2E8F0; }
-
-        /* Scrollbar - schlank und modern */
-        QScrollBar:vertical {
-            background: transparent; width: 6px;
-            margin: 4px 2px 4px 0px; border-radius: 3px; }
-        QScrollBar::handle:vertical {
-            background: #CBD5E1; border-radius: 3px; min-height: 40px; }
-        QScrollBar::handle:vertical:hover { background: #2563EB; }
-        QScrollBar::handle:vertical:pressed { background: #1D4ED8; }
-        QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0px; }
-        QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: transparent; }
-        QScrollBar:horizontal { height: 0px; }
-        """
-
-
-# ── Eigener Dialog (theme-bewusst) ─────────────────────────────────────────────
+# ── Eigener Dialog ─────────────────────────────────────────────────────────────
 class ThemedDialog(QDialog):
-    """Ersetzt QMessageBox — passt sich dem aktuellen Theme an."""
+    @staticmethod
+    def info(parent, title, message, dark):
+        ThemedDialog(parent, title, message, dark, mode="info").exec_()
 
     @staticmethod
-    def info(parent, title: str, message: str, dark: bool):
-        d = ThemedDialog(parent, title, message, dark, mode="info")
-        d.exec_()
+    def error(parent, title, message, dark):
+        ThemedDialog(parent, title, message, dark, mode="error").exec_()
 
     @staticmethod
-    def error(parent, title: str, message: str, dark: bool):
-        d = ThemedDialog(parent, title, message, dark, mode="error")
-        d.exec_()
-
-    @staticmethod
-    def question(parent, title: str, message: str, dark: bool) -> bool:
-        d = ThemedDialog(parent, title, message, dark, mode="question")
-        return d.exec_() == QDialog.Accepted
+    def question(parent, title, message, dark) -> bool:
+        return ThemedDialog(parent, title, message, dark, mode="question").exec_() == QDialog.Accepted
 
     def __init__(self, parent, title, message, dark, mode="info"):
         super().__init__(parent)
@@ -220,32 +43,27 @@ class ThemedDialog(QDialog):
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
 
         if dark:
-            bg, fg, border, btn_bg, btn_fg, btn_hover = (
-                "#1E293B", "#F1F5F9", "#334155",
-                "#3B82F6", "white",   "#2563EB")
-            btn_cancel_bg = "#334155"; btn_cancel_fg = "#94A3B8"
+            bg, fg, border = "#1E293B", "#F1F5F9", "#334155"
+            btn_bg, btn_fg = "#3B82F6", "white"
+            btn_cancel_bg, btn_cancel_fg = "#334155", "#94A3B8"
         else:
-            bg, fg, border, btn_bg, btn_fg, btn_hover = (
-                "#FFFFFF", "#0F172A", "#E2E8F0",
-                "#2563EB", "white",   "#1D4ED8")
-            btn_cancel_bg = "#F1F5F9"; btn_cancel_fg = "#64748B"
+            bg, fg, border = "#FFFFFF", "#0F172A", "#E2E8F0"
+            btn_bg, btn_fg = "#2563EB", "white"
+            btn_cancel_bg, btn_cancel_fg = "#F1F5F9", "#64748B"
 
         self.setStyleSheet(f"""
             QDialog {{ background: {bg}; border-radius: 12px; }}
             QLabel  {{ color: {fg}; background: transparent; }}
-            QPushButton {{
-                border-radius: 8px; padding: 8px 20px;
+            QPushButton {{ border-radius: 8px; padding: 8px 20px;
                 font-size: 12px; font-weight: bold; border: none; }}
         """)
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(28, 24, 28, 20)
-        layout.setSpacing(16)
+        layout.setContentsMargins(28, 24, 28, 20); layout.setSpacing(16)
 
-        # Icon + Titel
-        hdr = QWidget(); hl = QHBoxLayout(hdr); hl.setContentsMargins(0,0,0,0); hl.setSpacing(12)
-        icon_map = {"info": "✅", "error": "❌", "question": "↺"}
-        icon_lbl = QLabel(icon_map.get(mode, "ℹ️"))
+        hdr = QWidget(); hl = QHBoxLayout(hdr)
+        hl.setContentsMargins(0,0,0,0); hl.setSpacing(12)
+        icon_lbl = QLabel({"info":"✅","error":"❌","question":"↺"}.get(mode,"ℹ️"))
         icon_lbl.setFont(QFont("Segoe UI", 22))
         title_lbl = QLabel(title)
         title_lbl.setFont(QFont("Segoe UI", 14, QFont.Bold))
@@ -253,31 +71,26 @@ class ThemedDialog(QDialog):
         hl.addWidget(icon_lbl); hl.addWidget(title_lbl); hl.addStretch()
         layout.addWidget(hdr)
 
-        # Trennlinie
         line = QFrame(); line.setFrameShape(QFrame.HLine)
         line.setStyleSheet(f"background: {border}; max-height: 1px;")
         layout.addWidget(line)
 
-        # Nachricht
         msg_lbl = QLabel(message)
         msg_lbl.setFont(QFont("Segoe UI", 11))
         msg_lbl.setWordWrap(True)
         msg_lbl.setStyleSheet(f"color: {fg};")
         layout.addWidget(msg_lbl)
 
-        # Buttons
         btn_row = QWidget(); bl = QHBoxLayout(btn_row)
-        bl.setContentsMargins(0,0,0,0); bl.setSpacing(10)
-        bl.addStretch()
+        bl.setContentsMargins(0,0,0,0); bl.setSpacing(10); bl.addStretch()
 
         if mode == "question":
             cancel_btn = QPushButton("Abbrechen")
             cancel_btn.setStyleSheet(f"background:{btn_cancel_bg}; color:{btn_cancel_fg};")
             cancel_btn.clicked.connect(self.reject)
             bl.addWidget(cancel_btn)
-
             ok_btn = QPushButton("Ja, zurücksetzen")
-            ok_btn.setStyleSheet(f"background:#EF4444; color:white;")
+            ok_btn.setStyleSheet("background:#EF4444; color:white;")
             ok_btn.clicked.connect(self.accept)
             bl.addWidget(ok_btn)
         else:
@@ -286,7 +99,6 @@ class ThemedDialog(QDialog):
             ok_btn.setMinimumWidth(90)
             ok_btn.clicked.connect(self.accept)
             bl.addWidget(ok_btn)
-
         layout.addWidget(btn_row)
 
 
@@ -294,11 +106,11 @@ class ThemedDialog(QDialog):
 class StyledCheckBox(QWidget):
     stateChanged = pyqtSignal(int)
 
-    def __init__(self, text: str, parent=None):
+    def __init__(self, text, parent=None):
         super().__init__(parent)
         self._checked = False
         layout = QHBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0); layout.setSpacing(10)
+        layout.setContentsMargins(0,0,0,0); layout.setSpacing(10)
         self._box = QPushButton()
         self._box.setFixedSize(22, 22)
         self._box.setCursor(Qt.PointingHandCursor)
@@ -329,12 +141,12 @@ class StyledCheckBox(QWidget):
                     border:2px solid #475569; border-radius:5px; }
                 QPushButton:hover { border-color:#3B82F6; }""")
 
-    def isChecked(self):    return self._checked
+    def isChecked(self):      return self._checked
     def setChecked(self, v):
         if self._checked != v:
             self._checked = v; self._refresh()
 
-    def update_theme(self, dark: bool):
+    def update_theme(self, dark):
         if not self._checked:
             border = "#475569" if dark else "#CBD5E1"
             hover  = "#3B82F6" if dark else "#2563EB"
@@ -369,7 +181,7 @@ class Stepper(QWidget):
         self._min = min_val; self._max = max_val
         self._val = value;   self._step = step; self._fmt = fmt
         layout = QHBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0); layout.setSpacing(4)
+        layout.setContentsMargins(0,0,0,0); layout.setSpacing(4)
         self._dec_btn = QPushButton("−"); self._dec_btn.setObjectName("stepper")
         self._dec_btn.clicked.connect(self._dec)
         self._lbl = QLabel(fmt.format(value))
@@ -416,7 +228,7 @@ class FileRow(QWidget):
     def __init__(self, btn_text, on_pick, on_clear, parent=None):
         super().__init__(parent)
         layout = QHBoxLayout(self)
-        layout.setContentsMargins(0, 2, 0, 2); layout.setSpacing(6)
+        layout.setContentsMargins(0,2,0,2); layout.setSpacing(6)
         self._lbl = QLabel("Nichts ausgewählt")
         self._lbl.setObjectName("pathLabel")
         self._lbl.setFont(QFont("Segoe UI", 10))
@@ -447,14 +259,14 @@ class FileRow(QWidget):
 class IntroMaker(QMainWindow):
     def __init__(self):
         super().__init__()
-        self._settings     = cfg_load()
-        self._theme        = self._settings.get("theme", "light")
-        self._font_color   = self._settings.get("font_color",    "#FFFFFF")
-        self._sub_color    = self._settings.get("subtitle_color","#FFFFFF")
-        self._image_paths  = []
-        self._render_start = 0.0
-        self._thread       = None
-        self._worker       = None
+        self._settings      = cfg_load()
+        self._theme         = self._settings.get("theme", "light")
+        self._font_color    = self._settings.get("font_color",    "#FFFFFF")
+        self._sub_color     = self._settings.get("subtitle_color","#FFFFFF")
+        self._image_paths   = []
+        self._render_start  = 0.0
+        self._thread        = None
+        self._worker        = None
         self._bg_video_path = None
         self._bg_image_path = None
         self._music_path    = None
@@ -464,7 +276,6 @@ class IntroMaker(QMainWindow):
         self.setMinimumSize(960, 780)
         self.resize(1060, 920)
 
-        # ── App-Icon (icon.png) ───────────────────────────────────────
         icon_path = resource_path("assets/pictures/icon.png")
         if os.path.exists(icon_path):
             self.setWindowIcon(QIcon(icon_path))
@@ -479,10 +290,10 @@ class IntroMaker(QMainWindow):
         root = QWidget(); root.setObjectName("root")
         self.setCentralWidget(root)
         ml = QVBoxLayout(root)
-        ml.setContentsMargins(0, 0, 0, 0); ml.setSpacing(0)
+        ml.setContentsMargins(0,0,0,0); ml.setSpacing(0)
         ml.addWidget(self._make_header())
         body = QWidget(); bl = QHBoxLayout(body)
-        bl.setContentsMargins(20, 12, 20, 12); bl.setSpacing(16)
+        bl.setContentsMargins(20,12,20,12); bl.setSpacing(16)
         bl.addWidget(self._make_scroll(self._build_left),  1)
         bl.addWidget(self._make_scroll(self._build_right), 1)
         ml.addWidget(body, 1)
@@ -495,7 +306,7 @@ class IntroMaker(QMainWindow):
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         inner = QWidget(); inner.setObjectName("root")
         il = QVBoxLayout(inner)
-        il.setContentsMargins(0, 0, 8, 0); il.setSpacing(10)
+        il.setContentsMargins(0,0,8,0); il.setSpacing(10)
         fn(il); il.addStretch()
         scroll.setWidget(inner)
         return scroll
@@ -504,39 +315,33 @@ class IntroMaker(QMainWindow):
     def _make_header(self):
         hdr = QFrame(); hdr.setObjectName("header"); hdr.setFixedHeight(72)
         layout = QHBoxLayout(hdr)
-        layout.setContentsMargins(24, 0, 24, 0); layout.setSpacing(10)
+        layout.setContentsMargins(24,0,24,0); layout.setSpacing(10)
 
         self._header_logo_lbl = QLabel()
         self._header_logo_lbl.setStyleSheet("background: transparent;")
         layout.addWidget(self._header_logo_lbl)
         layout.addStretch()
 
-        # Speichern-Button
         self._save_btn = QPushButton("💾  Speichern")
         self._save_btn.setObjectName("saveBtn")
         self._save_btn.setFont(QFont("Segoe UI", 11, QFont.Bold))
         self._save_btn.setFixedHeight(38)
-        self._save_btn.setToolTip("Einstellungen jetzt speichern")
         self._save_btn.clicked.connect(self._manual_save)
         layout.addWidget(self._save_btn)
 
-        # Reset-Button
         self._reset_btn = QPushButton("↺  Zurücksetzen")
         self._reset_btn.setObjectName("resetBtn")
         self._reset_btn.setFont(QFont("Segoe UI", 11))
         self._reset_btn.setFixedHeight(38)
-        self._reset_btn.setToolTip("Alle Einstellungen auf Standard zurücksetzen")
         self._reset_btn.clicked.connect(self._confirm_reset)
         layout.addWidget(self._reset_btn)
 
-        # Theme-Button
         self._theme_btn = QPushButton()
         self._theme_btn.setObjectName("themeBtn")
         self._theme_btn.setFont(QFont("Segoe UI", 11, QFont.Bold))
         self._theme_btn.setFixedHeight(38)
         self._theme_btn.clicked.connect(self._toggle_theme)
         layout.addWidget(self._theme_btn)
-
         return hdr
 
     def _update_header_logo(self):
@@ -585,9 +390,38 @@ class IntroMaker(QMainWindow):
         cl3.addWidget(fade_r)
         layout.addWidget(c3)
 
+        # Start/Ende Fade
+        c_fade = make_card(); cl_f = QVBoxLayout(c_fade); cl_f.setContentsMargins(16,10,16,14); cl_f.setSpacing(6)
+        cl_f.addWidget(sec_lbl("🌑  Video Fade In / Out"))
+        cl_f.addWidget(hint_lbl("Blendet das Video am Anfang und/oder Ende von/zu Schwarz"))
+
+        # Fade In
+        self._intro_fade_chk = StyledCheckBox("Fade In am Start")
+        self._intro_fade_chk.stateChanged.connect(self._toggle_intro_fade)
+        cl_f.addWidget(self._intro_fade_chk)
+        fi_row = QWidget(); fi_l = QHBoxLayout(fi_row); fi_l.setContentsMargins(0,0,0,0); fi_l.setSpacing(10)
+        fi_l.addWidget(dim_lbl("Dauer:"))
+        self._intro_fade_step = Stepper(1, 30, 3, step=1, fmt="{} s")
+        self._intro_fade_step.setEnabled(False)
+        fi_l.addWidget(self._intro_fade_step); fi_l.addStretch()
+        cl_f.addWidget(fi_row)
+
+        # Fade Out
+        self._outro_fade_chk = StyledCheckBox("Fade Out am Ende")
+        self._outro_fade_chk.stateChanged.connect(self._toggle_outro_fade)
+        cl_f.addWidget(self._outro_fade_chk)
+        fo_row = QWidget(); fo_l = QHBoxLayout(fo_row); fo_l.setContentsMargins(0,0,0,0); fo_l.setSpacing(10)
+        fo_l.addWidget(dim_lbl("Dauer:"))
+        self._outro_fade_step = Stepper(1, 30, 3, step=1, fmt="{} s")
+        self._outro_fade_step.setEnabled(False)
+        fo_l.addWidget(self._outro_fade_step); fo_l.addStretch()
+        cl_f.addWidget(fo_row)
+        layout.addWidget(c_fade)
+
         # Ausgabe
         c7 = make_card(); cl7 = QVBoxLayout(c7); cl7.setContentsMargins(16,10,16,14); cl7.setSpacing(6)
         cl7.addWidget(sec_lbl("💾  Ausgabedatei"))
+        cl7.addWidget(hint_lbl("Dateiname wird automatisch gesetzt: Intro - TT.MM.JJJJ"))
         self._out_row = FileRow("📁  Speicherort wählen", self._pick_output, self._clear_output)
         cl7.addWidget(self._out_row)
         layout.addWidget(c7)
@@ -649,7 +483,6 @@ class IntroMaker(QMainWindow):
         crl.addWidget(dim_lbl("Farbe:"))
         self._color_btn = QPushButton("  #FFFFFF  ")
         self._color_btn.setObjectName("colorBtn"); self._color_btn.setFixedHeight(32)
-        self._color_btn.setStyleSheet("background:#FFFFFF;color:#000000;border-radius:8px;padding:4px 14px;border:1px solid rgba(0,0,0,0.2);")
         self._color_btn.clicked.connect(self._pick_color)
         crl.addWidget(self._color_btn); crl.addStretch()
         cl6.addWidget(cr_w)
@@ -674,7 +507,6 @@ class IntroMaker(QMainWindow):
         sol.addWidget(self._sub_size_step); sol.addSpacing(10); sol.addWidget(dim_lbl("Farbe:"))
         self._sub_color_btn = QPushButton("  #FFFFFF  ")
         self._sub_color_btn.setObjectName("colorBtn"); self._sub_color_btn.setFixedHeight(32)
-        self._sub_color_btn.setStyleSheet("background:#FFFFFF;color:#000000;border-radius:8px;padding:4px 14px;border:1px solid rgba(0,0,0,0.2);")
         self._sub_color_btn.setEnabled(False)
         self._sub_color_btn.clicked.connect(self._pick_sub_color)
         sol.addWidget(self._sub_color_btn); sol.addStretch()
@@ -685,9 +517,9 @@ class IntroMaker(QMainWindow):
     def _make_bottom(self):
         bar = QFrame(); bar.setObjectName("bottomBar"); bar.setFixedHeight(110)
         layout = QHBoxLayout(bar)
-        layout.setContentsMargins(20, 0, 24, 0); layout.setSpacing(12)
+        layout.setContentsMargins(20,0,24,0); layout.setSpacing(12)
         info = QWidget(); il = QVBoxLayout(info)
-        il.setContentsMargins(0, 14, 0, 10); il.setSpacing(5)
+        il.setContentsMargins(0,14,0,10); il.setSpacing(5)
         self._status_lbl = QLabel("Bereit")
         self._status_lbl.setObjectName("dim"); self._status_lbl.setFont(QFont("Segoe UI", 11))
         il.addWidget(self._status_lbl)
@@ -706,7 +538,7 @@ class IntroMaker(QMainWindow):
         il.addWidget(det)
         layout.addWidget(info, 1)
         btn_col = QWidget(); bcl = QVBoxLayout(btn_col)
-        bcl.setContentsMargins(0, 16, 0, 16); bcl.setSpacing(8)
+        bcl.setContentsMargins(0,16,0,16); bcl.setSpacing(8)
         self._create_btn = QPushButton("🎬  Video erstellen")
         self._create_btn.setObjectName("primary"); self._create_btn.setFixedSize(230, 52)
         self._create_btn.clicked.connect(self._start_render)
@@ -720,23 +552,27 @@ class IntroMaker(QMainWindow):
     # ── EINSTELLUNGEN ──────────────────────────────────────────────────────────
     def _collect_settings(self) -> dict:
         return {
-            "theme":            self._theme,
-            "timer_minutes":    self._timer_step.value(),
-            "music_loop":       self._music_loop_chk.isChecked(),
-            "music_fadeout":    self._music_fadeout_chk.isChecked(),
-            "music_fade_dur":   self._music_fade_step.value(),
-            "slider_from":      self._slider_from_step.value(),
-            "slider_until":     self._slider_until_step.value(),
-            "img_duration":     self._img_dur_step.value(),
-            "timer_between":    self._timer_between_step.value(),
-            "slider_loop":      self._slider_loop_chk.isChecked(),
-            "fade_duration":    self._fade_step.value(),
-            "font_color":       self._font_color,
-            "font_name":        self._font_picker._combo.currentText(),
-            "subtitle_enabled": self._sub_chk.isChecked(),
-            "subtitle_text":    self._sub_edit.toPlainText(),
-            "subtitle_size":    self._sub_size_step.value(),
-            "subtitle_color":   self._sub_color,
+            "theme":              self._theme,
+            "timer_minutes":      self._timer_step.value(),
+            "music_loop":         self._music_loop_chk.isChecked(),
+            "music_fadeout":      self._music_fadeout_chk.isChecked(),
+            "music_fade_dur":     self._music_fade_step.value(),
+            "intro_fade_enabled": self._intro_fade_chk.isChecked(),
+            "intro_fade_dur":     self._intro_fade_step.value(),
+            "outro_fade_enabled": self._outro_fade_chk.isChecked(),
+            "outro_fade_dur":     self._outro_fade_step.value(),
+            "slider_from":        self._slider_from_step.value(),
+            "slider_until":       self._slider_until_step.value(),
+            "img_duration":       self._img_dur_step.value(),
+            "timer_between":      self._timer_between_step.value(),
+            "slider_loop":        self._slider_loop_chk.isChecked(),
+            "fade_duration":      self._fade_step.value(),
+            "font_color":         self._font_color,
+            "font_name":          self._font_picker._combo.currentText(),
+            "subtitle_enabled":   self._sub_chk.isChecked(),
+            "subtitle_text":      self._sub_edit.toPlainText(),
+            "subtitle_size":      self._sub_size_step.value(),
+            "subtitle_color":     self._sub_color,
         }
 
     def _restore_settings(self):
@@ -745,6 +581,12 @@ class IntroMaker(QMainWindow):
         self._music_loop_chk.setChecked(s.get("music_loop", True))
         self._music_fadeout_chk.setChecked(s.get("music_fadeout", True))
         self._music_fade_step.set_value(s.get("music_fade_dur", 4))
+        self._intro_fade_chk.setChecked(s.get("intro_fade_enabled", False))
+        self._intro_fade_step.set_value(s.get("intro_fade_dur", 3))
+        self._intro_fade_step.setEnabled(s.get("intro_fade_enabled", False))
+        self._outro_fade_chk.setChecked(s.get("outro_fade_enabled", False))
+        self._outro_fade_step.set_value(s.get("outro_fade_dur", 3))
+        self._outro_fade_step.setEnabled(s.get("outro_fade_enabled", False))
         self._slider_from_step.set_value(s.get("slider_from", 4))
         self._slider_until_step.set_value(s.get("slider_until", 1))
         self._img_dur_step.set_value(s.get("img_duration", 10))
@@ -777,27 +619,23 @@ class IntroMaker(QMainWindow):
 
     def _manual_save(self):
         self._save_settings()
-        # Kurzes visuelles Feedback am Button
         self._save_btn.setText("✓  Gespeichert")
         self._save_btn.setStyleSheet(
             "background:#16A34A; color:white; border-radius:10px;"
             "font-size:11px; font-weight:bold; padding:8px 14px; border:none;")
         QApplication.processEvents()
-        from PyQt5.QtCore import QTimer
         QTimer.singleShot(1800, self._reset_save_btn)
 
     def _reset_save_btn(self):
         self._save_btn.setText("💾  Speichern")
-        self._save_btn.setStyleSheet("")   # zurück auf Stylesheet-Klasse
+        self._save_btn.setStyleSheet("")
         self._save_btn.setObjectName("saveBtn")
-        # Stylesheet neu anwenden damit objectName greift
-        QApplication.instance().setStyleSheet(
-            QApplication.instance().styleSheet())
+        QApplication.instance().setStyleSheet(QApplication.instance().styleSheet())
 
     # ── THEME ──────────────────────────────────────────────────────────────────
-    def _apply_theme(self, theme: str, save=True):
+    def _apply_theme(self, theme, save=True):
         self._theme = theme
-        QApplication.instance().setStyleSheet(_make_style(theme == "dark"))
+        QApplication.instance().setStyleSheet(make_style(theme == "dark"))
         self._theme_btn.setText("🌙  Dark Mode" if theme == "light" else "☀️  Light Mode")
         self._update_header_logo()
         accent = "#3B82F6" if theme == "dark" else "#2563EB"
@@ -806,10 +644,10 @@ class IntroMaker(QMainWindow):
             self._font_picker.set_theme(theme)
         dark = (theme == "dark")
         for chk in [self._music_loop_chk, self._music_fadeout_chk,
+                    self._intro_fade_chk, self._outro_fade_chk,
                     self._sub_chk, self._slider_loop_chk]:
             try: chk.update_theme(dark)
             except: pass
-        # Farb-Buttons border anpassen
         self._update_color_btn(self._color_btn, self._font_color)
         self._update_color_btn(self._sub_color_btn, self._sub_color)
         if save:
@@ -828,7 +666,7 @@ class IntroMaker(QMainWindow):
             self._apply_theme(self._settings.get("theme", "light"), save=False)
 
     # ── COLOR BUTTON HELPER ────────────────────────────────────────────────────
-    def _update_color_btn(self, btn, hex_color: str):
+    def _update_color_btn(self, btn, hex_color):
         c      = QColor(hex_color)
         dark   = (self._theme == "dark")
         border = "rgba(255,255,255,0.3)" if dark else "rgba(0,0,0,0.2)"
@@ -838,19 +676,15 @@ class IntroMaker(QMainWindow):
             f"padding:4px 14px; border:1px solid {border};")
         btn.setText(f"  {hex_color.upper()}  ")
 
-    # ── FARBAUSWAHL (native Dialog deaktiviert, eigener Wrapper) ──────────────
-    def _open_color_dialog(self, current: str, title: str) -> str | None:
+    def _open_color_dialog(self, current, title):
         dialog = QColorDialog(QColor(current), self)
         dialog.setWindowTitle(title)
-        # Nativen Dialog deaktivieren → Qt zeichnet ihn selbst (theme-neutral)
         dialog.setOption(QColorDialog.DontUseNativeDialog, True)
-        # Dark-Mode Palette setzen wenn nötig
         if self._theme == "dark":
             pal = dialog.palette()
             pal.setColor(QPalette.Window,      QColor("#1E293B"))
             pal.setColor(QPalette.WindowText,  QColor("#F1F5F9"))
             pal.setColor(QPalette.Base,        QColor("#0F172A"))
-            pal.setColor(QPalette.AlternateBase, QColor("#263348"))
             pal.setColor(QPalette.Text,        QColor("#F1F5F9"))
             pal.setColor(QPalette.Button,      QColor("#334155"))
             pal.setColor(QPalette.ButtonText,  QColor("#F1F5F9"))
@@ -864,23 +698,17 @@ class IntroMaker(QMainWindow):
     # ── FILE PICKERS ───────────────────────────────────────────────────────────
     def _pick_bg_video(self):
         p, _ = QFileDialog.getOpenFileName(self, "Hintergrundvideo", "", "Video (*.mp4 *.mov *.avi *.mkv)")
-        if p:
-            self._bg_video_path = p; self._bg_video_row.set_path(p)
-            self._bg_image_row.setEnabled(False)
+        if p: self._bg_video_path = p; self._bg_video_row.set_path(p); self._bg_image_row.setEnabled(False)
 
     def _clear_bg_video(self):
-        self._bg_video_path = None; self._bg_video_row.set_path(None)
-        self._bg_image_row.setEnabled(True)
+        self._bg_video_path = None; self._bg_video_row.set_path(None); self._bg_image_row.setEnabled(True)
 
     def _pick_bg_image(self):
         p, _ = QFileDialog.getOpenFileName(self, "Hintergrundbild", "", "Bild (*.png *.jpg *.jpeg *.bmp)")
-        if p:
-            self._bg_image_path = p; self._bg_image_row.set_path(p)
-            self._bg_video_row.setEnabled(False)
+        if p: self._bg_image_path = p; self._bg_image_row.set_path(p); self._bg_video_row.setEnabled(False)
 
     def _clear_bg_image(self):
-        self._bg_image_path = None; self._bg_image_row.set_path(None)
-        self._bg_video_row.setEnabled(True)
+        self._bg_image_path = None; self._bg_image_row.set_path(None); self._bg_video_row.setEnabled(True)
 
     def _pick_music(self):
         p, _ = QFileDialog.getOpenFileName(self, "Musikdatei", "", "Audio (*.mp3 *.wav *.ogg *.aac)")
@@ -890,29 +718,28 @@ class IntroMaker(QMainWindow):
         self._music_path = None; self._music_row.set_path(None)
 
     def _pick_output(self):
-        p, _ = QFileDialog.getSaveFileName(self, "Speicherort", "intro_output.mp4", "MP4 (*.mp4)")
-        if p: self._out_path = p; self._out_row.set_path(p)
+        # Standardname: "Intro - TT.MM.JJJJ"
+        default_name = datetime.now().strftime("Intro - %d.%m.%Y")
+        folder = QFileDialog.getExistingDirectory(self, "Speicherordner wählen")
+        if folder:
+            self._out_path = os.path.join(folder, f"{default_name}.mp4")
+            self._out_row.set_path(self._out_path)
 
     def _clear_output(self):
         self._out_path = None; self._out_row.set_path(None)
 
     def _pick_color(self):
         result = self._open_color_dialog(self._font_color, "Timer Schriftfarbe")
-        if result:
-            self._font_color = result
-            self._update_color_btn(self._color_btn, result)
+        if result: self._font_color = result; self._update_color_btn(self._color_btn, result)
 
     def _pick_sub_color(self):
         result = self._open_color_dialog(self._sub_color, "Untertitel Farbe")
-        if result:
-            self._sub_color = result
-            self._update_color_btn(self._sub_color_btn, result)
+        if result: self._sub_color = result; self._update_color_btn(self._sub_color_btn, result)
 
     # ── BILDER ─────────────────────────────────────────────────────────────────
     def _add_images(self):
         paths, _ = QFileDialog.getOpenFileNames(self, "Bilder", "", "Bilder (*.png *.jpg *.jpeg *.bmp *.webp)")
-        if paths:
-            self._image_paths.extend(paths); self._refresh_imgs()
+        if paths: self._image_paths.extend(paths); self._refresh_imgs()
 
     def _clear_images(self):
         self._image_paths = []; self._refresh_imgs()
@@ -922,67 +749,69 @@ class IntroMaker(QMainWindow):
             "\n".join(f"  • {os.path.basename(p)}" for p in self._image_paths)
             if self._image_paths else "  Keine Bilder ausgewählt")
 
-    # ── UNTERTITEL ─────────────────────────────────────────────────────────────
+    # ── UNTERTITEL / FADE TOGGLES ──────────────────────────────────────────────
     def _toggle_subtitle(self, state):
         on = (state == 2)
         self._sub_edit.setEnabled(on)
         self._sub_size_step.setEnabled(on)
         self._sub_color_btn.setEnabled(on)
 
+    def _toggle_intro_fade(self, state):
+        self._intro_fade_step.setEnabled(state == 2)
+
+    def _toggle_outro_fade(self, state):
+        self._outro_fade_step.setEnabled(state == 2)
+
     # ── RENDER ─────────────────────────────────────────────────────────────────
     def _start_render(self):
         if not self._out_path:
             ThemedDialog.error(self, "Fehler", "Bitte einen Speicherort wählen!",
-                            dark=(self._theme == "dark"))
+                               dark=(self._theme == "dark"))
             return
 
-        
         if self._music_path and not _get_ffmpeg():
-            ThemedDialog.error(
-                self, "FFmpeg fehlt",
+            ThemedDialog.error(self, "FFmpeg fehlt",
                 "Für Hintergrundmusik wird FFmpeg benötigt.\n\n"
-                "Bitte ffmpeg.exe unter assets/bin/ ablegen\n"
-                "oder FFmpeg global installieren (winget install ffmpeg).",
+                "Bitte ffmpeg.exe unter assets/bin/ ablegen.",
                 dark=(self._theme == "dark"))
             return
 
         self._save_settings()
         sub_text = self._sub_edit.toPlainText().strip() if self._sub_chk.isChecked() else ""
 
-        # BUTTON WECHSEL
-        self._is_rendering = True
-        self._create_btn.setEnabled(True)
-        self._create_btn.setText("✖  Abbrechen")
-
+        self._create_btn.setVisible(False)
+        self._cancel_btn.setVisible(True)
         self._progress.setValue(0)
-        self._frames_lbl.setText("")
-        self._eta_lbl.setText("")
-        self._pct_lbl.setText("")
+        self._frames_lbl.setText(""); self._eta_lbl.setText(""); self._pct_lbl.setText("")
         self._render_start = time.time()
 
         config = {
-            "bg_video":         self._bg_video_path,
-            "bg_image":         self._bg_image_path,
-            "music_path":       self._music_path,
-            "music_loop":       self._music_loop_chk.isChecked(),
-            "music_fadeout":    self._music_fadeout_chk.isChecked(),
-            "music_fade_dur":   self._music_fade_step.value(),
-            "timer_minutes":    self._timer_step.value(),
-            "image_paths":      list(self._image_paths),
-            "img_duration":     self._img_dur_step.value(),
-            "timer_between":    self._timer_between_step.value(),
-            "slider_loop":      self._slider_loop_chk.isChecked(),
-            "slider_from":      self._slider_from_step.value(),
-            "slider_until":     self._slider_until_step.value(),
-            "fade_duration":    self._fade_step.value(),
-            "font_path":        self._font_picker.get_font_path(),
-            "font_color":       self._font_color,
-            "output_path":      self._out_path,
-            "subtitle_enabled": self._sub_chk.isChecked(),
-            "subtitle_text":    sub_text,
-            "subtitle_size":    self._sub_size_step.value(),
-            "subtitle_color":   self._sub_color,
-            "subtitle_font":    self._font_picker.get_font_path(),
+            "bg_video":           self._bg_video_path,
+            "bg_image":           self._bg_image_path,
+            "music_path":         self._music_path,
+            "music_loop":         self._music_loop_chk.isChecked(),
+            "music_fadeout":      self._music_fadeout_chk.isChecked(),
+            "music_fade_dur":     self._music_fade_step.value(),
+            "intro_fade_enabled": self._intro_fade_chk.isChecked(),
+            "intro_fade_dur":     self._intro_fade_step.value(),
+            "outro_fade_enabled": self._outro_fade_chk.isChecked(),
+            "outro_fade_dur":     self._outro_fade_step.value(),
+            "timer_minutes":      self._timer_step.value(),
+            "image_paths":        list(self._image_paths),
+            "img_duration":       self._img_dur_step.value(),
+            "timer_between":      self._timer_between_step.value(),
+            "slider_loop":        self._slider_loop_chk.isChecked(),
+            "slider_from":        self._slider_from_step.value(),
+            "slider_until":       self._slider_until_step.value(),
+            "fade_duration":      self._fade_step.value(),
+            "font_path":          self._font_picker.get_font_path(),
+            "font_color":         self._font_color,
+            "output_path":        self._out_path,
+            "subtitle_enabled":   self._sub_chk.isChecked(),
+            "subtitle_text":      sub_text,
+            "subtitle_size":      self._sub_size_step.value(),
+            "subtitle_color":     self._sub_color,
+            "subtitle_font":      self._font_picker.get_font_path(),
         }
 
         self._worker = RenderWorker(config)
@@ -1014,8 +843,8 @@ class IntroMaker(QMainWindow):
             self._eta_lbl.setText(f"⏳ ETA: {m:02d}:{s:02d}")
 
     def _on_done(self, ok, msg):
+        self._create_btn.setVisible(True)
         self._create_btn.setEnabled(True)
-        self._create_btn.setText("🎬  Video erstellen")
         self._cancel_btn.setVisible(False)
         self._eta_lbl.setText("")
         dark = (self._theme == "dark")
@@ -1039,7 +868,6 @@ def main():
     app = QApplication(sys.argv)
     app.setFont(QFont("Segoe UI", 10))
 
-    # App-Icon auch für die Taskleiste
     icon_path = resource_path("assets/pictures/icon.png")
     if os.path.exists(icon_path):
         app.setWindowIcon(QIcon(icon_path))

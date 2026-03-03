@@ -1,7 +1,6 @@
 import cv2, numpy as np, os, traceback, subprocess, shutil, sys
 from PIL import Image, ImageDraw, ImageFont
 
-# Windows: verhindert CMD-Fenster bei subprocess-Aufrufen
 _STARTUPINFO = None
 if sys.platform == "win32":
     _STARTUPINFO = subprocess.STARTUPINFO()
@@ -14,39 +13,20 @@ def _get_ffmpeg() -> str | None:
         base = sys._MEIPASS
     else:
         base = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
-
     bundled = os.path.join(base, "assets", "bin", "ffmpeg.exe")
     if os.path.isfile(bundled):
         return os.path.normpath(bundled)
-
     return shutil.which("ffmpeg")
 
 
 def _run_ffmpeg(cmd: list):
-    """FFmpeg ausführen — kein CMD-Fenster, Fehler-Output wird geloggt."""
     result = subprocess.run(
-        cmd,
-        check=True,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.PIPE,          # stderr aufzeichnen statt wegwerfen
+        cmd, check=True,
+        stdout=subprocess.DEVNULL, stderr=subprocess.PIPE,
         startupinfo=_STARTUPINFO
     )
     return result
 
-
-def _get_ffmpeg_version(ffmpeg_path: str) -> str:
-    """Gibt die FFmpeg-Version als String zurück (für Debug-Log)."""
-    try:
-        r = subprocess.run(
-            [ffmpeg_path, "-version"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.DEVNULL,
-            startupinfo=_STARTUPINFO
-        )
-        first_line = r.stdout.decode(errors="ignore").splitlines()[0]
-        return first_line
-    except:
-        return "unbekannt"
 
 
 class VideoGenerator:
@@ -103,6 +83,12 @@ class VideoGenerator:
         slider_loop   = cfg.get("slider_loop", True)
         fade_dur      = float(cfg["fade_duration"])
 
+        # Start/Ende Fade
+        intro_fade    = cfg.get("intro_fade_enabled", False)
+        outro_fade    = cfg.get("outro_fade_enabled", False)
+        intro_fade_dur = float(cfg.get("intro_fade_dur", 3.0))
+        outro_fade_dur = float(cfg.get("outro_fade_dur", 3.0))
+
         # ── Fonts ─────────────────────────────────────────────────────
         font_path     = cfg.get("font_path")
         sub_font_path = cfg.get("subtitle_font") or font_path
@@ -126,24 +112,18 @@ class VideoGenerator:
             slider_imgs, img_dur, timer_between, slider_loop)
         total_frames = int(total_sec * fps)
 
-        # ── FFmpeg-Prozess starten — Frames direkt per Pipe, kein AVI ──
-        # Popen mit _STARTUPINFO → kein CMD-Fenster auf Windows
-        tmp_video = out_path.replace(".mp4", "_noaudio.mp4")
+        # ── FFmpeg-Prozess starten ────────────────────────────────────
+        tmp_video   = out_path.replace(".mp4", "_noaudio.mp4")
         ffmpeg_path = _get_ffmpeg()
 
         if ffmpeg_path:
             ff_cmd = [
                 ffmpeg_path, "-y",
-                "-f", "rawvideo",
-                "-vcodec", "rawvideo",
-                "-pix_fmt", "bgr24",
-                "-s", f"{w}x{h}",
-                "-r", str(fps),
-                "-i", "pipe:0",
-                "-c:v", "libx264",
-                "-preset", "fast",
-                "-crf", "18",
-                "-pix_fmt", "yuv420p",
+                "-f", "rawvideo", "-vcodec", "rawvideo",
+                "-pix_fmt", "bgr24", "-s", f"{w}x{h}",
+                "-r", str(fps), "-i", "pipe:0",
+                "-c:v", "libx264", "-preset", "fast",
+                "-crf", "18", "-pix_fmt", "yuv420p",
                 tmp_video
             ]
             ff_proc = subprocess.Popen(
@@ -151,16 +131,19 @@ class VideoGenerator:
                 stdin=subprocess.PIPE,
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
-                startupinfo=_STARTUPINFO   # ← kein CMD-Fenster
+                startupinfo=_STARTUPINFO
             )
             write_frame = lambda f: ff_proc.stdin.write(f.tobytes())
         else:
-            # Fallback ohne FFmpeg
             ff_proc = None
             fourcc  = cv2.VideoWriter_fourcc(*"mp4v")
             writer  = cv2.VideoWriter(tmp_video, fourcc, fps, (w, h))
             write_frame = lambda f: writer.write(f)
 
+        # schwarzer Frame für Fades
+        black = np.zeros((h, w, 3), dtype=np.uint8)
+
+        # ── Frames rendern ────────────────────────────────────────────
         bg_frame_idx = 0
         elapsed      = 0.0
 
@@ -183,6 +166,7 @@ class VideoGenerator:
                     else:
                         bg = bg_static.copy()
 
+                    # ── Frame-Inhalt ───────────────────────────────────
                     if seg_type == "timer":
                         frame = self._draw_timer_and_subtitle(
                             bg.copy(), time_left, cfg, w, h,
@@ -192,14 +176,33 @@ class VideoGenerator:
                         slide      = slider_imgs[img_idx]
                         pos_in_seg = f / fps
 
+                        # Fade-in: Timer bleibt im Hintergrund sichtbar
                         if fade_dur > 0 and pos_in_seg < fade_dur:
                             a = pos_in_seg / fade_dur
-                            frame = cv2.addWeighted(slide, a, bg, 1 - a, 0)
+                            timer_bg = self._draw_timer_and_subtitle(
+                                bg.copy(), time_left, cfg, w, h,
+                                get_font, font_path, sub_font_path)
+                            frame = cv2.addWeighted(slide, a, timer_bg, 1 - a, 0)
+                        # Fade-out: Timer bleibt im Hintergrund sichtbar
                         elif fade_dur > 0 and pos_in_seg > seg_dur - fade_dur:
                             a = (seg_dur - pos_in_seg) / fade_dur
-                            frame = cv2.addWeighted(slide, a, bg, 1 - a, 0)
+                            timer_bg = self._draw_timer_and_subtitle(
+                                bg.copy(), time_left, cfg, w, h,
+                                get_font, font_path, sub_font_path)
+                            frame = cv2.addWeighted(slide, a, timer_bg, 1 - a, 0)
                         else:
                             frame = slide.copy()
+
+                    # ── Start-Fade (Fade-in von Schwarz) ──────────────
+                    if intro_fade and elapsed < intro_fade_dur:
+                        a = elapsed / intro_fade_dur
+                        frame = cv2.addWeighted(frame, a, black, 1 - a, 0)
+
+                    # ── Ende-Fade (Fade-out zu Schwarz) ───────────────
+                    if outro_fade and elapsed > total_sec - outro_fade_dur:
+                        a = (total_sec - elapsed) / outro_fade_dur
+                        a = max(0.0, min(1.0, a))
+                        frame = cv2.addWeighted(frame, a, black, 1 - a, 0)
 
                     write_frame(frame)
                     elapsed += 1.0 / fps
@@ -221,7 +224,7 @@ class VideoGenerator:
             if bg_cap:
                 bg_cap.release()
 
-        # ── Audio einmischen ───────────────────────────────────────────
+        # ── Audio einmischen ──────────────────────────────────────────
         if cfg.get("music_path") and ffmpeg_path:
             self.cb(0.98, "🎵 Mische Audio …", frame_info=(total_frames, total_frames))
             self._mix_audio(tmp_video, out_path, total_sec, cfg, ffmpeg_path)
@@ -241,17 +244,14 @@ class VideoGenerator:
         pre_timer = total_sec - slider_from
         if pre_timer > 0:
             segs.append(("timer", pre_timer))
-
         zone_dur = slider_from - slider_until
         if zone_dur > 0 and slider_imgs:
             segs.extend(self._build_slider_zone(
                 zone_dur, slider_imgs, img_dur, timer_between, slider_loop))
         elif zone_dur > 0:
             segs.append(("timer", zone_dur))
-
         if slider_until > 0:
             segs.append(("timer", slider_until))
-
         return segs
 
     def _build_slider_zone(self, zone_dur, slider_imgs,
@@ -259,7 +259,6 @@ class VideoGenerator:
         segs  = []
         n     = len(slider_imgs)
         used  = 0.0
-
         if not slider_loop:
             for i in range(n):
                 if used >= zone_dur:
@@ -286,7 +285,6 @@ class VideoGenerator:
                     segs.append(("timer", dur_t))
                     used += dur_t
                 img_idx += 1
-
         return segs
 
     # ── TIMER + UNTERTITEL ZEICHNEN ───────────────────────────────────
@@ -295,7 +293,6 @@ class VideoGenerator:
         time_left  = max(0, time_left)
         m          = int(time_left // 60)
         s          = int(time_left % 60)
-        timer_text = f"{m:02d}:{s:02d}"
 
         timer_size = int(min(w, h) * 0.18)
         timer_font = get_font(font_path, timer_size)
@@ -303,10 +300,30 @@ class VideoGenerator:
         pil_img = Image.fromarray(cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB))
         draw    = ImageDraw.Draw(pil_img)
 
-        bbox_t = draw.textbbox((0, 0), timer_text, font=timer_font)
-        tw     = bbox_t[2] - bbox_t[0]
-        th     = bbox_t[3] - bbox_t[1]
+        # ── Timer zentriert mit festem Colon ──────────────────────────
+        # Jede Sektion (MM, :, SS) wird separat gemessen und positioniert,
+        # sodass der Doppelpunkt immer exakt in der Mitte sitzt.
+        mm_str = f"{m:02d}"
+        ss_str = f"{s:02d}"
+        col_str = ":"
 
+        bbox_mm  = draw.textbbox((0, 0), mm_str,  font=timer_font)
+        bbox_col = draw.textbbox((0, 0), col_str, font=timer_font)
+        bbox_ss  = draw.textbbox((0, 0), ss_str,  font=timer_font)
+
+        mm_w  = bbox_mm[2]  - bbox_mm[0]
+        col_w = bbox_col[2] - bbox_col[0]
+        ss_w  = bbox_ss[2]  - bbox_ss[0]
+        th    = bbox_mm[3]  - bbox_mm[1]   # Höhe (alle gleich)
+
+        total_w   = mm_w + col_w + ss_w
+        start_x   = (w - total_w) // 2
+
+        mm_x  = start_x
+        col_x = start_x + mm_w
+        ss_x  = start_x + mm_w + col_w
+
+        # Untertitel-Daten sammeln
         sub_enabled = cfg.get("subtitle_enabled", False)
         sub_lines   = []
         sub_font    = None
@@ -318,7 +335,8 @@ class VideoGenerator:
                 sub_font  = get_font(sub_font_path, sub_size)
                 sub_lines = [ln for ln in raw.splitlines() if ln.strip()]
 
-        gap          = int(min(w, h) * 0.03)
+        # Gesamthöhe berechnen für vertikale Zentrierung
+        gap          = int(min(w, h) * 0.11)   # Abstand Timer → Untertitel
         line_spacing = int(min(w, h) * 0.012)
         total_height = th
         sub_data     = []
@@ -333,18 +351,27 @@ class VideoGenerator:
                 if i < len(sub_lines) - 1:
                     total_height += line_spacing
 
+        # Y-Position: alles vertikal zentrieren
         start_y = (h - total_height) // 2
+        ty      = start_y - bbox_mm[1]   # Korrektur des textbbox-Offsets
 
+        # Farbe
         hx_t        = cfg["font_color"].lstrip("#")
         rt, gt, bt  = int(hx_t[0:2], 16), int(hx_t[2:4], 16), int(hx_t[4:6], 16)
         timer_color = (rt, gt, bt)
+        shadow      = max(3, timer_size // 30)
 
-        tx     = (w - tw) // 2 - bbox_t[0]
-        ty     = start_y - bbox_t[1]
-        shadow = max(3, timer_size // 30)
-        draw.text((tx + shadow, ty + shadow), timer_text, font=timer_font, fill=(0, 0, 0, 180))
-        draw.text((tx, ty), timer_text, font=timer_font, fill=timer_color)
+        # MM zeichnen
+        draw.text((mm_x  - bbox_mm[0]  + shadow, ty + shadow), mm_str,  font=timer_font, fill=(0,0,0,180))
+        draw.text((mm_x  - bbox_mm[0],            ty),          mm_str,  font=timer_font, fill=timer_color)
+        # : zeichnen
+        draw.text((col_x - bbox_col[0] + shadow, ty + shadow), col_str, font=timer_font, fill=(0,0,0,180))
+        draw.text((col_x - bbox_col[0],           ty),          col_str, font=timer_font, fill=timer_color)
+        # SS zeichnen
+        draw.text((ss_x  - bbox_ss[0]  + shadow, ty + shadow), ss_str,  font=timer_font, fill=(0,0,0,180))
+        draw.text((ss_x  - bbox_ss[0],            ty),          ss_str,  font=timer_font, fill=timer_color)
 
+        # Untertitel zeichnen
         if sub_data:
             hx_s       = cfg.get("subtitle_color", "#FFFFFF").lstrip("#")
             rs, gs, bs = int(hx_s[0:2], 16), int(hx_s[2:4], 16), int(hx_s[4:6], 16)
@@ -355,9 +382,8 @@ class VideoGenerator:
                 lw  = bbox_s[2] - bbox_s[0]
                 lx  = (w - lw) // 2 - bbox_s[0]
                 ly  = cur_y - bbox_s[1]
-                draw.text((lx + sub_shadow, ly + sub_shadow),
-                          line, font=sub_font, fill=(0, 0, 0, 160))
-                draw.text((lx, ly), line, font=sub_font, fill=sub_color)
+                draw.text((lx + sub_shadow, ly + sub_shadow), line, font=sub_font, fill=(0,0,0,160))
+                draw.text((lx, ly),                           line, font=sub_font, fill=sub_color)
                 cur_y += lh + (line_spacing if i < len(sub_data) - 1 else 0)
 
         return cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
@@ -370,13 +396,6 @@ class VideoGenerator:
         fade_dur   = cfg["music_fade_dur"]
         fade_start = max(0, total_sec - fade_dur)
 
-        # Debug-Log: welches FFmpeg wird verwendet?
-        log_path = out_path.replace(".mp4", "_ffmpeg.log")
-        version  = _get_ffmpeg_version(ffmpeg_path)
-        with open(log_path, "w", encoding="utf-8") as lf:
-            lf.write(f"FFmpeg path:    {ffmpeg_path}\n")
-            lf.write(f"FFmpeg version: {version}\n\n")
-
         af_parts = []
         if fadeout:
             af_parts.append(f"afade=t=out:st={fade_start:.2f}:d={fade_dur}")
@@ -388,25 +407,21 @@ class VideoGenerator:
             ffmpeg_path, "-y",
             "-i", tmp_video,
             *loop_flag,
-            "-vn",                        # Cover-Bild in der MP3 ignorieren
+            "-vn",
             "-i", music,
             "-filter_complex",
-                f"[1:a]asetpts=PTS-STARTPTS,{af_str}[aout]",  # Offset auf 0 setzen, dann fade
+                f"[1:a]asetpts=PTS-STARTPTS,{af_str}[aout]",
             "-map", "0:v", "-map", "[aout]",
             "-c:v", "copy",
             "-c:a", "aac",
-            "-ac", "2",                   # Stereo erzwingen
-            "-ar", "44100",               # Samplerate fixieren
+            "-ac", "2",
+            "-ar", "44100",
             "-shortest", out_path
         ]
 
-        # stderr in Log-Datei schreiben
-        with open(log_path, "a", encoding="utf-8") as lf:
-            lf.write(f"CMD: {' '.join(cmd)}\n\n")
+        with open(os.devnull, "w") as devnull:
             subprocess.run(
-                cmd,
-                check=True,
-                stdout=subprocess.DEVNULL,
-                stderr=lf,
+                cmd, check=True,
+                stdout=subprocess.DEVNULL, stderr=devnull,
                 startupinfo=_STARTUPINFO
             )

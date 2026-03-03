@@ -1,9 +1,8 @@
-- !! ffmpeg so einbauen, das dies in der ex nicht mehr nötig ist und die Audio funkionen zur verfügung stehen
-
-- fate-in beim start
 - untertitel, mehr abstand zu dem Timer
+- Der : vom Timer soll immer perfekt mittig sein, aktuell hängt das von den ziffern rechts favon ab. Beim wchesl vin 1 zu 0 verschiebt sich der ganze timer immer ein bisschen
 - beim fate out vor den Bildern und nach den Bildern, soll der Timer schon zu sehen sein (Aktuell erst nach dem der fate beendet ist)
-- Timer soll immer schon auf dem Hintergrund sein, wenn der fate zu dem Bilder slider beginnt
+- ausgabe datei soll so benannt sein: "Intro - dd.mm.yyyy" hier das aktuelle datum einfügen
+- Beim start und ende soll man auch ein video fate inj/out hinzufügen können, eine checkbos ob man das möchte und eine zeitangebe, standart 3 sekunden
+
 - einfacher Modus / erweiterter Modus
 - end screnen hinzufügen (Herzlich wilkommen)
-- ausgabe datei soll so benannt sein: "Intro - dd.mm.yyyy"
