@@ -5,3 +5,4 @@
 - beim fate out vor den Bildern und nach den Bildern, soll der Timer schon zu sehen sein (Aktuell erst nach dem der fate beendet ist)
 - Timer soll immer schon auf dem Hintergrund sein, wenn der fate zu dem Bilder slider beginnt
 - einfacher Modus / erweiterter Modus
+- end screnen hinzufügen (Herzlich wilkommen)

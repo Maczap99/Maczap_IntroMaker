@@ -1,5 +1,29 @@
-import cv2, numpy as np, os, traceback, subprocess, shutil
+import cv2, numpy as np, os, traceback, subprocess, shutil, sys
 from PIL import Image, ImageDraw, ImageFont
+
+
+def _get_ffmpeg() -> str | None:
+    """
+    Sucht ffmpeg.exe in folgender Reihenfolge:
+      1. assets/bin/ffmpeg.exe  (mitgeliefert, auch in der EXE)
+      2. System-PATH             (falls der User ffmpeg global installiert hat)
+    Gibt den Pfad zurück oder None wenn nicht gefunden.
+    """
+    # 1) Mitgeliefertes ffmpeg neben der EXE / im _MEIPASS-Ordner
+    if hasattr(sys, "_MEIPASS"):
+        base = sys._MEIPASS
+    else:
+        base = os.path.dirname(os.path.abspath(__file__))
+        # Im Entwicklungsmodus liegt assets/ eine Ebene höher (scripts/../assets)
+        base = os.path.join(base, "..")
+
+    bundled = os.path.join(base, "assets", "bin", "ffmpeg.exe")
+    if os.path.isfile(bundled):
+        return os.path.normpath(bundled)
+
+    # 2) System-PATH als Fallback
+    found = shutil.which("ffmpeg")
+    return found  # None wenn gar nicht vorhanden
 
 
 class VideoGenerator:
@@ -49,10 +73,10 @@ class VideoGenerator:
                 pass
 
         # ── Einstellungen ─────────────────────────────────────────────
-        slider_from    = cfg["slider_from"]  * 60   # Sek: Slider beginnt
-        slider_until   = cfg["slider_until"] * 60   # Sek: Slider endet
-        img_dur        = float(cfg["img_duration"])  # Sek pro Bild
-        timer_between  = float(cfg.get("timer_between", 0))  # Sek Timer zwischen Bildern
+        slider_from    = cfg["slider_from"]  * 60
+        slider_until   = cfg["slider_until"] * 60
+        img_dur        = float(cfg["img_duration"])
+        timer_between  = float(cfg.get("timer_between", 0))
         slider_loop    = cfg.get("slider_loop", True)
         fade_dur       = float(cfg["fade_duration"])
 
@@ -74,9 +98,6 @@ class VideoGenerator:
             return self._pil_fonts[key]
 
         # ── Zeitplan berechnen ────────────────────────────────────────
-        # Wir bauen einen Plan: Liste von Segmenten mit (typ, dauer_in_sek)
-        # Typ: "timer" oder index in slider_imgs
-        # Die reale Zeit (time_left) läuft immer weiter — unabhängig vom Segment
         segments = self._build_segments(
             total_sec, slider_from, slider_until,
             slider_imgs, img_dur, timer_between, slider_loop)
@@ -88,8 +109,7 @@ class VideoGenerator:
         fourcc       = cv2.VideoWriter_fourcc(*"mp4v")
         writer       = cv2.VideoWriter(tmp_video, fourcc, fps, (w, h))
         bg_frame_idx = 0
-
-        elapsed = 0.0   # Sekunden ab Videostart
+        elapsed      = 0.0
 
         for seg_type, seg_dur in segments:
             seg_frames = int(seg_dur * fps)
@@ -97,7 +117,6 @@ class VideoGenerator:
             for f in range(seg_frames):
                 time_left = max(0.0, total_sec - elapsed)
 
-                # Hintergrund
                 if bg_cap:
                     if bg_frame_idx >= bg_total - 1:
                         bg_cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
@@ -114,18 +133,14 @@ class VideoGenerator:
                     frame = bg.copy()
                     frame = self._draw_timer_and_subtitle(
                         frame, time_left, cfg, w, h, get_font, font_path, sub_font_path)
-
                 else:
-                    # Bild-Segment: seg_type ist der Index in slider_imgs
-                    img_idx = seg_type % len(slider_imgs)
-                    slide   = slider_imgs[img_idx]
-                    pos_in_seg = f / fps   # Position innerhalb dieses Segments
+                    img_idx    = seg_type % len(slider_imgs)
+                    slide      = slider_imgs[img_idx]
+                    pos_in_seg = f / fps
 
-                    # Fade-in
                     if fade_dur > 0 and pos_in_seg < fade_dur:
                         a = pos_in_seg / fade_dur
                         frame = cv2.addWeighted(slide, a, bg, 1 - a, 0)
-                    # Fade-out
                     elif fade_dur > 0 and pos_in_seg > seg_dur - fade_dur:
                         a = (seg_dur - pos_in_seg) / fade_dur
                         frame = cv2.addWeighted(slide, a, bg, 1 - a, 0)
@@ -149,8 +164,9 @@ class VideoGenerator:
             bg_cap.release()
 
         # ── Audio ─────────────────────────────────────────────────────
-        if cfg.get("music_path") and shutil.which("ffmpeg"):
-            self._mix_audio(tmp_video, out_path, total_sec, cfg)
+        ffmpeg_path = _get_ffmpeg()
+        if cfg.get("music_path") and ffmpeg_path:
+            self._mix_audio(tmp_video, out_path, total_sec, cfg, ffmpeg_path)
             try:
                 os.remove(tmp_video)
             except:
@@ -163,38 +179,19 @@ class VideoGenerator:
     # ── ZEITPLAN BUILDER ──────────────────────────────────────────────
     def _build_segments(self, total_sec, slider_from, slider_until,
                          slider_imgs, img_dur, timer_between, slider_loop):
-        """
-        Gibt eine Liste von (typ, dauer) zurück.
-        typ = "timer"  → Countdown anzeigen
-        typ = int      → Bild-Index anzeigen
-
-        Zeitachse (time_left läuft rückwärts):
-          total_sec → slider_from : Timer
-          slider_from → slider_until : Slider-Zone
-          slider_until → 0           : Timer
-
-        Innerhalb der Slider-Zone:
-          Loop=False: alle Bilder einmal, dazwischen timer_between Sek Timer
-          Loop=True:  Bild → timer_between Timer → nächstes Bild → ... bis Zone voll
-        """
         segs = []
-
-        # Phase 1: Timer von Start bis slider_from
         pre_timer = total_sec - slider_from
         if pre_timer > 0:
             segs.append(("timer", pre_timer))
 
-        # Phase 2: Slider-Zone
         zone_dur = slider_from - slider_until
         if zone_dur > 0 and slider_imgs:
             slider_segs = self._build_slider_zone(
                 zone_dur, slider_imgs, img_dur, timer_between, slider_loop)
             segs.extend(slider_segs)
         elif zone_dur > 0:
-            # Keine Bilder → einfach Timer
             segs.append(("timer", zone_dur))
 
-        # Phase 3: Timer von slider_until bis 0
         if slider_until > 0:
             segs.append(("timer", slider_until))
 
@@ -202,49 +199,35 @@ class VideoGenerator:
 
     def _build_slider_zone(self, zone_dur, slider_imgs,
                             img_dur, timer_between, slider_loop):
-        """Baut die Segmente innerhalb der Slider-Zone."""
         segs  = []
         n     = len(slider_imgs)
-        used  = 0.0   # bereits verplante Sekunden
+        used  = 0.0
 
         if not slider_loop:
-            # ── Loop=False: alle Bilder genau einmal ──────────────────
             for i in range(n):
                 if used >= zone_dur:
                     break
-                # Bild
                 dur = min(img_dur, zone_dur - used)
                 segs.append((i, dur))
                 used += dur
-                # Timer zwischen Bildern (außer nach dem letzten)
                 if i < n - 1 and timer_between > 0 and used < zone_dur:
                     dur_t = min(timer_between, zone_dur - used)
                     segs.append(("timer", dur_t))
                     used += dur_t
-            # Restzeit als Timer
             rest = zone_dur - used
             if rest > 0.05:
                 segs.append(("timer", rest))
-
         else:
-            # ── Loop=True: Bild → Timer → Bild → Timer → ... ──────────
-            # Runde: img_dur + timer_between Sek
-            cycle = img_dur + timer_between
             img_idx = 0
             while used < zone_dur - 0.05:
                 remaining = zone_dur - used
-
-                # Bild
                 dur_img = min(img_dur, remaining)
                 segs.append((img_idx % n, dur_img))
                 used += dur_img
-
-                # Timer zwischen Bildern
                 if timer_between > 0 and used < zone_dur - 0.05:
                     dur_t = min(timer_between, zone_dur - used)
                     segs.append(("timer", dur_t))
                     used += dur_t
-
                 img_idx += 1
 
         return segs
@@ -322,7 +305,7 @@ class VideoGenerator:
         return cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
 
     # ── AUDIO ─────────────────────────────────────────────────────────
-    def _mix_audio(self, tmp_video, out_path, total_sec, cfg):
+    def _mix_audio(self, tmp_video, out_path, total_sec, cfg, ffmpeg_path):
         music      = cfg["music_path"]
         loop       = cfg["music_loop"]
         fadeout    = cfg["music_fadeout"]
@@ -337,7 +320,7 @@ class VideoGenerator:
 
         loop_flag = ["-stream_loop", "-1"] if loop else []
         cmd = [
-            "ffmpeg", "-y",
+            ffmpeg_path, "-y",       # ← dynamischer Pfad statt hartkodiertem "ffmpeg"
             "-i", tmp_video,
             *loop_flag, "-i", music,
             "-filter_complex", f"[1:a]{af_str}[aout]",

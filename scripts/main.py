@@ -12,6 +12,7 @@ from splash          import SplashScreen
 from font_picker     import FontPickerWidget
 from video_generator import VideoGenerator
 from config_manager  import load as cfg_load, save as cfg_save, reset as cfg_reset, DEFAULTS
+from video_generator import _get_ffmpeg
 
 
 def resource_path(relative_path):
@@ -933,6 +934,16 @@ class IntroMaker(QMainWindow):
         if not self._out_path:
             ThemedDialog.error(self, "Fehler", "Bitte einen Speicherort wählen!",
                             dark=(self._theme == "dark"))
+            return
+
+        
+        if self._music_path and not _get_ffmpeg():
+            ThemedDialog.error(
+                self, "FFmpeg fehlt",
+                "Für Hintergrundmusik wird FFmpeg benötigt.\n\n"
+                "Bitte ffmpeg.exe unter assets/bin/ ablegen\n"
+                "oder FFmpeg global installieren (winget install ffmpeg).",
+                dark=(self._theme == "dark"))
             return
 
         self._save_settings()
