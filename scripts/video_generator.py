@@ -105,9 +105,12 @@ class VideoGenerator:
         total_frames = int(total_sec * fps)
 
         # ── Output ────────────────────────────────────────────────────
-        tmp_video    = out_path.replace(".mp4", "_noaudio.mp4")
-        fourcc       = cv2.VideoWriter_fourcc(*"mp4v")
-        writer       = cv2.VideoWriter(tmp_video, fourcc, fps, (w, h))
+        # Rohe Frames als AVI zwischenspeichern (verlustfrei, kein Codec-Problem)
+        # FFmpeg übernimmt danach die finale H.264-Kodierung
+        tmp_raw   = out_path.replace(".mp4", "_raw.avi")
+        tmp_video = out_path.replace(".mp4", "_noaudio.mp4")
+        fourcc    = cv2.VideoWriter_fourcc(*"MJPG")
+        writer    = cv2.VideoWriter(tmp_raw, fourcc, fps, (w, h))
         bg_frame_idx = 0
         elapsed      = 0.0
 
@@ -163,8 +166,19 @@ class VideoGenerator:
         if bg_cap:
             bg_cap.release()
 
-        # ── Audio ─────────────────────────────────────────────────────
+        # ── Video mit FFmpeg zu H.264 konvertieren ─────────────────────
         ffmpeg_path = _get_ffmpeg()
+        if ffmpeg_path:
+            self._encode_video(tmp_raw, tmp_video, ffmpeg_path)
+            try:
+                os.remove(tmp_raw)
+            except:
+                pass
+        else:
+            # Fallback: AVI direkt umbenennen (kein H.264, aber besser als mp4v)
+            tmp_video = tmp_raw
+
+        # ── Audio einmischen ───────────────────────────────────────────
         if cfg.get("music_path") and ffmpeg_path:
             self._mix_audio(tmp_video, out_path, total_sec, cfg, ffmpeg_path)
             try:
