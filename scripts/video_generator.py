@@ -380,18 +380,23 @@ class VideoGenerator:
         af_parts = []
         if fadeout:
             af_parts.append(f"afade=t=out:st={fade_start:.2f}:d={fade_dur}")
-        af_parts.append(f"atrim=0:{total_sec},asetpts=PTS-STARTPTS")
-        af_str = ",".join(af_parts)
+        af_parts.append(f"atrim=0:{total_sec}")
+        af_str = ",".join(af_parts) if af_parts else "anull"
 
         loop_flag = ["-stream_loop", "-1"] if loop else []
         cmd = [
             ffmpeg_path, "-y",
             "-i", tmp_video,
-            *loop_flag, "-i", music,
-            "-filter_complex", f"[1:a]{af_str}[aout]",
+            *loop_flag,
+            "-vn",                        # Cover-Bild in der MP3 ignorieren
+            "-i", music,
+            "-filter_complex",
+                f"[1:a]asetpts=PTS-STARTPTS,{af_str}[aout]",  # Offset auf 0 setzen, dann fade
             "-map", "0:v", "-map", "[aout]",
             "-c:v", "copy",
             "-c:a", "aac",
+            "-ac", "2",                   # Stereo erzwingen
+            "-ar", "44100",               # Samplerate fixieren
             "-shortest", out_path
         ]
 
