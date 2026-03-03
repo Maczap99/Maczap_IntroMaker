@@ -23,14 +23,30 @@ def _get_ffmpeg() -> str | None:
 
 
 def _run_ffmpeg(cmd: list):
-    """FFmpeg ausführen — kein CMD-Fenster, kein Output."""
-    subprocess.run(
+    """FFmpeg ausführen — kein CMD-Fenster, Fehler-Output wird geloggt."""
+    result = subprocess.run(
         cmd,
         check=True,
         stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
+        stderr=subprocess.PIPE,          # stderr aufzeichnen statt wegwerfen
         startupinfo=_STARTUPINFO
     )
+    return result
+
+
+def _get_ffmpeg_version(ffmpeg_path: str) -> str:
+    """Gibt die FFmpeg-Version als String zurück (für Debug-Log)."""
+    try:
+        r = subprocess.run(
+            [ffmpeg_path, "-version"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            startupinfo=_STARTUPINFO
+        )
+        first_line = r.stdout.decode(errors="ignore").splitlines()[0]
+        return first_line
+    except:
+        return "unbekannt"
 
 
 class VideoGenerator:
@@ -349,6 +365,13 @@ class VideoGenerator:
         fade_dur   = cfg["music_fade_dur"]
         fade_start = max(0, total_sec - fade_dur)
 
+        # Debug-Log: welches FFmpeg wird verwendet?
+        log_path = out_path.replace(".mp4", "_ffmpeg.log")
+        version  = _get_ffmpeg_version(ffmpeg_path)
+        with open(log_path, "w", encoding="utf-8") as lf:
+            lf.write(f"FFmpeg path:    {ffmpeg_path}\n")
+            lf.write(f"FFmpeg version: {version}\n\n")
+
         af_parts = []
         if fadeout:
             af_parts.append(f"afade=t=out:st={fade_start:.2f}:d={fade_dur}")
@@ -356,7 +379,7 @@ class VideoGenerator:
         af_str = ",".join(af_parts)
 
         loop_flag = ["-stream_loop", "-1"] if loop else []
-        _run_ffmpeg([
+        cmd = [
             ffmpeg_path, "-y",
             "-i", tmp_video,
             *loop_flag, "-i", music,
@@ -365,4 +388,15 @@ class VideoGenerator:
             "-c:v", "copy",
             "-c:a", "aac",
             "-shortest", out_path
-        ])
+        ]
+
+        # stderr in Log-Datei schreiben
+        with open(log_path, "a", encoding="utf-8") as lf:
+            lf.write(f"CMD: {' '.join(cmd)}\n\n")
+            subprocess.run(
+                cmd,
+                check=True,
+                stdout=subprocess.DEVNULL,
+                stderr=lf,
+                startupinfo=_STARTUPINFO
+            )
