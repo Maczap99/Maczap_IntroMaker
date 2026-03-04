@@ -357,8 +357,8 @@ class IntroMaker(QMainWindow):
 
         self._slider_from_step   = Stepper(1, 120, 4,  step=1, fmt="{} min")
         self._slider_until_step  = Stepper(0, 120, 1,  step=1, fmt="{} min")
-        self._img_dur_step       = Stepper(5, 120, 10, step=5, fmt="{} s")
-        self._timer_between_step = Stepper(0, 120, 15, step=5, fmt="{} s")
+        self._img_dur_step       = Stepper(5, 120, 10, step=1, fmt="{} s")
+        self._timer_between_step = Stepper(0, 120, 15, step=1, fmt="{} s")
         self._slider_loop_chk    = StyledCheckBox("Bilder wiederholen bis Slider-Ende")
         self._slider_loop_chk.setChecked(True)
 
