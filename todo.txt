@@ -1,3 +1,5 @@
 - Output Option hinzufügen (Kein timer, kein Abschluss Bild)
 es soll nur das Video/Bild mit Musik und einem Outro Titel in der Mitte angezeigt werden
 und eine fate in fate out Sekunden Einstellung
+
+- Aus dem Slider bilder entfernbar machen
