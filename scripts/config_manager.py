@@ -31,15 +31,15 @@ DEFAULTS = {
     "music_fade_dur":     4,
 
     # Video fade
-    "intro_fade_enabled": True,
+    "intro_fade_enabled": False,
     "intro_fade_dur":     3,
-    "outro_fade_enabled": True,
+    "outro_fade_enabled": False,
     "outro_fade_dur":     3,
 
     # Slider timing
     "slider_from":        4,
     "slider_until":       1,
-    "img_duration":       15,
+    "img_duration":       10,
     "timer_between":      15,
     "slider_loop":        True,
 
@@ -56,6 +56,15 @@ DEFAULTS = {
     "subtitle_size":      40,
     "subtitle_offset":    2,           # extra line-heights of gap below timer
     "subtitle_color":     "#FFFFFF",
+
+    # Outro slide (shown after timer reaches 0)
+    "outro_slide_enabled":    False,
+    "outro_slide_text":       "Herzlich Willkommen",
+    "outro_slide_color":      "#000000",
+    "outro_slide_font_size":  80,
+    "outro_slide_duration":   5,       # seconds the slide is visible
+    "outro_slide_fade_in":    1,       # fade-in duration in seconds
+    "outro_slide_fade_out":   1,       # fade-out duration in seconds
 }
 
 

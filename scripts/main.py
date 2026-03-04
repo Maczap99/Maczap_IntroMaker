@@ -392,9 +392,11 @@ class IntroMaker(QMainWindow):
         self._outro_slide_dur_step    = Stepper(1, 60, 5,  step=1,   fmt="{} s")
         self._outro_slide_fadein_step = Stepper(0, 10, 1,  step=0.5, fmt="{} s")
         self._outro_slide_fadeout_step= Stepper(0, 10, 1,  step=0.5, fmt="{} s")
+        self._outro_slide_font_size_step = Stepper(10, 200, 80, step=2, fmt="{} pt")
         self._outro_slide_dur_step.setEnabled(False)
         self._outro_slide_fadein_step.setEnabled(False)
         self._outro_slide_fadeout_step.setEnabled(False)
+        self._outro_slide_font_size_step.setEnabled(False)
 
     # ── UI build ───────────────────────────────────────────────────────────────
     def _build_ui(self):
@@ -431,7 +433,6 @@ class IntroMaker(QMainWindow):
         self._header_logo_lbl.setStyleSheet("background: transparent;")
         layout.addWidget(self._header_logo_lbl)
         layout.addStretch()
-
         # Save button — only visible on advanced page
         self._save_btn = QPushButton("💾  Speichern")
         self._save_btn.setObjectName("saveBtn")
@@ -440,7 +441,6 @@ class IntroMaker(QMainWindow):
         self._save_btn.clicked.connect(self._manual_save)
         self._save_btn.setVisible(False)
         layout.addWidget(self._save_btn)
-
         # Reset button — only visible on advanced page
         self._reset_btn = QPushButton("↺  Zurücksetzen")
         self._reset_btn.setObjectName("resetBtn")
@@ -449,7 +449,6 @@ class IntroMaker(QMainWindow):
         self._reset_btn.clicked.connect(self._confirm_reset)
         self._reset_btn.setVisible(False)
         layout.addWidget(self._reset_btn)
-
         # Mode toggle button
         self._mode_btn = QPushButton()
         self._mode_btn.setObjectName("themeBtn")
@@ -457,7 +456,6 @@ class IntroMaker(QMainWindow):
         self._mode_btn.setFixedHeight(38)
         self._mode_btn.clicked.connect(self._toggle_mode)
         layout.addWidget(self._mode_btn)
-
         # Theme toggle button
         self._theme_btn = QPushButton()
         self._theme_btn.setObjectName("themeBtn")
@@ -747,12 +745,14 @@ class IntroMaker(QMainWindow):
         layout.addWidget(self._settings_block("🖼", "Abschluss-Bild", [
             text_row,
             text_edit_row,
+            self._settings_row("Schriftgröße", self._outro_slide_font_size_step,
+                               "Textgröße auf dem Abschluss-Bild"),
             self._settings_row("Sichtbar für", self._outro_slide_dur_step,
                                "Wie lange das Abschluss-Bild angezeigt wird"),
             self._settings_row("Fade-In Dauer", self._outro_slide_fadein_step,
-                               "Einblenden vom Timer zum Abschluss-Bild"),
+                               "Crossfade vom Timer zum Abschluss-Bild"),
             self._settings_row("Fade-Out Dauer", self._outro_slide_fadeout_step,
-                               "Ausblenden des Abschluss-Bilds (Musik + Video)"),
+                               "Ausblenden des Abschluss-Bilds zu Schwarz"),
         ]))
 
     # ── Bottom bar ─────────────────────────────────────────────────────────────
@@ -821,6 +821,7 @@ class IntroMaker(QMainWindow):
             "outro_slide_enabled":     self._outro_slide_chk.isChecked(),
             "outro_slide_text":        self._outro_slide_edit.toPlainText(),
             "outro_slide_color":       self._outro_slide_color,
+            "outro_slide_font_size":   self._outro_slide_font_size_step.value(),
             "outro_slide_duration":    self._outro_slide_dur_step.value(),
             "outro_slide_fade_in":     self._outro_slide_fadein_step.value(),
             "outro_slide_fade_out":    self._outro_slide_fadeout_step.value(),
@@ -881,10 +882,11 @@ class IntroMaker(QMainWindow):
         self._outro_slide_dur_step.set_value(s.get("outro_slide_duration", 5))
         self._outro_slide_fadein_step.set_value(s.get("outro_slide_fade_in", 1))
         self._outro_slide_fadeout_step.set_value(s.get("outro_slide_fade_out", 1))
+        self._outro_slide_font_size_step.set_value(s.get("outro_slide_font_size", 80))
         _outro_widgets = [
             self._outro_slide_edit, self._outro_slide_color_btn,
             self._outro_slide_dur_step, self._outro_slide_fadein_step,
-            self._outro_slide_fadeout_step,
+            self._outro_slide_fadeout_step, self._outro_slide_font_size_step,
         ]
         for w in _outro_widgets:
             w.setEnabled(outro_on)
@@ -1084,7 +1086,7 @@ class IntroMaker(QMainWindow):
         on = (state == 2)
         for w in [self._outro_slide_edit, self._outro_slide_color_btn,
                   self._outro_slide_dur_step, self._outro_slide_fadein_step,
-                  self._outro_slide_fadeout_step]:
+                  self._outro_slide_fadeout_step, self._outro_slide_font_size_step]:
             w.setEnabled(on)
 
     # ── Render ─────────────────────────────────────────────────────────────────
@@ -1141,6 +1143,8 @@ class IntroMaker(QMainWindow):
             "outro_slide_enabled":  self._outro_slide_chk.isChecked(),
             "outro_slide_text":     self._outro_slide_edit.toPlainText().strip(),
             "outro_slide_color":    self._outro_slide_color,
+            "outro_slide_font_size": self._outro_slide_font_size_step.value(),
+            "outro_slide_font":     self._font_picker.get_font_path(),
             "outro_slide_duration": self._outro_slide_dur_step.value(),
             "outro_slide_fade_in":  self._outro_slide_fadein_step.value(),
             "outro_slide_fade_out": self._outro_slide_fadeout_step.value(),

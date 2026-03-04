@@ -84,7 +84,10 @@ class VideoGenerator:
 
         # Start/end fades
         intro_fade     = cfg.get("intro_fade_enabled", False)
-        outro_fade     = cfg.get("outro_fade_enabled", False)
+        # If outro slide is active, we crossfade into it instead of fading to black
+        outro_slide_active = (cfg.get("outro_slide_enabled", False) and
+                              cfg.get("outro_slide_text", "").strip())
+        outro_fade     = cfg.get("outro_fade_enabled", False) and not outro_slide_active
         intro_fade_dur = float(cfg.get("intro_fade_dur", 3.0))
         outro_fade_dur = float(cfg.get("outro_fade_dur", 3.0))
 
@@ -152,7 +155,9 @@ class VideoGenerator:
             write_frame = lambda f: writer.write(f)
 
         # Black frame used for fades
-        black = np.zeros((h, w, 3), dtype=np.uint8)
+        black      = np.zeros((h, w, 3), dtype=np.uint8)
+        # Holds the last rendered frame — used as crossfade base for outro slide
+        last_frame = black.copy()
 
         # ── Render frames ─────────────────────────────────────────────────────
         bg_frame_idx = 0
@@ -217,6 +222,7 @@ class VideoGenerator:
 
                     write_frame(frame)
                     elapsed += 1.0 / fps
+                    last_frame = frame   # keep reference for outro crossfade
 
                     frame_idx = int(elapsed * fps)
                     if frame_idx % 15 == 0:
@@ -231,23 +237,28 @@ class VideoGenerator:
             outro_enabled  = cfg.get("outro_slide_enabled", False)
             outro_text     = cfg.get("outro_slide_text", "").strip()
             outro_color    = cfg.get("outro_slide_color", "#000000")
+            outro_font_size= int(cfg.get("outro_slide_font_size", 80))
+            outro_font_path= cfg.get("outro_slide_font") or font_path
             outro_dur      = float(cfg.get("outro_slide_duration", 5))
             outro_fade_in  = float(cfg.get("outro_slide_fade_in", 1))
             outro_fade_out = float(cfg.get("outro_slide_fade_out", 1))
 
             if outro_enabled and outro_text:
                 outro_base   = self._draw_outro_slide(
-                    outro_text, outro_color, w, h, get_font, font_path)
+                    outro_text, outro_color, outro_font_size,
+                    outro_font_path, w, h, get_font)
                 outro_frames = int(outro_dur * fps)
 
                 for f in range(outro_frames):
                     frame = outro_base.copy()
                     t     = f / fps
 
+                    # Crossfade from last timer frame into the outro slide
                     if outro_fade_in > 0 and t < outro_fade_in:
                         a = t / outro_fade_in
-                        frame = cv2.addWeighted(frame, a, black, 1 - a, 0)
+                        frame = cv2.addWeighted(frame, a, last_frame, 1 - a, 0)
 
+                    # Fade out to black at the end
                     if outro_fade_out > 0 and t > outro_dur - outro_fade_out:
                         a = (outro_dur - t) / outro_fade_out
                         a = max(0.0, min(1.0, a))
@@ -453,22 +464,21 @@ class VideoGenerator:
         return cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
 
     # ── Draw outro slide ──────────────────────────────────────────────────────
-    def _draw_outro_slide(self, text, hex_color, w, h, get_font, font_path):
+    def _draw_outro_slide(self, text, hex_color, font_size, font_path,
+                          w, h, get_font):
         """
-        Renders a white slide with the given text centered on it.
+        Renders a white slide with centered text.
+        Font size and font path are passed explicitly from config.
         Returns a BGR numpy array ready to be written as video frames.
         """
-        # White background
         pil_img = Image.new("RGB", (w, h), color=(255, 255, 255))
         draw    = ImageDraw.Draw(pil_img)
 
-        # Font size: scale relative to frame height for readability
-        font_size = int(min(w, h) * 0.08)
-        font      = get_font(font_path, font_size)
+        font = get_font(font_path, font_size)
 
         # Parse color
         hx = hex_color.lstrip("#")
-        r, g, b = int(hx[0:2], 16), int(hx[2:4], 16), int(hx[4:6], 16)
+        r, g, b    = int(hx[0:2], 16), int(hx[2:4], 16), int(hx[4:6], 16)
         text_color = (r, g, b)
 
         # Support multi-line text
@@ -491,9 +501,8 @@ class VideoGenerator:
         # Draw each line centered
         cur_y = (h - total_h) // 2
         for line, bbox, lw, lh in line_data:
-            x  = (w - lw) // 2 - bbox[0]
-            y  = cur_y - bbox[1]
-            # Subtle shadow
+            x = (w - lw) // 2 - bbox[0]
+            y = cur_y - bbox[1]
             draw.text((x + shadow_off, y + shadow_off), line,
                       font=font, fill=(0, 0, 0, 60))
             draw.text((x, y), line, font=font, fill=text_color)
