@@ -2,7 +2,9 @@ import json, os, sys
 
 APP_NAME = "MaczapIntroMaker"
 
+
 def _config_path() -> str:
+    """Return the full path to the settings JSON file, creating its folder if needed."""
     appdata = os.environ.get("APPDATA")
     if appdata:
         folder = os.path.join(appdata, APP_NAME)
@@ -14,6 +16,7 @@ def _config_path() -> str:
             folder = os.path.join(base, "..", "config")
     os.makedirs(folder, exist_ok=True)
     return os.path.join(folder, "settings.json")
+
 
 DEFAULTS = {
     # UI state
@@ -56,15 +59,19 @@ DEFAULTS = {
     "outro_slide_duration":   5,
     "outro_slide_fade_in":    1,
     "outro_slide_fade_out":   2,
+    # FIX: remember last used output folder so the dialog opens there next time
+    "last_output_folder":     "",
 }
 
+
 def load() -> dict:
+    """Load settings from disk, filling missing keys with DEFAULTS."""
     path = _config_path()
     if os.path.exists(path):
         try:
             with open(path, "r", encoding="utf-8") as f:
                 data = json.load(f)
-            # Fill in any keys added in newer versions
+            # Back-fill any keys that were added in newer versions
             for k, v in DEFAULTS.items():
                 data.setdefault(k, v)
             return data
@@ -72,7 +79,9 @@ def load() -> dict:
             pass
     return dict(DEFAULTS)
 
+
 def save(data: dict):
+    """Persist settings dict to disk as JSON."""
     path = _config_path()
     try:
         with open(path, "w", encoding="utf-8") as f:
@@ -80,7 +89,9 @@ def save(data: dict):
     except Exception as e:
         print(f"[config_manager] Save failed: {e}")
 
+
 def reset() -> dict:
+    """Delete the settings file and return a fresh copy of DEFAULTS."""
     path = _config_path()
     try:
         if os.path.exists(path):
@@ -89,5 +100,7 @@ def reset() -> dict:
         pass
     return dict(DEFAULTS)
 
+
 def get_config_path() -> str:
+    """Return the resolved settings file path (useful for debugging)."""
     return _config_path()

@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QPushButton, QFileDialog, QScrollArea, QFrame,
     QProgressBar, QTextEdit, QSizePolicy, QDialog, QStackedWidget,
-    QColorDialog
+    QColorDialog, QListWidget, QListWidgetItem, QAbstractItemView
 )
 from PyQt5.QtCore import Qt, QThread, pyqtSignal, QObject, QTimer
 from PyQt5.QtGui  import QPixmap, QFont, QColor, QIcon, QPalette
@@ -277,6 +277,8 @@ class IntroMaker(QMainWindow):
         self._bg_image_path = None
         self._music_path    = None
         self._out_path      = None
+        # Restore last used output folder from settings
+        self._last_output_folder = self._settings.get("last_output_folder", "")
         # Background image for the outro slide (optional, overrides bg color)
         self._outro_slide_bg_image_path = None
         # Always start in simple mode regardless of last saved page
@@ -298,7 +300,7 @@ class IntroMaker(QMainWindow):
 
     # ── Shared widgets (created once, used on both pages) ─────────────────────
     def _build_shared_widgets(self):
-        # Timer
+        # Timer duration stepper
         self._timer_step = Stepper(1, 120, 5, step=1, fmt="{} min")
 
         # Background rows — two instances due to Qt single-parent rule
@@ -307,28 +309,30 @@ class IntroMaker(QMainWindow):
         self._bg_video_row_a = FileRow("🎬  Video wählen", self._pick_bg_video, self._clear_bg_video)
         self._bg_image_row_a = FileRow("🖼  Bild wählen",  self._pick_bg_image, self._clear_bg_image)
 
-        # Music
+        # Music file rows
         self._music_row   = FileRow("🎵  Musikdatei wählen", self._pick_music, self._clear_music)
         self._music_row_a = FileRow("🎵  Musikdatei wählen", self._pick_music, self._clear_music)
 
-        # Output
+        # Output location rows
         self._out_row   = FileRow("📁  Speicherort wählen", self._pick_output, self._clear_output)
         self._out_row_a = FileRow("📁  Speicherort wählen", self._pick_output, self._clear_output)
 
-        # Image list
-        self._img_list = QTextEdit()
-        self._img_list.setReadOnly(True); self._img_list.setFixedHeight(80)
-        self._img_list.setPlainText("  Keine Bilder ausgewählt")
+        # ── FIX: Replace QTextEdit image list with a QListWidget so individual
+        #    items can be selected and removed via a "Remove selected" button ──
+        self._img_list = QListWidget()
+        self._img_list.setFixedHeight(110)
+        self._img_list.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        self._img_list.setFont(QFont("Segoe UI", 10))
 
         # Font picker for timer / subtitle — preview shows digits
         self._font_picker = FontPickerWidget(theme=self._theme, preview_text="04:32")
 
-        # Font color for timer
+        # Font color button for the timer
         self._color_btn = QPushButton("  #FFFFFF  ")
         self._color_btn.setObjectName("colorBtn"); self._color_btn.setFixedHeight(32)
         self._color_btn.clicked.connect(self._pick_color)
 
-        # Subtitle
+        # Subtitle widgets
         self._sub_chk = StyledCheckBox("Untertitel aktivieren")
         self._sub_chk.stateChanged.connect(self._toggle_subtitle)
         self._sub_edit = QTextEdit()
@@ -378,7 +382,7 @@ class IntroMaker(QMainWindow):
         self._outro_slide_edit.setPlaceholderText("z. B. Herzlich Willkommen")
         self._outro_slide_edit.setEnabled(False)
 
-        # Text color — default white (good on black background)
+        # Outro text color — default white (good on black background)
         self._outro_slide_color_btn = QPushButton("  #FFFFFF  ")
         self._outro_slide_color_btn.setObjectName("colorBtn")
         self._outro_slide_color_btn.setFixedHeight(32)
@@ -386,7 +390,7 @@ class IntroMaker(QMainWindow):
         self._outro_slide_color_btn.clicked.connect(self._pick_outro_slide_color)
         self._outro_slide_color = "#FFFFFF"
 
-        # Background color — default black
+        # Outro background color — default black
         self._outro_slide_bg_color_btn = QPushButton("  #000000  ")
         self._outro_slide_bg_color_btn.setObjectName("colorBtn")
         self._outro_slide_bg_color_btn.setFixedHeight(32)
@@ -394,7 +398,7 @@ class IntroMaker(QMainWindow):
         self._outro_slide_bg_color_btn.clicked.connect(self._pick_outro_slide_bg_color)
         self._outro_slide_bg_color = "#000000"
 
-        # Background image — optional; overrides bg color when set
+        # Outro background image row — overrides bg color when set
         self._outro_slide_bg_image_row = FileRow(
             "🖼  Hintergrundbild wählen",
             self._pick_outro_slide_bg_image,
@@ -462,6 +466,7 @@ class IntroMaker(QMainWindow):
         self._theme_btn.setObjectName("themeBtn")
         self._theme_btn.setFont(QFont("Segoe UI", 11, QFont.Bold))
         self._theme_btn.setFixedHeight(38)
+        # FIX: theme toggle is saved immediately on click
         self._theme_btn.clicked.connect(self._toggle_theme)
         layout.addWidget(self._theme_btn)
         return hdr
@@ -497,12 +502,14 @@ class IntroMaker(QMainWindow):
         return page
 
     def _build_simple_left(self, layout):
+        # Timer duration card
         c = make_card(); cl = QVBoxLayout(c); cl.setContentsMargins(16,10,16,14); cl.setSpacing(6)
         cl.addWidget(sec_lbl("⏱  Timer-Dauer"))
         cl.addWidget(hint_lbl("Gesamtlänge des Countdown-Videos"))
         cl.addWidget(self._timer_step)
         layout.addWidget(c)
 
+        # Background card
         c2 = make_card(); cl2 = QVBoxLayout(c2); cl2.setContentsMargins(16,10,16,14); cl2.setSpacing(6)
         cl2.addWidget(sec_lbl("🎨  Hintergrund"))
         cl2.addWidget(hint_lbl("Video hat Vorrang vor Bild — beide optional (Standard: Weiß)"))
@@ -510,12 +517,14 @@ class IntroMaker(QMainWindow):
         cl2.addWidget(self._bg_image_row)
         layout.addWidget(c2)
 
+        # Music card
         c3 = make_card(); cl3 = QVBoxLayout(c3); cl3.setContentsMargins(16,10,16,14); cl3.setSpacing(6)
         cl3.addWidget(sec_lbl("🎵  Hintergrundmusik"))
         cl3.addWidget(hint_lbl("Optional — MP3, WAV, OGG"))
         cl3.addWidget(self._music_row)
         layout.addWidget(c3)
 
+        # Output card
         c7 = make_card(); cl7 = QVBoxLayout(c7); cl7.setContentsMargins(16,10,16,14); cl7.setSpacing(6)
         cl7.addWidget(sec_lbl("💾  Ausgabedatei"))
         cl7.addWidget(hint_lbl("Dateiname: Intro - TT.MM.JJJJ"))
@@ -523,20 +532,32 @@ class IntroMaker(QMainWindow):
         layout.addWidget(c7)
 
     def _build_simple_right(self, layout):
+        # ── Slider images card ────────────────────────────────────────────────
         c4 = make_card(); cl4 = QVBoxLayout(c4); cl4.setContentsMargins(16,10,16,14); cl4.setSpacing(6)
         cl4.addWidget(sec_lbl("🖼  Slider-Bilder"))
         cl4.addWidget(hint_lbl("Werden zwischen Countdown-Abschnitten eingeblendet"))
+
+        # Button row: add, remove selected, clear all
         br = QWidget(); brl = QHBoxLayout(br); brl.setContentsMargins(0,0,0,0); brl.setSpacing(8)
         add_btn = QPushButton("+ Bilder hinzufügen"); add_btn.setObjectName("secondary")
         add_btn.clicked.connect(self._add_images)
+
+        # FIX: "Remove selected" button deletes only the highlighted items
+        rem_btn = QPushButton("− Auswahl entfernen"); rem_btn.setObjectName("secondary")
+        rem_btn.clicked.connect(self._remove_selected_images)
+
         clr_btn = QPushButton("Liste leeren"); clr_btn.setObjectName("secondary")
         clr_btn.clicked.connect(self._clear_images)
-        brl.addWidget(add_btn); brl.addWidget(clr_btn); brl.addStretch()
-        cl4.addWidget(br); cl4.addWidget(self._img_list)
+
+        brl.addWidget(add_btn); brl.addWidget(rem_btn); brl.addWidget(clr_btn); brl.addStretch()
+        cl4.addWidget(br)
+
+        cl4.addWidget(self._img_list)
         layout.addWidget(c4)
 
         layout.addWidget(self._font_picker)
 
+        # Timer font color card
         c6 = make_card(); cl6 = QVBoxLayout(c6); cl6.setContentsMargins(16,10,16,14); cl6.setSpacing(6)
         cl6.addWidget(sec_lbl("🎨  Schriftfarbe Timer"))
         cr_w = QWidget(); crl = QHBoxLayout(cr_w); crl.setContentsMargins(0,0,0,0); crl.setSpacing(10)
@@ -544,6 +565,7 @@ class IntroMaker(QMainWindow):
         cl6.addWidget(cr_w)
         layout.addWidget(c6)
 
+        # Subtitle card
         c8 = make_card(); cl8 = QVBoxLayout(c8); cl8.setContentsMargins(16,10,16,14); cl8.setSpacing(6)
         cl8.addWidget(sec_lbl("💬  Untertitel"))
         cl8.addWidget(hint_lbl("Wird unterhalb des Timers angezeigt"))
@@ -642,7 +664,7 @@ class IntroMaker(QMainWindow):
         return w
 
     def _build_settings_content(self, layout):
-        # ── Music ─────────────────────────────────────────────────────────────
+        # Music settings block
         layout.addWidget(self._settings_block("🎵", "Musik", [
             self._settings_check_row(self._music_loop_chk),
             self._settings_check_row(self._music_fadeout_chk),
@@ -650,7 +672,7 @@ class IntroMaker(QMainWindow):
                                "Wie lange die Musik am Ende ausblendet"),
         ]))
 
-        # ── Video fade ────────────────────────────────────────────────────────
+        # Video fade in / out block
         layout.addWidget(self._settings_block("🌑", "Video Fade In / Out", [
             self._settings_check_row(self._intro_fade_chk,
                                      "Video blendet am Start von Schwarz ein"),
@@ -660,7 +682,7 @@ class IntroMaker(QMainWindow):
             self._settings_row("Fade-Out Dauer", self._outro_fade_step),
         ]))
 
-        # ── Slider timing ─────────────────────────────────────────────────────
+        # Slider timing block
         layout.addWidget(self._settings_block("🖼", "Slider-Timing", [
             self._settings_row("Slider erst ab", self._slider_from_step,
                                "Bilder einblenden wenn noch X Minuten verbleiben"),
@@ -674,13 +696,13 @@ class IntroMaker(QMainWindow):
                                      "Loop an: Bild → Timer → Bild → ...  |  Loop aus: alle Bilder einmal"),
         ]))
 
-        # ── Transitions ───────────────────────────────────────────────────────
+        # Transitions block
         layout.addWidget(self._settings_block("✨", "Übergänge", [
             self._settings_row("Bild-Fade Dauer", self._fade_step,
                                "Sanftes Ein-/Ausblenden beim Wechsel zu Bildern"),
         ]))
 
-        # ── Subtitle ──────────────────────────────────────────────────────────
+        # Subtitle settings block
         layout.addWidget(self._settings_block("💬", "Untertitel", [
             self._settings_row("Schriftgröße", self._sub_size_step,
                                "Größe des Untertiteltextes im Video"),
@@ -688,12 +710,12 @@ class IntroMaker(QMainWindow):
                                "Wie viele Zeilen Abstand zwischen Timer und Untertitel"),
         ]))
 
-        # ── Outro slide ───────────────────────────────────────────────────────
+        # ── Outro slide block ─────────────────────────────────────────────────
         text_row = self._settings_check_row(
             self._outro_slide_chk, "Bild mit Text nach dem Timer"
         )
 
-        # Text + colors + background image all in one card row
+        # Combined text + colors + background image row
         text_edit_row = QWidget(); text_edit_row.setObjectName("card")
         tel = QVBoxLayout(text_edit_row)
         tel.setContentsMargins(16, 10, 16, 10); tel.setSpacing(6)
@@ -721,7 +743,7 @@ class IntroMaker(QMainWindow):
         bg_hint2.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
         tel.addWidget(bg_hint2)
 
-        # Background image picker
+        # Background image picker for outro slide
         tel.addWidget(self._outro_slide_bg_image_row)
 
         # Foreground (text) color
@@ -731,14 +753,14 @@ class IntroMaker(QMainWindow):
         fgl.addStretch()
         tel.addWidget(fg_row)
 
-        # Background color (background when no image is selected)
+        # Background color fallback
         bg_col_row = QWidget(); bcl = QHBoxLayout(bg_col_row)
         bcl.setContentsMargins(0, 2, 0, 0); bcl.setSpacing(10)
         bcl.addWidget(dim_lbl("Hintergrund-Farbe:")); bcl.addWidget(self._outro_slide_bg_color_btn)
         bcl.addStretch()
         tel.addWidget(bg_col_row)
 
-        # Font picker row for outro slide (uses "Beispiel" preview text)
+        # Outro font picker row
         outro_font_row = QWidget(); outro_font_row.setObjectName("card")
         ofl = QVBoxLayout(outro_font_row)
         ofl.setContentsMargins(16, 10, 16, 10); ofl.setSpacing(4)
@@ -764,7 +786,7 @@ class IntroMaker(QMainWindow):
                                "Ausblenden des Abschluss-Bilds zu Schwarz"),
         ]))
 
-        # ── Save / Reset buttons ──────────────────────────────────────────────
+        # Save / Reset buttons
         btn_row = QWidget()
         brl = QHBoxLayout(btn_row)
         brl.setContentsMargins(0, 16, 0, 0); brl.setSpacing(10)
@@ -823,6 +845,7 @@ class IntroMaker(QMainWindow):
 
     # ── Settings persistence ───────────────────────────────────────────────────
     def _collect_settings(self) -> dict:
+        """Gather all current UI values into a dict for persistence."""
         return {
             "theme":              self._theme,
             # Current page is intentionally NOT persisted — app always starts in simple mode
@@ -857,9 +880,12 @@ class IntroMaker(QMainWindow):
             "outro_slide_duration":    self._outro_slide_dur_step.value(),
             "outro_slide_fade_in":     self._outro_slide_fadein_step.value(),
             "outro_slide_fade_out":    self._outro_slide_fadeout_step.value(),
+            # FIX: persist last used output folder
+            "last_output_folder":      self._last_output_folder,
         }
 
     def _restore_settings(self):
+        """Apply persisted settings back to all UI widgets."""
         s = self._settings
         # Always open in simple mode — page preference is not loaded from disk
         self._current_page = self.PAGE_SIMPLE
@@ -906,10 +932,10 @@ class IntroMaker(QMainWindow):
         outro_on = s.get("outro_slide_enabled", False)
         self._outro_slide_chk.setChecked(outro_on)
         self._outro_slide_edit.setPlainText(s.get("outro_slide_text", "Herzlich Willkommen"))
-        osc = s.get("outro_slide_color", "#FFFFFF")   # text color default: white
+        osc = s.get("outro_slide_color", "#FFFFFF")
         self._outro_slide_color = osc
         self._update_color_btn(self._outro_slide_color_btn, osc)
-        obg = s.get("outro_slide_bg_color", "#000000")  # bg color default: black
+        obg = s.get("outro_slide_bg_color", "#000000")
         self._outro_slide_bg_color = obg
         self._update_color_btn(self._outro_slide_bg_color_btn, obg)
         self._outro_slide_dur_step.set_value(s.get("outro_slide_duration", 5))
@@ -935,11 +961,21 @@ class IntroMaker(QMainWindow):
         for w in _outro_widgets:
             w.setEnabled(outro_on)
 
+        # Restore last output folder and pre-fill the output path
+        self._last_output_folder = s.get("last_output_folder", "")
+        if self._last_output_folder and os.path.isdir(self._last_output_folder):
+            default_name = datetime.now().strftime("Intro - %d.%m.%Y")
+            self._out_path = os.path.join(self._last_output_folder, f"{default_name}.mp4")
+            self._out_row.set_path(self._out_path)
+            self._out_row_a.set_path(self._out_path)
+
     def _save_settings(self):
+        """Collect and persist current settings to disk."""
         data = self._collect_settings()
         cfg_save(data); self._settings = data
 
     def _manual_save(self):
+        """Save settings and briefly flash the save button green."""
         self._save_settings()
         self._save_btn.setText("✓  Gespeichert")
         self._save_btn.setStyleSheet(
@@ -974,7 +1010,12 @@ class IntroMaker(QMainWindow):
         self._update_color_btn(self._sub_color_btn, self._sub_color)
 
     def _toggle_theme(self):
-        self._apply_theme("dark" if self._theme == "light" else "light")
+        """Switch light/dark theme and immediately persist the preference."""
+        new_theme = "dark" if self._theme == "light" else "light"
+        self._apply_theme(new_theme)
+        # FIX: save only the theme key without requiring a manual save
+        self._settings["theme"] = new_theme
+        cfg_save(self._settings)
 
     # ── Reset ──────────────────────────────────────────────────────────────────
     def _confirm_reset(self):
@@ -1070,12 +1111,19 @@ class IntroMaker(QMainWindow):
         self._music_row.set_path(None); self._music_row_a.set_path(None)
 
     def _pick_output(self):
+        """Open folder dialog, defaulting to the last used folder if available."""
         default_name = datetime.now().strftime("Intro - %d.%m.%Y")
-        folder = QFileDialog.getExistingDirectory(self, "Speicherordner wählen")
+        # FIX: open the dialog at the previously used folder
+        start_dir = self._last_output_folder if os.path.isdir(self._last_output_folder) else ""
+        folder = QFileDialog.getExistingDirectory(self, "Speicherordner wählen", start_dir)
         if folder:
+            self._last_output_folder = folder  # remember for next time
             self._out_path = os.path.join(folder, f"{default_name}.mp4")
             self._out_row.set_path(self._out_path)
             self._out_row_a.set_path(self._out_path)
+            # FIX: persist the folder immediately so it survives a restart
+            self._settings["last_output_folder"] = folder
+            cfg_save(self._settings)
 
     def _clear_output(self):
         self._out_path = None
@@ -1118,21 +1166,46 @@ class IntroMaker(QMainWindow):
         self._outro_slide_bg_image_path = None
         self._outro_slide_bg_image_row.set_path(None)
 
-    # ── Images ─────────────────────────────────────────────────────────────────
+    # ── Slider image management ────────────────────────────────────────────────
     def _add_images(self):
+        """Open a file dialog to append one or more images to the slider list."""
         paths, _ = QFileDialog.getOpenFileNames(self, "Bilder", "", "Bilder (*.png *.jpg *.jpeg *.bmp *.webp)")
         if paths:
-            self._image_paths.extend(paths); self._refresh_imgs()
+            self._image_paths.extend(paths)
+            self._refresh_imgs()
+
+    def _remove_selected_images(self):
+        """FIX: Remove only the items currently selected in the list widget."""
+        selected_rows = sorted(
+            [self._img_list.row(item) for item in self._img_list.selectedItems()],
+            reverse=True  # remove from bottom up so indices stay valid
+        )
+        for row in selected_rows:
+            del self._image_paths[row]
+            self._img_list.takeItem(row)
+        # Refresh only if we need to show the empty-state placeholder
+        if not self._image_paths:
+            self._refresh_imgs()
 
     def _clear_images(self):
-        self._image_paths = []; self._refresh_imgs()
+        """Remove all images from the slider list."""
+        self._image_paths = []
+        self._refresh_imgs()
 
     def _refresh_imgs(self):
-        txt = ("\n".join(f"  • {os.path.basename(p)}" for p in self._image_paths)
-               if self._image_paths else "  Keine Bilder ausgewählt")
-        self._img_list.setPlainText(txt)
+        """Rebuild the QListWidget from the current _image_paths list."""
+        self._img_list.clear()
+        if self._image_paths:
+            for p in self._image_paths:
+                item = QListWidgetItem(f"  {os.path.basename(p)}")
+                item.setToolTip(p)
+                self._img_list.addItem(item)
+        else:
+            placeholder = QListWidgetItem("  Keine Bilder ausgewählt")
+            placeholder.setFlags(placeholder.flags() & ~Qt.ItemIsSelectable)
+            self._img_list.addItem(placeholder)
 
-    # ── Toggles ────────────────────────────────────────────────────────────────
+    # ── Toggle handlers ────────────────────────────────────────────────────────
     def _toggle_subtitle(self, state):
         on = (state == 2)
         self._sub_edit.setEnabled(on)

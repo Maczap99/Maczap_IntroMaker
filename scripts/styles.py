@@ -53,6 +53,18 @@ def make_style(dark: bool) -> str:
         QTextEdit {
             background: #0F172A; color: #F1F5F9; border-radius: 8px;
             border: 1px solid #334155; font-size: 12px; padding: 6px; }
+        /* Slider image list — dark mode */
+        QListWidget {
+            background: #0F172A; color: #F1F5F9; border-radius: 8px;
+            border: 1px solid #334155; font-size: 12px; padding: 4px;
+            outline: none; }
+        QListWidget::item {
+            color: #F1F5F9; background: transparent;
+            padding: 4px 6px; border-radius: 6px; }
+        QListWidget::item:selected {
+            background: #3B82F6; color: #FFFFFF; }
+        QListWidget::item:hover:!selected {
+            background: #1E293B; }
         QProgressBar {
             background: #0F172A; border-radius: 6px;
             border: 1px solid #334155; min-height: 14px; max-height: 14px; }
@@ -135,6 +147,18 @@ def make_style(dark: bool) -> str:
         QTextEdit {
             background: #F1F5F9; color: #0F172A; border-radius: 8px;
             border: 1px solid #CBD5E1; font-size: 12px; padding: 6px; }
+        /* Slider image list — light mode */
+        QListWidget {
+            background: #F1F5F9; color: #0F172A; border-radius: 8px;
+            border: 1px solid #CBD5E1; font-size: 12px; padding: 4px;
+            outline: none; }
+        QListWidget::item {
+            color: #0F172A; background: transparent;
+            padding: 4px 6px; border-radius: 6px; }
+        QListWidget::item:selected {
+            background: #2563EB; color: #FFFFFF; }
+        QListWidget::item:hover:!selected {
+            background: #E2E8F0; }
         QProgressBar {
             background: #E2E8F0; border-radius: 6px;
             border: 1px solid #CBD5E1; min-height: 14px; max-height: 14px; }
