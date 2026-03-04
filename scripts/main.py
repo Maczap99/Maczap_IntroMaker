@@ -398,6 +398,10 @@ class IntroMaker(QMainWindow):
         self._outro_slide_fadeout_step.setEnabled(False)
         self._outro_slide_font_size_step.setEnabled(False)
 
+        # Separate font picker for the outro slide — independent from the timer font
+        self._outro_font_picker = FontPickerWidget(theme=self._theme)
+        self._outro_font_picker.setEnabled(False)
+
     # ── UI build ───────────────────────────────────────────────────────────────
     def _build_ui(self):
         root = QWidget(); root.setObjectName("root")
@@ -742,9 +746,22 @@ class IntroMaker(QMainWindow):
         crl.addWidget(self._outro_slide_color_btn); crl.addStretch()
         tel.addWidget(color_row_w)
 
+        # Font picker row for outro slide
+        outro_font_row = QWidget(); outro_font_row.setObjectName("card")
+        ofl = QVBoxLayout(outro_font_row)
+        ofl.setContentsMargins(16, 10, 16, 10); ofl.setSpacing(4)
+        of_lbl = QLabel("Schriftart"); of_lbl.setFont(QFont("Segoe UI", 11))
+        of_lbl.setObjectName("dim"); ofl.addWidget(of_lbl)
+        of_hint = QLabel("Unabhängig vom Timer — nur für das Abschluss-Bild")
+        of_hint.setFont(QFont("Segoe UI", 9)); of_hint.setObjectName("hint")
+        of_hint.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
+        ofl.addWidget(of_hint)
+        ofl.addWidget(self._outro_font_picker)
+
         layout.addWidget(self._settings_block("🖼", "Abschluss-Bild", [
             text_row,
             text_edit_row,
+            outro_font_row,
             self._settings_row("Schriftgröße", self._outro_slide_font_size_step,
                                "Textgröße auf dem Abschluss-Bild"),
             self._settings_row("Sichtbar für", self._outro_slide_dur_step,
@@ -822,6 +839,7 @@ class IntroMaker(QMainWindow):
             "outro_slide_text":        self._outro_slide_edit.toPlainText(),
             "outro_slide_color":       self._outro_slide_color,
             "outro_slide_font_size":   self._outro_slide_font_size_step.value(),
+            "outro_slide_font_name":   self._outro_font_picker._combo.currentText(),
             "outro_slide_duration":    self._outro_slide_dur_step.value(),
             "outro_slide_fade_in":     self._outro_slide_fadein_step.value(),
             "outro_slide_fade_out":    self._outro_slide_fadeout_step.value(),
@@ -883,10 +901,15 @@ class IntroMaker(QMainWindow):
         self._outro_slide_fadein_step.set_value(s.get("outro_slide_fade_in", 1))
         self._outro_slide_fadeout_step.set_value(s.get("outro_slide_fade_out", 1))
         self._outro_slide_font_size_step.set_value(s.get("outro_slide_font_size", 80))
+        outro_font_name = s.get("outro_slide_font_name")
+        if outro_font_name:
+            idx = self._outro_font_picker._combo.findText(outro_font_name)
+            if idx >= 0: self._outro_font_picker._combo.setCurrentIndex(idx)
         _outro_widgets = [
             self._outro_slide_edit, self._outro_slide_color_btn,
             self._outro_slide_dur_step, self._outro_slide_fadein_step,
             self._outro_slide_fadeout_step, self._outro_slide_font_size_step,
+            self._outro_font_picker,
         ]
         for w in _outro_widgets:
             w.setEnabled(outro_on)
@@ -920,6 +943,8 @@ class IntroMaker(QMainWindow):
         self._pct_lbl.setStyleSheet(f"color: {accent};")
         if hasattr(self, "_font_picker"):
             self._font_picker.set_theme(theme)
+        if hasattr(self, "_outro_font_picker"):
+            self._outro_font_picker.set_theme(theme)
         dark = (theme == "dark")
         for chk in [self._music_loop_chk, self._music_fadeout_chk,
                     self._intro_fade_chk, self._outro_fade_chk,
@@ -1086,7 +1111,8 @@ class IntroMaker(QMainWindow):
         on = (state == 2)
         for w in [self._outro_slide_edit, self._outro_slide_color_btn,
                   self._outro_slide_dur_step, self._outro_slide_fadein_step,
-                  self._outro_slide_fadeout_step, self._outro_slide_font_size_step]:
+                  self._outro_slide_fadeout_step, self._outro_slide_font_size_step,
+                  self._outro_font_picker]:
             w.setEnabled(on)
 
     # ── Render ─────────────────────────────────────────────────────────────────
@@ -1144,7 +1170,7 @@ class IntroMaker(QMainWindow):
             "outro_slide_text":     self._outro_slide_edit.toPlainText().strip(),
             "outro_slide_color":    self._outro_slide_color,
             "outro_slide_font_size": self._outro_slide_font_size_step.value(),
-            "outro_slide_font":     self._font_picker.get_font_path(),
+            "outro_slide_font":     self._outro_font_picker.get_font_path(),
             "outro_slide_duration": self._outro_slide_dur_step.value(),
             "outro_slide_fade_in":  self._outro_slide_fadein_step.value(),
             "outro_slide_fade_out": self._outro_slide_fadeout_step.value(),

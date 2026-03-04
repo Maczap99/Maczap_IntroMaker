@@ -62,6 +62,7 @@ DEFAULTS = {
     "outro_slide_text":       "Herzlich Willkommen",
     "outro_slide_color":      "#000000",
     "outro_slide_font_size":  80,
+    "outro_slide_font_name":  None,
     "outro_slide_duration":   5,       # seconds the slide is visible
     "outro_slide_fade_in":    1,       # fade-in duration in seconds
     "outro_slide_fade_out":   1,       # fade-out duration in seconds
