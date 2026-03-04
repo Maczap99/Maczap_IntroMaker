@@ -373,6 +373,29 @@ class IntroMaker(QMainWindow):
         self._sub_offset_step = Stepper(0, 20, 2, step=1, fmt="{} Zeilen")
         self._sub_offset_step.setEnabled(False)
 
+        # ── Outro slide widgets ────────────────────────────────────────────────
+        self._outro_slide_chk = StyledCheckBox("Abschluss-Bild aktivieren")
+        self._outro_slide_chk.stateChanged.connect(self._toggle_outro_slide)
+
+        self._outro_slide_edit = QTextEdit()
+        self._outro_slide_edit.setFixedHeight(70)
+        self._outro_slide_edit.setPlaceholderText("z. B. Herzlich Willkommen")
+        self._outro_slide_edit.setEnabled(False)
+
+        self._outro_slide_color_btn = QPushButton("  #000000  ")
+        self._outro_slide_color_btn.setObjectName("colorBtn")
+        self._outro_slide_color_btn.setFixedHeight(32)
+        self._outro_slide_color_btn.setEnabled(False)
+        self._outro_slide_color_btn.clicked.connect(self._pick_outro_slide_color)
+        self._outro_slide_color = "#000000"
+
+        self._outro_slide_dur_step    = Stepper(1, 60, 5,  step=1,   fmt="{} s")
+        self._outro_slide_fadein_step = Stepper(0, 10, 1,  step=0.5, fmt="{} s")
+        self._outro_slide_fadeout_step= Stepper(0, 10, 1,  step=0.5, fmt="{} s")
+        self._outro_slide_dur_step.setEnabled(False)
+        self._outro_slide_fadein_step.setEnabled(False)
+        self._outro_slide_fadeout_step.setEnabled(False)
+
     # ── UI build ───────────────────────────────────────────────────────────────
     def _build_ui(self):
         root = QWidget(); root.setObjectName("root")
@@ -699,6 +722,39 @@ class IntroMaker(QMainWindow):
                                "Wie viele Zeilen Abstand zwischen Timer und Untertitel"),
         ]))
 
+        # ── Outro slide ───────────────────────────────────────────────────────
+        # Build the text + color row manually so both fit in one card row
+        text_row = self._settings_check_row(self._outro_slide_chk,
+                                            "Weißes Bild mit Text nach dem Timer")
+
+        # Text edit row
+        text_edit_row = QWidget(); text_edit_row.setObjectName("card")
+        tel = QVBoxLayout(text_edit_row)
+        tel.setContentsMargins(16, 10, 16, 10); tel.setSpacing(6)
+        te_lbl = QLabel("Text"); te_lbl.setFont(QFont("Segoe UI", 11))
+        te_lbl.setObjectName("dim"); tel.addWidget(te_lbl)
+        te_hint = QLabel("Wird zentriert auf dem Abschluss-Bild angezeigt")
+        te_hint.setFont(QFont("Segoe UI", 9)); te_hint.setObjectName("hint")
+        te_hint.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
+        tel.addWidget(te_hint)
+        tel.addWidget(self._outro_slide_edit)
+        color_row_w = QWidget(); crl = QHBoxLayout(color_row_w)
+        crl.setContentsMargins(0, 4, 0, 0); crl.setSpacing(10)
+        crl.addWidget(dim_lbl("Schriftfarbe:"))
+        crl.addWidget(self._outro_slide_color_btn); crl.addStretch()
+        tel.addWidget(color_row_w)
+
+        layout.addWidget(self._settings_block("🖼", "Abschluss-Bild", [
+            text_row,
+            text_edit_row,
+            self._settings_row("Sichtbar für", self._outro_slide_dur_step,
+                               "Wie lange das Abschluss-Bild angezeigt wird"),
+            self._settings_row("Fade-In Dauer", self._outro_slide_fadein_step,
+                               "Einblenden vom Timer zum Abschluss-Bild"),
+            self._settings_row("Fade-Out Dauer", self._outro_slide_fadeout_step,
+                               "Ausblenden des Abschluss-Bilds (Musik + Video)"),
+        ]))
+
     # ── Bottom bar ─────────────────────────────────────────────────────────────
     def _make_bottom(self):
         bar = QFrame(); bar.setObjectName("bottomBar"); bar.setFixedHeight(110)
@@ -761,6 +817,13 @@ class IntroMaker(QMainWindow):
             "subtitle_size":      self._sub_size_step.value(),
             "subtitle_offset":    self._sub_offset_step.value(),
             "subtitle_color":     self._sub_color,
+            # Outro slide
+            "outro_slide_enabled":     self._outro_slide_chk.isChecked(),
+            "outro_slide_text":        self._outro_slide_edit.toPlainText(),
+            "outro_slide_color":       self._outro_slide_color,
+            "outro_slide_duration":    self._outro_slide_dur_step.value(),
+            "outro_slide_fade_in":     self._outro_slide_fadein_step.value(),
+            "outro_slide_fade_out":    self._outro_slide_fadeout_step.value(),
         }
 
     def _restore_settings(self):
@@ -807,6 +870,24 @@ class IntroMaker(QMainWindow):
         self._update_color_btn(self._sub_color_btn, sc)
         self._sub_edit.setEnabled(sub_on)
         self._sub_color_btn.setEnabled(sub_on)
+
+        # Outro slide
+        outro_on = s.get("outro_slide_enabled", False)
+        self._outro_slide_chk.setChecked(outro_on)
+        self._outro_slide_edit.setPlainText(s.get("outro_slide_text", "Herzlich Willkommen"))
+        osc = s.get("outro_slide_color", "#000000")
+        self._outro_slide_color = osc
+        self._update_color_btn(self._outro_slide_color_btn, osc)
+        self._outro_slide_dur_step.set_value(s.get("outro_slide_duration", 5))
+        self._outro_slide_fadein_step.set_value(s.get("outro_slide_fade_in", 1))
+        self._outro_slide_fadeout_step.set_value(s.get("outro_slide_fade_out", 1))
+        _outro_widgets = [
+            self._outro_slide_edit, self._outro_slide_color_btn,
+            self._outro_slide_dur_step, self._outro_slide_fadein_step,
+            self._outro_slide_fadeout_step,
+        ]
+        for w in _outro_widgets:
+            w.setEnabled(outro_on)
 
     def _save_settings(self):
         data = self._collect_settings()
@@ -967,6 +1048,10 @@ class IntroMaker(QMainWindow):
         r = self._open_color_dialog(self._sub_color, "Untertitel Farbe")
         if r: self._sub_color = r; self._update_color_btn(self._sub_color_btn, r)
 
+    def _pick_outro_slide_color(self):
+        r = self._open_color_dialog(self._outro_slide_color, "Abschluss-Bild Schriftfarbe")
+        if r: self._outro_slide_color = r; self._update_color_btn(self._outro_slide_color_btn, r)
+
     # ── Images ─────────────────────────────────────────────────────────────────
     def _add_images(self):
         paths, _ = QFileDialog.getOpenFileNames(self, "Bilder", "", "Bilder (*.png *.jpg *.jpeg *.bmp *.webp)")
@@ -994,6 +1079,13 @@ class IntroMaker(QMainWindow):
 
     def _toggle_outro_fade(self, state):
         self._outro_fade_step.setEnabled(state == 2)
+
+    def _toggle_outro_slide(self, state):
+        on = (state == 2)
+        for w in [self._outro_slide_edit, self._outro_slide_color_btn,
+                  self._outro_slide_dur_step, self._outro_slide_fadein_step,
+                  self._outro_slide_fadeout_step]:
+            w.setEnabled(on)
 
     # ── Render ─────────────────────────────────────────────────────────────────
     def _start_render(self):
@@ -1045,6 +1137,13 @@ class IntroMaker(QMainWindow):
             "subtitle_offset":    self._sub_offset_step.value(),
             "subtitle_color":     self._sub_color,
             "subtitle_font":      self._font_picker.get_font_path(),
+            # Outro slide
+            "outro_slide_enabled":  self._outro_slide_chk.isChecked(),
+            "outro_slide_text":     self._outro_slide_edit.toPlainText().strip(),
+            "outro_slide_color":    self._outro_slide_color,
+            "outro_slide_duration": self._outro_slide_dur_step.value(),
+            "outro_slide_fade_in":  self._outro_slide_fadein_step.value(),
+            "outro_slide_fade_out": self._outro_slide_fadeout_step.value(),
         }
 
         self._worker = RenderWorker(config)

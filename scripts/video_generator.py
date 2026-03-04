@@ -223,10 +223,54 @@ class VideoGenerator:
             if bg_cap:
                 bg_cap.release()
 
+        # ── Outro slide (shown after timer reaches 0) ─────────────────────────
+        outro_enabled  = cfg.get("outro_slide_enabled", False)
+        outro_text     = cfg.get("outro_slide_text", "").strip()
+        outro_color    = cfg.get("outro_slide_color", "#000000")
+        outro_dur      = float(cfg.get("outro_slide_duration", 5))
+        outro_fade_in  = float(cfg.get("outro_slide_fade_in", 1))
+        outro_fade_out = float(cfg.get("outro_slide_fade_out", 1))
+
+        if outro_enabled and outro_text:
+            # Build the static white outro frame with centered text
+            outro_base = self._draw_outro_slide(
+                outro_text, outro_color, w, h, get_font, font_path)
+            outro_frames = int(outro_dur * fps)
+            outro_total  = outro_frames
+
+            for f in range(outro_frames):
+                frame = outro_base.copy()
+                t     = f / fps   # seconds into the outro
+
+                # Fade in from last timer frame
+                if outro_fade_in > 0 and t < outro_fade_in:
+                    a = t / outro_fade_in
+                    frame = cv2.addWeighted(frame, a, black, 1 - a, 0)
+
+                # Fade out to black
+                if outro_fade_out > 0 and t > outro_dur - outro_fade_out:
+                    a = (outro_dur - t) / outro_fade_out
+                    a = max(0.0, min(1.0, a))
+                    frame = cv2.addWeighted(frame, a, black, 1 - a, 0)
+
+                write_frame(frame)
+
+                if f % 15 == 0:
+                    self.cb(0.95 + 0.04 * (f / outro_total),
+                            "🖼 Abschluss-Bild …",
+                            frame_info=(total_frames + f, total_frames + outro_total))
+
+        # Total video duration including optional outro slide
+        outro_enabled = cfg.get("outro_slide_enabled", False)
+        outro_text    = cfg.get("outro_slide_text", "").strip()
+        audio_total   = total_sec
+        if outro_enabled and outro_text:
+            audio_total += float(cfg.get("outro_slide_duration", 5))
+
         # ── Mix audio ─────────────────────────────────────────────────────────
         if cfg.get("music_path") and ffmpeg_path:
             self.cb(0.98, "🎵 Mische Audio …", frame_info=(total_frames, total_frames))
-            self._mix_audio(tmp_video, out_path, total_sec, cfg, ffmpeg_path)
+            self._mix_audio(tmp_video, out_path, audio_total, cfg, ffmpeg_path)
             try:
                 os.remove(tmp_video)
             except:
@@ -390,6 +434,55 @@ class VideoGenerator:
                 draw.text((lx + sub_shadow, ly + sub_shadow), line, font=sub_font, fill=(0,0,0,160))
                 draw.text((lx, ly),                           line, font=sub_font, fill=sub_color)
                 cur_y += lh + (line_spacing if i < len(sub_data) - 1 else 0)
+
+        return cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
+
+    # ── Draw outro slide ──────────────────────────────────────────────────────
+    def _draw_outro_slide(self, text, hex_color, w, h, get_font, font_path):
+        """
+        Renders a white slide with the given text centered on it.
+        Returns a BGR numpy array ready to be written as video frames.
+        """
+        # White background
+        pil_img = Image.new("RGB", (w, h), color=(255, 255, 255))
+        draw    = ImageDraw.Draw(pil_img)
+
+        # Font size: scale relative to frame height for readability
+        font_size = int(min(w, h) * 0.08)
+        font      = get_font(font_path, font_size)
+
+        # Parse color
+        hx = hex_color.lstrip("#")
+        r, g, b = int(hx[0:2], 16), int(hx[2:4], 16), int(hx[4:6], 16)
+        text_color = (r, g, b)
+
+        # Support multi-line text
+        lines        = [ln for ln in text.splitlines() if ln.strip()] or [text]
+        line_spacing = int(font_size * 0.3)
+        shadow_off   = max(2, font_size // 25)
+
+        # Measure total block height
+        line_data = []
+        total_h   = 0
+        for i, line in enumerate(lines):
+            bbox = draw.textbbox((0, 0), line, font=font)
+            lw   = bbox[2] - bbox[0]
+            lh   = bbox[3] - bbox[1]
+            line_data.append((line, bbox, lw, lh))
+            total_h += lh
+            if i < len(lines) - 1:
+                total_h += line_spacing
+
+        # Draw each line centered
+        cur_y = (h - total_h) // 2
+        for line, bbox, lw, lh in line_data:
+            x  = (w - lw) // 2 - bbox[0]
+            y  = cur_y - bbox[1]
+            # Subtle shadow
+            draw.text((x + shadow_off, y + shadow_off), line,
+                      font=font, fill=(0, 0, 0, 60))
+            draw.text((x, y), line, font=font, fill=text_color)
+            cur_y += lh + line_spacing
 
         return cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
 
