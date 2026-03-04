@@ -1,7 +1,7 @@
-import sys, os
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QApplication
+import os, sys
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QFrame, QApplication
 from PyQt5.QtCore    import Qt, QTimer, pyqtSignal
-from PyQt5.QtGui     import QPixmap, QPainter, QColor, QPen, QFont
+from PyQt5.QtGui     import QPixmap, QFont, QColor, QPainter, QPainterPath
 
 
 def resource_path(relative_path):
@@ -10,89 +10,98 @@ def resource_path(relative_path):
     return os.path.join(os.path.abspath("."), relative_path)
 
 
-THEMES = {
-    "light": {"bg": "#F1F5F9", "accent": "#2563EB", "ring_bg": "#CBD5E1"},
-    "dark":  {"bg": "#0F172A", "accent": "#3B82F6", "ring_bg": "#1E293B"},
-}
-
-
-class _Spinner(QWidget):
-    def __init__(self, accent, ring_bg, parent=None):
-        super().__init__(parent)
-        self.setFixedSize(52, 52)
-        self._angle   = 0
-        self._accent  = QColor(accent)
-        self._ring_bg = QColor(ring_bg)
-        self._timer   = QTimer(self)
-        self._timer.timeout.connect(self._tick)
-        self._timer.start(16)
-
-    def _tick(self):
-        self._angle = (self._angle - 8) % 360
-        self.update()
-
-    def stop(self):
-        self._timer.stop()
-
-    def paintEvent(self, _):
-        p = QPainter(self)
-        p.setRenderHint(QPainter.Antialiasing)
-        r = 18
-        cx, cy = 26, 26
-        pen = QPen(self._ring_bg, 4, Qt.SolidLine, Qt.RoundCap)
-        p.setPen(pen)
-        p.drawArc(cx - r, cy - r, r * 2, r * 2, 0, 360 * 16)
-        pen2 = QPen(self._accent, 4, Qt.SolidLine, Qt.RoundCap)
-        p.setPen(pen2)
-        p.drawArc(cx - r, cy - r, r * 2, r * 2, self._angle * 16, 260 * 16)
-
-
 class SplashScreen(QWidget):
     finished = pyqtSignal()
 
-    def __init__(self, theme: str = "light"):
-        super().__init__()
-        colors = THEMES.get(theme, THEMES["light"])
+    # Corner radius for the rounded splash window
+    _RADIUS = 20
 
-        self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.SplashScreen)
-        self.setFixedSize(420, 280)
-        self.setStyleSheet(f"background-color: {colors['bg']};")
+    def __init__(self, theme="light", parent=None):
+        super().__init__(parent)
+        self._theme = theme
 
-        screen = QApplication.primaryScreen().geometry()
-        self.move((screen.width() - 420) // 2, (screen.height() - 280) // 2)
+        # Frameless + translucent so we can paint our own rounded background
+        self.setWindowFlags(
+            Qt.FramelessWindowHint |
+            Qt.WindowStaysOnTopHint |
+            Qt.SplashScreen
+        )
+        self.setAttribute(Qt.WA_TranslucentBackground)
+        # Slightly taller window to give the larger logo room to breathe
+        self.setFixedSize(480, 320)
 
-        layout = QVBoxLayout(self)
+        self._build_ui()
+        self._center()
+
+        # Auto-close after 2.5 seconds
+        QTimer.singleShot(2500, self._finish)
+
+    # ── UI ────────────────────────────────────────────────────────────────────
+    def _build_ui(self):
+        dark   = (self._theme == "dark")
+        bg     = "#1E293B" if dark else "#FFFFFF"
+        border = "#334155" if dark else "#E2E8F0"
+        fg     = "#F1F5F9" if dark else "#0F172A"
+        sub    = "#94A3B8" if dark else "#64748B"
+
+        # Inner container — rounded corners handled via QFrame stylesheet
+        self._container = QFrame(self)
+        self._container.setGeometry(0, 0, 480, 320)
+        self._container.setStyleSheet(f"""
+            QFrame {{
+                background: {bg};
+                border-radius: {self._RADIUS}px;
+                border: 1px solid {border};
+            }}
+        """)
+
+        layout = QVBoxLayout(self._container)
+        layout.setContentsMargins(40, 40, 40, 32)
+        layout.setSpacing(16)
         layout.setAlignment(Qt.AlignCenter)
-        layout.setSpacing(12)
-        layout.setContentsMargins(40, 30, 40, 30)
 
-        # Logo je nach Theme (kein Text mehr)
-        logo_file = "logo_light.png" if theme == "light" else "logo_dark.png"
-        logo_path = resource_path(f"assets/pictures/{logo_file}")
-        logo_lbl  = QLabel()
+        # Logo — prefer a themed PNG, fall back to plain text
+        logo_suffix = "dark" if dark else "light"
+        logo_path   = resource_path(f"assets/pictures/logo_{logo_suffix}.png")
+        logo_lbl    = QLabel()
         logo_lbl.setAlignment(Qt.AlignCenter)
-        logo_lbl.setStyleSheet("background: transparent;")
+        logo_lbl.setStyleSheet("background: transparent; border: none;")
         if os.path.exists(logo_path):
-            pix = QPixmap(logo_path)
-            pix = pix.scaledToHeight(150, Qt.SmoothTransformation)
+            # Scale to 180 px tall — noticeably larger than the previous 90 px
+            pix = QPixmap(logo_path).scaledToHeight(180, Qt.SmoothTransformation)
             logo_lbl.setPixmap(pix)
         else:
-            logo_lbl.setText("🎬")
-            logo_lbl.setFont(QFont("Segoe UI", 52))
+            logo_lbl.setText("Intro Maker")
+            logo_lbl.setFont(QFont("Segoe UI", 32, QFont.Bold))
+            logo_lbl.setStyleSheet(
+                f"color: {fg}; background: transparent; border: none;")
         layout.addWidget(logo_lbl)
 
-        # Spinner
-        self._spinner = _Spinner(colors["accent"], colors["ring_bg"])
-        spin_wrap = QWidget()
-        spin_wrap.setStyleSheet("background: transparent;")
-        sw_layout = QVBoxLayout(spin_wrap)
-        sw_layout.setAlignment(Qt.AlignCenter)
-        sw_layout.addWidget(self._spinner)
-        layout.addWidget(spin_wrap)
+        layout.addSpacing(4)
 
-        QTimer.singleShot(3000, self._finish)
+        # Loading label
+        loading_lbl = QLabel("Wird geladen …")
+        loading_lbl.setAlignment(Qt.AlignCenter)
+        loading_lbl.setFont(QFont("Segoe UI", 11))
+        loading_lbl.setStyleSheet(
+            f"color: {sub}; background: transparent; border: none;")
+        layout.addWidget(loading_lbl)
+
+    # ── Painting ──────────────────────────────────────────────────────────────
+    def paintEvent(self, event):
+        """Fill the overall window area with full transparency so only the
+        rounded QFrame container is visible on screen."""
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing)
+        painter.fillRect(self.rect(), QColor(0, 0, 0, 0))
+
+    # ── Helpers ───────────────────────────────────────────────────────────────
+    def _center(self):
+        screen = QApplication.primaryScreen().geometry()
+        x = (screen.width()  - self.width())  // 2
+        y = (screen.height() - self.height()) // 2
+        self.move(x, y)
 
     def _finish(self):
-        self._spinner.stop()
+        self.hide()
         self.finished.emit()
-        self.close()

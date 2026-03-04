@@ -31,6 +31,7 @@ def _load_font_list():
 
 
 def _render_preview(font_path, theme="light", text="04:32", size=(320, 80)):
+    """Render a preview image of the given text using the specified font."""
     W, H = size
     if theme == "dark":
         bg_col, text_col, shd_col = (15, 23, 42), (255, 255, 255), (0, 0, 0)
@@ -56,10 +57,14 @@ def _render_preview(font_path, theme="light", text="04:32", size=(320, 80)):
 class FontPickerWidget(QFrame):
     font_changed = pyqtSignal(object)
 
-    def __init__(self, parent=None, theme="light"):
+    def __init__(self, parent=None, theme="light", preview_text="04:32"):
         super().__init__(parent)
-        self._font_list = _load_font_list()
-        self._theme     = theme
+        self._font_list   = _load_font_list()
+        self._theme       = theme
+        # Preview text shown in the font preview image (e.g. "04:32" for timer,
+        # "Beispiel" for outro slide text)
+        self._preview_text = preview_text
+
         self.setObjectName("FontPickerWidget")
         layout = QVBoxLayout(self)
         layout.setContentsMargins(14, 12, 14, 12)
@@ -90,7 +95,9 @@ class FontPickerWidget(QFrame):
         self.font_changed.emit(self.get_font_path())
 
     def _refresh_preview(self):
-        self._preview.setPixmap(_render_preview(self.get_font_path(), self._theme))
+        self._preview.setPixmap(
+            _render_preview(self.get_font_path(), self._theme, text=self._preview_text)
+        )
 
     def set_theme(self, theme):
         self._theme = theme
