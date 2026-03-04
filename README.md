@@ -1,49 +1,51 @@
 # 🎬 Maczap IntroMaker
 
-> **A desktop app for creating professional countdown intro videos — with custom fonts, background music, image sliders, and smooth fade effects.**
+> **Desktop-App zur Erstellung professioneller Countdown-Intro-Videos — mit eigenen Schriftarten, Hintergrundmusik, Bild-Slider, Abschluss-Bild und flüssigen Überblendungseffekten.**
 
-Built with Python + PyQt5. Renders directly via OpenCV and PIL, with optional FFmpeg support for audio mixing.
+Gebaut mit Python + PyQt5. Rendering direkt über OpenCV und PIL, mit optionalem FFmpeg-Support für Audio-Mixing.
 
 ---
 
 ## ✨ Features
 
-- **Countdown Timer** — configurable duration (1–120 min), centered on screen with custom font and color
-- **Subtitle** — optional text displayed below the timer, with independent font size and color
-- **Background** — use a video loop, a static image, or plain white
-- **Image Slider** — display images between countdown segments, with configurable timing and loop behavior
-- **Background Music** — MP3 / WAV / OGG support, with optional loop and fade-out (requires FFmpeg)
-- **Fade Effects** — smooth fade-in from black at the start, fade-out to black at the end, and crossfade transitions between timer and images
-- **Custom Fonts** — pick any `.ttf` / `.otf` font from the `assets/fonts/` folder, with live preview
-- **Light & Dark Mode** — full UI theming with persistent settings
-- **Advanced Settings Page** — configure all timing, fade, and slider parameters in a clean settings view
+- **Countdown-Timer** — konfigurierbare Dauer (1–120 Min.), zentriert mit eigener Schriftart und Farbe
+- **Untertitel** — optionaler Text unterhalb des Timers mit unabhängiger Schriftgröße und Farbe
+- **Hintergrund** — Video-Loop, statisches Bild oder einfaches Weiß
+- **Bild-Slider** — Bilder zwischen Countdown-Abschnitten einblenden, mit konfigurierbarem Timing und Loop-Verhalten
+- **Hintergrundmusik** — MP3 / WAV / OGG mit Loop und Fade-out (erfordert FFmpeg)
+- **Abschluss-Bild** — optionaler Slide nach dem Timer mit eigenem Text, Schriftart, Farbe und Hintergrundbild
+- **Fade-Effekte** — Fade-in aus Schwarz am Start, Fade-out zu Schwarz am Ende, Crossfade zwischen Timer und Bildern
+- **Eigene Schriftarten** — beliebige `.ttf` / `.otf` Fonts aus `assets/fonts/`, mit Live-Vorschau
+- **Hell- & Dunkel-Modus** — vollständiges UI-Theming mit persistenten Einstellungen
+- **Mehrsprachig** — Deutsch, Englisch und Russisch, umschaltbar in den Einstellungen (gilt ab Neustart)
+- **Einstellungsseite** — alle Timing-, Fade- und Slider-Parameter übersichtlich konfigurierbar
 
 ---
 
 ## 🖥️ Screenshots
 
-> *(Add your own screenshots here)*
+> *(Eigene Screenshots hier einfügen)*
 
-| Standard View | Advanced Settings |
+| Hauptansicht | Einstellungen |
 |---|---|
 | `screenshots/standard.png` | `screenshots/advanced.png` |
 
 ---
 
-## 🚀 Getting Started
+## 🚀 Schnellstart
 
-### Requirements
+### Voraussetzungen
 
 - Python 3.10+
-- FFmpeg (optional, required for audio mixing — place `ffmpeg.exe` under `assets/bin/`)
+- FFmpeg (optional, für Audio-Mixing — `ffmpeg.exe` unter `assets/bin/` ablegen)
 
-### Install dependencies
+### Abhängigkeiten installieren
 
 ```bash
 pip install -r config/requirements.txt
 ```
 
-### Run
+### Starten
 
 ```bash
 cd scripts
@@ -52,97 +54,119 @@ python main.py
 
 ---
 
-## 📦 Build EXE (Windows)
-
-Run the included build script:
+## 📦 EXE erstellen (Windows)
 
 ```
 build\build.bat
 ```
 
-This will:
-1. Install all dependencies via pip
-2. Bundle everything into a single `.exe` using PyInstaller
-3. Output to `dist\IntroMaker.exe`
+Das Skript:
+1. Installiert alle Abhängigkeiten via pip
+2. Bündelt alles in eine einzelne `.exe` mit PyInstaller
+3. Gibt die fertige Datei unter `dist\IntroMaker.exe` aus
 
-> Make sure `assets/bin/ffmpeg.exe` is present before building if you want audio support bundled.
+> `assets/bin/ffmpeg.exe` muss vorhanden sein, wenn Audio-Support mit eingebunden werden soll.
 
 ---
 
-## 📁 Project Structure
+## 📁 Projektstruktur
 
 ```
 IntroMaker/
 ├── assets/
-│   ├── bin/            # ffmpeg.exe (optional, not included)
-│   ├── fonts/          # Custom .ttf / .otf fonts
-│   └── pictures/       # Icons, logos, splash images
+│   ├── bin/                # ffmpeg.exe (optional, nicht enthalten)
+│   ├── fonts/              # Eigene .ttf / .otf Schriftarten
+│   └── pictures/           # Icons, Logos, Splash-Bilder
 ├── build/
-│   └── build.bat       # PyInstaller build script
+│   └── build.bat           # PyInstaller Build-Skript
 ├── config/
 │   └── requirements.txt
+├── lang/
+│   ├── de.json             # Deutsch
+│   ├── en.json             # Englisch
+│   └── ru.json             # Russisch
 ├── scripts/
-│   ├── main.py             # Main window & UI
-│   ├── video_generator.py  # Frame rendering & FFmpeg pipeline
-│   ├── font_picker.py      # Font selection widget with live preview
-│   ├── splash.py           # Animated splash screen
-│   ├── config_manager.py   # Settings load/save/reset (stored in %APPDATA%)
-│   └── styles.py           # Light/dark theme stylesheets
+│   ├── main.py             # Hauptfenster & UI
+│   ├── video_generator.py  # Frame-Rendering & FFmpeg-Pipeline
+│   ├── font_picker.py      # Schriftart-Auswahl mit Live-Vorschau
+│   ├── splash.py           # Animierter Splash-Screen
+│   ├── config_manager.py   # Einstellungen laden/speichern/zurücksetzen
+│   ├── lang_manager.py     # Mehrsprachigkeit (i18n)
+│   └── styles.py           # Hell-/Dunkel-Theme Stylesheets
 └── README.md
 ```
 
 ---
 
-## ⚙️ Configuration
+## ⚙️ Einstellungen
 
-All settings are saved automatically between sessions. You can also manually save or reset them from the **Advanced Settings** page (⚙️ button in the header).
+Alle Einstellungen werden automatisch zwischen Sitzungen gespeichert und können auf der **Einstellungsseite** (⚙️-Button im Header) manuell gespeichert oder zurückgesetzt werden.
 
-| Setting | Description |
+| Einstellung | Beschreibung |
 |---|---|
-| Timer Duration | Total length of the countdown video (1–120 min) |
-| Background | Video file, image file, or plain white |
-| Music | Audio file with optional loop + fade-out (requires FFmpeg) |
-| Slider Images | Images shown between countdown segments |
-| Font & Colors | Custom font, timer color, subtitle color |
-| Subtitle | Optional text below the timer with size and color control |
-| Subtitle Offset | Extra distance between timer and subtitle in line-heights |
-| Fade In / Out | Configurable black fade at video start and end, with duration |
-| Slider Timing | When to show images, how long each is shown, pause between |
-| Slider Loop | Repeat images until the slider zone ends, or show each once |
-| Transitions | Crossfade duration between timer and slider images |
-| Music Fade-out | Duration of the music fade at the end of the video |
+| Timer-Dauer | Gesamtlänge des Countdown-Videos (1–120 Min.) |
+| Hintergrund | Videodatei, Bilddatei oder reines Weiß |
+| Musik | Audiodatei mit optionalem Loop und Fade-out (erfordert FFmpeg) |
+| Slider-Bilder | Bilder zwischen Countdown-Abschnitten |
+| Schrift & Farben | Eigene Schriftart, Timer-Farbe, Untertitel-Farbe |
+| Untertitel | Optionaler Text unter dem Timer mit Größen- und Farbsteuerung |
+| Untertitel-Abstand | Extra-Abstand zwischen Timer und Untertitel in Zeilenhöhen |
+| Abschluss-Bild | Slide nach dem Timer mit Text, Schriftart, Farbe und Hintergrundbild |
+| Fade In / Out | Schwarzblende am Start und Ende mit konfigurierbarer Dauer |
+| Slider-Timing | Wann Bilder erscheinen, wie lange, Pause dazwischen |
+| Slider-Loop | Bilder bis Zonen-Ende wiederholen oder jeden einmal zeigen |
+| Übergänge | Crossfade-Dauer zwischen Timer und Slider-Bildern |
+| Musik-Fade-out | Dauer des Musik-Fade am Videoende |
+| Sprache | Deutsch / Englisch / Russisch — wirkt ab dem nächsten Start |
 
-Settings are saved automatically to `%APPDATA%\MaczapIntroMaker\settings.json` and restored on next launch. You can also manually save or reset from the **Advanced Settings** page.
+Einstellungen werden gespeichert unter:
+```
+%APPDATA%\MaczapIntroMaker\settings.json
+```
+
+---
+
+## 🌐 Sprachen
+
+Die App unterstützt aktuell drei Sprachen:
+
+| Code | Sprache |
+|---|---|
+| `de` | Deutsch (Standard) |
+| `en` | English |
+| `ru` | Русский |
+
+Die Sprache wird in den **Einstellungen** gewählt und gilt ab dem nächsten Programmstart. Weitere Sprachen können einfach durch Ablegen einer neuen `xx.json` im `lang/`-Ordner hinzugefügt werden — sie werden automatisch erkannt.
 
 ---
 
 ## 🎵 Audio (FFmpeg)
 
-Audio mixing requires `ffmpeg.exe` to be placed at:
+Audio-Mixing erfordert `ffmpeg.exe` unter:
 
 ```
 assets/bin/ffmpeg.exe
 ```
 
-You can download a static build from [ffmpeg.org](https://ffmpeg.org/download.html) or [gyan.dev](https://www.gyan.dev/ffmpeg/builds/).
+Einen statischen Build gibt es auf [ffmpeg.org](https://ffmpeg.org/download.html) oder [gyan.dev](https://www.gyan.dev/ffmpeg/builds/).
 
-If FFmpeg is not found, the video will be rendered without audio.
+Wird FFmpeg nicht gefunden, wird das Video ohne Audio gerendert.
 
 ---
 
 ## 🛠️ Tech Stack
 
-| Library | Purpose |
+| Bibliothek | Zweck |
 |---|---|
-| `PyQt5` | UI framework |
-| `OpenCV` (`cv2`) | Frame writing & video capture |
-| `Pillow` (`PIL`) | Text rendering, font handling |
-| `NumPy` | Frame compositing |
-| `FFmpeg` | Audio mixing (optional, external) |
-| `PyInstaller` | EXE bundling |
+| `PyQt5` | UI-Framework |
+| `OpenCV` (`cv2`) | Frame-Rendering & Video-Capture |
+| `Pillow` (`PIL`) | Text-Rendering, Font-Handling |
+| `NumPy` | Frame-Compositing |
+| `FFmpeg` | Audio-Mixing (optional, extern) |
+| `PyInstaller` | EXE-Bundling |
 
 ---
 
-## 📄 License
+## 📄 Lizenz
 
-MIT — do whatever you want, attribution appreciated.
+MIT — frei verwendbar, Nennung erwünscht.
