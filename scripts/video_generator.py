@@ -129,10 +129,22 @@ class VideoGenerator:
                 ff_cmd,
                 stdin=subprocess.PIPE,
                 stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
+                stderr=subprocess.PIPE,   # capture stderr for error diagnosis
                 startupinfo=_STARTUPINFO
             )
-            write_frame = lambda f: ff_proc.stdin.write(f.tobytes())
+
+            def write_frame(f):
+                # If FFmpeg has already exited, raise a clear error immediately
+                if ff_proc.poll() is not None:
+                    err = ff_proc.stderr.read().decode(errors="replace")
+                    raise RuntimeError(
+                        f"FFmpeg beendet (Code {ff_proc.returncode}):\n{err}")
+                try:
+                    ff_proc.stdin.write(f.tobytes())
+                except (BrokenPipeError, OSError):
+                    err = ff_proc.stderr.read().decode(errors="replace")
+                    raise RuntimeError(
+                        f"FFmpeg Pipe-Fehler (Code {ff_proc.returncode}):\n{err}")
         else:
             ff_proc = None
             fourcc  = cv2.VideoWriter_fourcc(*"mp4v")
@@ -214,51 +226,54 @@ class VideoGenerator:
                         self.cb(min(pct, 0.95),
                                 f"⏳ Rendere … {m:02d}:{s:02d}  ({int(pct*100)}%)",
                                 frame_info=(frame_idx, total_frames))
+
+            # ── Outro slide — rendered BEFORE stdin is closed ─────────────────
+            outro_enabled  = cfg.get("outro_slide_enabled", False)
+            outro_text     = cfg.get("outro_slide_text", "").strip()
+            outro_color    = cfg.get("outro_slide_color", "#000000")
+            outro_dur      = float(cfg.get("outro_slide_duration", 5))
+            outro_fade_in  = float(cfg.get("outro_slide_fade_in", 1))
+            outro_fade_out = float(cfg.get("outro_slide_fade_out", 1))
+
+            if outro_enabled and outro_text:
+                outro_base   = self._draw_outro_slide(
+                    outro_text, outro_color, w, h, get_font, font_path)
+                outro_frames = int(outro_dur * fps)
+
+                for f in range(outro_frames):
+                    frame = outro_base.copy()
+                    t     = f / fps
+
+                    if outro_fade_in > 0 and t < outro_fade_in:
+                        a = t / outro_fade_in
+                        frame = cv2.addWeighted(frame, a, black, 1 - a, 0)
+
+                    if outro_fade_out > 0 and t > outro_dur - outro_fade_out:
+                        a = (outro_dur - t) / outro_fade_out
+                        a = max(0.0, min(1.0, a))
+                        frame = cv2.addWeighted(frame, a, black, 1 - a, 0)
+
+                    write_frame(frame)
+
+                    if f % 15 == 0:
+                        self.cb(0.95 + 0.04 * (f / outro_frames),
+                                "🖼 Abschluss-Bild …",
+                                frame_info=(total_frames + f,
+                                            total_frames + outro_frames))
+
         finally:
+            # Must happen AFTER all frames including outro are written
             if ff_proc:
                 ff_proc.stdin.close()
+                ff_proc.stderr.close()
                 ff_proc.wait()
+                if ff_proc.returncode not in (0, None):
+                    raise RuntimeError(
+                        f"FFmpeg schloss mit Code {ff_proc.returncode}")
             else:
                 writer.release()
             if bg_cap:
                 bg_cap.release()
-
-        # ── Outro slide (shown after timer reaches 0) ─────────────────────────
-        outro_enabled  = cfg.get("outro_slide_enabled", False)
-        outro_text     = cfg.get("outro_slide_text", "").strip()
-        outro_color    = cfg.get("outro_slide_color", "#000000")
-        outro_dur      = float(cfg.get("outro_slide_duration", 5))
-        outro_fade_in  = float(cfg.get("outro_slide_fade_in", 1))
-        outro_fade_out = float(cfg.get("outro_slide_fade_out", 1))
-
-        if outro_enabled and outro_text:
-            # Build the static white outro frame with centered text
-            outro_base = self._draw_outro_slide(
-                outro_text, outro_color, w, h, get_font, font_path)
-            outro_frames = int(outro_dur * fps)
-            outro_total  = outro_frames
-
-            for f in range(outro_frames):
-                frame = outro_base.copy()
-                t     = f / fps   # seconds into the outro
-
-                # Fade in from last timer frame
-                if outro_fade_in > 0 and t < outro_fade_in:
-                    a = t / outro_fade_in
-                    frame = cv2.addWeighted(frame, a, black, 1 - a, 0)
-
-                # Fade out to black
-                if outro_fade_out > 0 and t > outro_dur - outro_fade_out:
-                    a = (outro_dur - t) / outro_fade_out
-                    a = max(0.0, min(1.0, a))
-                    frame = cv2.addWeighted(frame, a, black, 1 - a, 0)
-
-                write_frame(frame)
-
-                if f % 15 == 0:
-                    self.cb(0.95 + 0.04 * (f / outro_total),
-                            "🖼 Abschluss-Bild …",
-                            frame_info=(total_frames + f, total_frames + outro_total))
 
         # Total video duration including optional outro slide
         outro_enabled = cfg.get("outro_slide_enabled", False)
