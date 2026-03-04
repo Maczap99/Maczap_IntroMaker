@@ -55,7 +55,7 @@ DEFAULTS = {
     "outro_slide_font_name":  None,
     "outro_slide_duration":   5,
     "outro_slide_fade_in":    1,
-    "outro_slide_fade_out":   1,
+    "outro_slide_fade_out":   2,
 }
 
 def load() -> dict:
