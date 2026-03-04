@@ -706,13 +706,6 @@ class IntroMaker(QMainWindow):
         tel.addWidget(te_hint)
         tel.addWidget(self._outro_slide_edit)
 
-        # Foreground (text) color
-        fg_row = QWidget(); fgl = QHBoxLayout(fg_row)
-        fgl.setContentsMargins(0, 4, 0, 0); fgl.setSpacing(10)
-        fgl.addWidget(dim_lbl("Schriftfarbe:")); fgl.addWidget(self._outro_slide_color_btn)
-        fgl.addStretch()
-        tel.addWidget(fg_row)
-
         # Separator before background section
         bg_sep = QFrame(); bg_sep.setFrameShape(QFrame.HLine)
         bg_sep.setStyleSheet("background: #334155; max-height:1px; margin-top:6px;")
@@ -731,10 +724,17 @@ class IntroMaker(QMainWindow):
         # Background image picker
         tel.addWidget(self._outro_slide_bg_image_row)
 
-        # Background color (fallback when no image is selected)
+        # Foreground (text) color
+        fg_row = QWidget(); fgl = QHBoxLayout(fg_row)
+        fgl.setContentsMargins(0, 4, 0, 0); fgl.setSpacing(10)
+        fgl.addWidget(dim_lbl("Schriftfarbe:")); fgl.addWidget(self._outro_slide_color_btn)
+        fgl.addStretch()
+        tel.addWidget(fg_row)
+
+        # Background color (background when no image is selected)
         bg_col_row = QWidget(); bcl = QHBoxLayout(bg_col_row)
         bcl.setContentsMargins(0, 2, 0, 0); bcl.setSpacing(10)
-        bcl.addWidget(dim_lbl("Fallback-Farbe:")); bcl.addWidget(self._outro_slide_bg_color_btn)
+        bcl.addWidget(dim_lbl("Hintergrund-Farbe:")); bcl.addWidget(self._outro_slide_bg_color_btn)
         bcl.addStretch()
         tel.addWidget(bg_col_row)
 
@@ -956,7 +956,7 @@ class IntroMaker(QMainWindow):
     def _apply_theme(self, theme):
         self._theme = theme
         QApplication.instance().setStyleSheet(make_style(theme == "dark"))
-        self._theme_btn.setText("🌙  Dark Mode" if theme == "light" else "☀️  Light Mode")
+        self._theme_btn.setText("🌙" if theme == "light" else "☀️")
         self._update_header_logo()
         accent = "#3B82F6" if theme == "dark" else "#2563EB"
         self._pct_lbl.setStyleSheet(f"color: {accent};")
