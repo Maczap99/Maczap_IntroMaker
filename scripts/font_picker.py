@@ -4,6 +4,8 @@ from PyQt5.QtGui     import QPixmap, QImage, QFont
 from PyQt5.QtCore    import Qt, pyqtSignal
 from PIL             import Image, ImageDraw, ImageFont
 
+from lang_manager import tr
+
 
 def resource_path(relative_path):
     if hasattr(sys, "_MEIPASS"):
@@ -31,7 +33,6 @@ def _load_font_list():
 
 
 def _render_preview(font_path, theme="light", text="04:32", size=(320, 80)):
-    """Render a preview image of the given text using the specified font."""
     W, H = size
     if theme == "dark":
         bg_col, text_col, shd_col = (15, 23, 42), (255, 255, 255), (0, 0, 0)
@@ -61,35 +62,30 @@ class FontPickerWidget(QFrame):
         super().__init__(parent)
         self._font_list    = _load_font_list()
         self._theme        = theme
-        # Preview text shown in the font preview image (e.g. "04:32" for timer,
-        # "Beispiel" for outro slide text)
         self._preview_text = preview_text
         self.setObjectName("FontPickerWidget")
         layout = QVBoxLayout(self)
         layout.setContentsMargins(14, 12, 14, 12)
         layout.setSpacing(8)
-        title = QLabel("🔤  Schriftart")
-        title.setFont(QFont("Segoe UI", 11, QFont.Bold))
-        title.setObjectName("sectionLabel")
-        layout.addWidget(title)
+
+        # Title label — translated
+        self._title_lbl = QLabel(tr("font_picker.title"))
+        self._title_lbl.setFont(QFont("Segoe UI", 11, QFont.Bold))
+        self._title_lbl.setObjectName("sectionLabel")
+        layout.addWidget(self._title_lbl)
+
         self._combo = QComboBox()
         self._combo.setFont(QFont("Segoe UI", 11))
-        # No fixed width — combo stretches to fill the parent card like
-        # QTextEdit and QListWidget do in the same layout
         self._combo.setMaximumWidth(16777215)
         for name, _ in self._font_list:
             self._combo.addItem(name)
         self._combo.currentIndexChanged.connect(self._on_change)
         layout.addWidget(self._combo)
+
         self._preview = QLabel()
-        # Height stays fixed at 80 px; width is unconstrained so Qt stretches
-        # the label to match the parent card width automatically.
-        # setScaledContents lets the pixmap fill whatever width Qt assigns.
         self._preview.setFixedHeight(80)
         self._preview.setMaximumWidth(16777215)
         self._preview.setAlignment(Qt.AlignCenter)
-        # No setScaledContents — the pixmap keeps its natural 320 x 80 px size
-        # and is simply centred inside the (wider) label
         layout.addWidget(self._preview)
         self._refresh_preview()
 
@@ -105,6 +101,10 @@ class FontPickerWidget(QFrame):
     def set_theme(self, theme):
         self._theme = theme
         self._refresh_preview()
+
+    def retranslate(self):
+        """Refresh the title label after a language change."""
+        self._title_lbl.setText(tr("font_picker.title"))
 
     def get_font_path(self):
         idx = self._combo.currentIndex()

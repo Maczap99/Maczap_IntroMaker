@@ -1,0 +1,171 @@
+{
+  "app_title": "Intro Maker",
+
+  "header": {
+    "settings": "⚙️  Настройки",
+    "back": "🏠  Назад",
+    "theme_dark": "🌙",
+    "theme_light": "☀️"
+  },
+
+  "simple_left": {
+    "timer_title": "⏱  Длительность таймера",
+    "timer_hint": "Общая длина countdown-видео",
+    "timer_unit": "{} мин",
+
+    "bg_title": "🎨  Фон",
+    "bg_hint": "Видео имеет приоритет над изображением — оба необязательны (по умолчанию: белый)",
+    "bg_pick_video": "🎬  Выбрать видео",
+    "bg_pick_image": "🖼  Выбрать изображение",
+
+    "music_title": "🎵  Фоновая музыка",
+    "music_hint": "Необязательно — MP3, WAV, OGG",
+    "music_pick": "🎵  Выбрать музыкальный файл",
+
+    "output_title": "💾  Выходной файл",
+    "output_hint": "Имя файла: Intro - ДД.ММ.ГГГГ",
+    "output_pick": "📁  Выбрать папку"
+  },
+
+  "simple_right": {
+    "slider_title": "🖼  Изображения слайдера",
+    "slider_hint": "Отображаются между секциями обратного отсчёта",
+    "slider_add": "+ Добавить изображения",
+    "slider_remove": "− Удалить выбранные",
+    "slider_clear": "Очистить список",
+    "slider_empty": "  Изображения не выбраны",
+
+    "font_color_title": "🎨  Цвет шрифта таймера",
+    "font_color_label": "Цвет:",
+
+    "subtitle_title": "💬  Субтитры",
+    "subtitle_hint": "Отображается под таймером",
+    "subtitle_enable": "Включить субтитры",
+    "subtitle_placeholder": "напр. Добро пожаловать на мероприятие",
+    "subtitle_color_label": "Цвет:"
+  },
+
+  "settings": {
+    "music_group": "Музыка",
+    "music_loop": "Зацикливание (повтор)",
+    "music_fadeout": "Затухание в конце",
+    "music_fade_dur_label": "Длительность затухания",
+    "music_fade_dur_hint": "Как долго музыка затухает в конце",
+    "music_in_outro": "Музыка в заключительном слайде",
+    "music_in_outro_hint": "Вкл: музыка играет до конца видео  |  Выкл: музыка останавливается при 0:00",
+
+    "fade_group": "Плавное появление / исчезновение",
+    "intro_fade": "Включить появление в начале",
+    "intro_fade_hint": "Видео плавно появляется из чёрного экрана",
+    "intro_fade_dur_label": "Длительность появления",
+    "outro_fade": "Включить исчезновение в конце",
+    "outro_fade_hint": "Видео плавно исчезает в чёрный экран",
+    "outro_fade_dur_label": "Длительность исчезновения",
+
+    "slider_group": "Настройки слайдера",
+    "slider_from_label": "Слайдер начинается с",
+    "slider_from_hint": "Показывать изображения когда осталось X минут",
+    "slider_until_label": "Слайдер заканчивается при",
+    "slider_until_hint": "Больше нет изображений с X оставшихся минут",
+    "img_dur_label": "Длительность изображения",
+    "img_dur_hint": "Как долго отображается каждое изображение",
+    "timer_between_label": "Таймер между изображениями",
+    "timer_between_hint": "Пауза обратного отсчёта между двумя изображениями",
+    "slider_loop": "Повторять изображения до конца слайдера",
+    "slider_loop_hint": "Цикл вкл: изобр. → таймер → изобр. → ...  |  Цикл выкл: все изображения один раз",
+
+    "transitions_group": "Переходы",
+    "fade_label": "Длительность перехода",
+    "fade_hint": "Плавное появление/исчезновение при смене изображений",
+
+    "subtitle_group": "Субтитры",
+    "sub_size_label": "Размер шрифта",
+    "sub_size_hint": "Размер текста субтитров в видео",
+    "sub_offset_label": "Отступ от таймера",
+    "sub_offset_hint": "Количество строк между таймером и субтитрами",
+
+    "outro_group": "Заключительный слайд",
+    "outro_enable": "Включить заключительный слайд",
+    "outro_enable_hint": "Изображение с текстом после таймера",
+    "outro_text_label": "Текст",
+    "outro_text_hint": "Отображается по центру заключительного слайда",
+    "outro_text_placeholder": "напр. Добро пожаловать",
+    "outro_bg_section": "Фон",
+    "outro_bg_hint": "Изображение имеет приоритет — цвет используется без изображения",
+    "outro_bg_image_pick": "🖼  Выбрать фоновое изображение",
+    "outro_font_color_label": "Цвет текста:",
+    "outro_bg_color_label": "Цвет фона:",
+    "outro_font_label": "Шрифт",
+    "outro_font_hint": "Независимо от таймера — только для заключительного слайда",
+    "outro_font_size_label": "Размер шрифта",
+    "outro_font_size_hint": "Размер текста на заключительном слайде",
+    "outro_dur_label": "Показывать в течение",
+    "outro_dur_hint": "Как долго отображается заключительный слайд",
+    "outro_fadein_label": "Длительность появления",
+    "outro_fadein_hint": "Плавный переход от таймера к заключительному слайду",
+    "outro_fadeout_label": "Длительность исчезновения",
+    "outro_fadeout_hint": "Плавное исчезновение заключительного слайда в чёрный",
+
+    "language_group": "Sprache / Language / Язык",
+    "language_label": "Язык",
+    "language_hint": "Выбранный язык применяется после перезапуска",
+
+    "save_btn": "💾  Сохранить",
+    "save_btn_ok": "✓  Сохранено",
+    "reset_btn": "↺  Сбросить"
+  },
+
+  "bottom": {
+    "status_ready": "Готово",
+    "create_btn": "🎬  Создать видео",
+    "cancel_btn": "✕  Отмена",
+    "status_cancelled": "⛔  Отменено",
+    "status_done": "✅  Готово!",
+    "status_error": "❌  Ошибка!",
+    "eta_prefix": "⏳ До конца:",
+    "rendering": "⏳ Рендеринг … {mm}:{ss}  ({pct}%)",
+    "mixing_audio": "🎵 Смешивание аудио …",
+    "outro_rendering": "🖼 Заключительный слайд …",
+    "done_final": "✅ Готово!"
+  },
+
+  "dialogs": {
+    "error_no_output_title": "Ошибка",
+    "error_no_output_msg": "Пожалуйста, выберите папку для сохранения!",
+    "error_ffmpeg_title": "FFmpeg не найден",
+    "error_ffmpeg_msg": "Для фоновой музыки требуется FFmpeg.\n\nПожалуйста, поместите ffmpeg.exe в assets/bin/.",
+    "error_render_title": "Ошибка рендеринга",
+    "done_title": "🎉 Готово!",
+    "done_msg": "Видео успешно сохранено:\n\n{0}",
+    "reset_title": "Сброс настроек",
+    "reset_msg": "Сбросить все настройки до значений по умолчанию?\n\nЭто действие нельзя отменить.",
+    "reset_confirm": "Да, сбросить",
+    "cancel": "Отмена",
+    "ok": "ОК",
+    "icon_info": "✅",
+    "icon_error": "❌",
+    "icon_question": "↺"
+  },
+
+  "file_row": {
+    "nothing_selected": "Ничего не выбрано",
+    "remove_tooltip": "Удалить выбранное"
+  },
+
+  "font_picker": {
+    "title": "🔤  Шрифт"
+  },
+
+  "splash": {
+    "loading": "Загрузка …"
+  },
+
+  "stepper": {
+    "minutes": "{} мин",
+    "seconds": "{} с",
+    "points": "{} пт",
+    "lines": "{} строк"
+  },
+
+  "output_filename": "Intro - {0}"
+}

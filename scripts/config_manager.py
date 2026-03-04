@@ -21,6 +21,7 @@ def _config_path() -> str:
 DEFAULTS = {
     # UI state
     "theme":              "light",
+    "language":           "de",
     # Timer
     "timer_minutes":      5,
     # Music
@@ -61,7 +62,7 @@ DEFAULTS = {
     "outro_slide_fade_out":   2,
     # Music behaviour during outro slide
     "music_in_outro":         False,
-    # FIX: remember last used output folder so the dialog opens there next time
+    # Remember last used output folder so the dialog opens there next time
     "last_output_folder":     "",
 }
 

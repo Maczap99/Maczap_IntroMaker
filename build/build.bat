@@ -16,10 +16,13 @@ python -m PyInstaller --onefile --windowed ^
   --workpath "build\_pyinstaller_tmp" ^
   --specpath "build" ^
   --add-data "%CD%\assets;assets" ^
+  --add-data "%CD%\lang;lang" ^
   --add-data "%CD%\scripts\font_picker.py;." ^
   --add-data "%CD%\scripts\video_generator.py;." ^
   --add-data "%CD%\scripts\splash.py;." ^
   --add-data "%CD%\scripts\config_manager.py;." ^
+  --add-data "%CD%\scripts\lang_manager.py;." ^
+  --add-data "%CD%\scripts\styles.py;." ^
   scripts\main.py
 if errorlevel 1 ( echo FEHLER beim Build! & pause & exit /b 1 )
 echo [3/3] Aufraeumen...
