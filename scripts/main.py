@@ -385,7 +385,7 @@ class IntroMaker(QMainWindow):
         self._sub_size_step   = Stepper(10, 120, 40, step=2,
                                         fmt=tr("stepper.points"))
         self._sub_size_step.setEnabled(False)
-        self._sub_offset_step = Stepper(0,  20,  2,  step=1,
+        self._sub_offset_step = Stepper(0,  20,  2.5,  step=0.5,
                                         fmt=tr("stepper.lines"))
         self._sub_offset_step.setEnabled(False)
 
