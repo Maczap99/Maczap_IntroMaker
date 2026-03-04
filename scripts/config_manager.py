@@ -59,6 +59,8 @@ DEFAULTS = {
     "outro_slide_duration":   5,
     "outro_slide_fade_in":    1,
     "outro_slide_fade_out":   2,
+    # Music behaviour during outro slide
+    "music_in_outro":         False,
     # FIX: remember last used output folder so the dialog opens there next time
     "last_output_folder":     "",
 }

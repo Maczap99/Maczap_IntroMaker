@@ -345,10 +345,14 @@ class IntroMaker(QMainWindow):
         self._sub_color_btn.clicked.connect(self._pick_sub_color)
 
         # ── Advanced settings widgets ──────────────────────────────────────────
-        self._music_loop_chk    = StyledCheckBox("Loop (wiederholen)")
-        self._music_fadeout_chk = StyledCheckBox("Fade-out am Ende")
+        self._music_loop_chk     = StyledCheckBox("Loop (wiederholen)")
+        self._music_fadeout_chk  = StyledCheckBox("Fade-out am Ende")
+        # When checked, music continues through the outro slide and ends with
+        # the video. When unchecked, music stops when the timer hits 0:00.
+        self._music_in_outro_chk = StyledCheckBox("Musik im Abschluss-Bild")
         self._music_loop_chk.setChecked(True); self._music_fadeout_chk.setChecked(True)
-        self._music_fade_step   = Stepper(1, 30, 4, step=1, fmt="{} s")
+        self._music_in_outro_chk.setChecked(False)
+        self._music_fade_step    = Stepper(1, 30, 4, step=1, fmt="{} s")
 
         self._intro_fade_chk  = StyledCheckBox("Fade In am Start aktivieren")
         self._intro_fade_chk.stateChanged.connect(self._toggle_intro_fade)
@@ -784,6 +788,8 @@ class IntroMaker(QMainWindow):
                                "Crossfade vom Timer zum Abschluss-Bild"),
             self._settings_row("Fade-Out Dauer", self._outro_slide_fadeout_step,
                                "Ausblenden des Abschluss-Bilds zu Schwarz"),
+            self._settings_check_row(self._music_in_outro_chk,
+                                     "An: Musik läuft bis Videoende  |  Aus: Musik endet mit Timer 0:00"),
         ]))
 
         # Save / Reset buttons
@@ -853,6 +859,7 @@ class IntroMaker(QMainWindow):
             "music_loop":         self._music_loop_chk.isChecked(),
             "music_fadeout":      self._music_fadeout_chk.isChecked(),
             "music_fade_dur":     self._music_fade_step.value(),
+            "music_in_outro":     self._music_in_outro_chk.isChecked(),
             "intro_fade_enabled": self._intro_fade_chk.isChecked(),
             "intro_fade_dur":     self._intro_fade_step.value(),
             "outro_fade_enabled": self._outro_fade_chk.isChecked(),
@@ -896,6 +903,7 @@ class IntroMaker(QMainWindow):
         self._music_loop_chk.setChecked(s.get("music_loop", True))
         self._music_fadeout_chk.setChecked(s.get("music_fadeout", True))
         self._music_fade_step.set_value(s.get("music_fade_dur", 4))
+        self._music_in_outro_chk.setChecked(s.get("music_in_outro", False))
         self._intro_fade_chk.setChecked(s.get("intro_fade_enabled", False))
         self._intro_fade_step.set_value(s.get("intro_fade_dur", 3))
         self._intro_fade_step.setEnabled(s.get("intro_fade_enabled", False))
@@ -1001,7 +1009,7 @@ class IntroMaker(QMainWindow):
         if hasattr(self, "_outro_font_picker"):
             self._outro_font_picker.set_theme(theme)
         dark = (theme == "dark")
-        for chk in [self._music_loop_chk, self._music_fadeout_chk,
+        for chk in [self._music_loop_chk, self._music_fadeout_chk, self._music_in_outro_chk,
                     self._intro_fade_chk, self._outro_fade_chk,
                     self._sub_chk, self._slider_loop_chk]:
             try: chk.update_theme(dark)
@@ -1262,6 +1270,7 @@ class IntroMaker(QMainWindow):
             "music_loop":         self._music_loop_chk.isChecked(),
             "music_fadeout":      self._music_fadeout_chk.isChecked(),
             "music_fade_dur":     self._music_fade_step.value(),
+            "music_in_outro":     self._music_in_outro_chk.isChecked(),
             "intro_fade_enabled": self._intro_fade_chk.isChecked(),
             "intro_fade_dur":     self._intro_fade_step.value(),
             "outro_fade_enabled": self._outro_fade_chk.isChecked(),

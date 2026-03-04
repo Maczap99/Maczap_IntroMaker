@@ -285,15 +285,34 @@ class VideoGenerator:
             if bg_cap:
                 bg_cap.release()
 
-        outro_enabled = cfg.get("outro_slide_enabled", False)
-        outro_text    = cfg.get("outro_slide_text", "").strip()
-        audio_total   = total_sec
-        if outro_enabled and outro_text:
-            audio_total += float(cfg.get("outro_slide_duration", 5))
+        # ── Determine audio duration ──────────────────────────────────────────
+        # The video file always contains timer + outro slide frames, so FFmpeg
+        # must always receive the full video length — otherwise -shortest would
+        # cut the outro slide off.
+        #
+        # music_in_outro=True  → music plays through the outro slide
+        # music_in_outro=False → music fades out / stops at timer 0:00,
+        #                         but the outro slide still plays in silence
+        outro_enabled   = cfg.get("outro_slide_enabled", False)
+        outro_text_set  = cfg.get("outro_slide_text", "").strip()
+        music_in_outro  = cfg.get("music_in_outro", False)
+        outro_dur_val   = float(cfg.get("outro_slide_duration", 5)) if (outro_enabled and outro_text_set) else 0.0
+
+        # Total video duration (what FFmpeg sees on the video stream)
+        full_video_dur = total_sec + outro_dur_val
+
+        if music_in_outro:
+            # Music is trimmed to the full video length
+            audio_total = full_video_dur
+        else:
+            # Music is trimmed at timer end; the video is still full length
+            audio_total = total_sec
 
         if cfg.get("music_path") and ffmpeg_path:
             self.cb(0.98, "🎵 Mische Audio …", frame_info=(total_frames, total_frames))
-            self._mix_audio(tmp_video, out_path, audio_total, cfg, ffmpeg_path)
+            # Pass full_video_dur so FFmpeg knows the video is longer than the
+            # music when music_in_outro=False; audio_total controls music length
+            self._mix_audio(tmp_video, out_path, audio_total, full_video_dur, cfg, ffmpeg_path)
             try:
                 os.remove(tmp_video)
             except:
@@ -452,19 +471,6 @@ class VideoGenerator:
           1. bg_image_path — if a valid image path is provided, it is scaled to
              fill the frame and used as the background.
           2. bg_hex_color  — solid color fill used when no image is set.
-
-        Text is drawn centered on top of whichever background is chosen.
-
-        Parameters
-        ----------
-        text          : str   – text to display (supports newlines)
-        hex_color     : str   – foreground / text color   (e.g. '#FFFFFF')
-        bg_image_path : str|None – path to background image, or None
-        bg_hex_color  : str   – fallback background color (e.g. '#000000')
-        font_size     : int   – font size in pt
-        font_path     : str|None – path to .ttf/.otf, or None for default
-        w, h          : int   – frame dimensions in pixels
-        get_font      : func  – cached font loader (path, size) -> font
         """
         # ── Build background ──────────────────────────────────────────────────
         if bg_image_path and os.path.isfile(bg_image_path):
@@ -473,7 +479,6 @@ class VideoGenerator:
                     (w, h), Image.LANCZOS
                 )
             except Exception:
-                # Fallback to color if the image cannot be opened
                 bg_r, bg_g, bg_b = _hex_to_rgb(bg_hex_color)
                 bg_pil = Image.new("RGB", (w, h), color=(bg_r, bg_g, bg_b))
         else:
@@ -513,17 +518,36 @@ class VideoGenerator:
         return cv2.cvtColor(np.array(bg_pil), cv2.COLOR_RGB2BGR)
 
     # ── Audio mix ─────────────────────────────────────────────────────────────
-    def _mix_audio(self, tmp_video, out_path, total_sec, cfg, ffmpeg_path):
+    def _mix_audio(self, tmp_video, out_path, audio_sec, video_sec, cfg, ffmpeg_path):
+        """Mix background music into the video.
+
+        Parameters
+        ----------
+        audio_sec : float
+            How long the music should play (may be shorter than the video when
+            music_in_outro=False so the outro slide plays in silence).
+        video_sec : float
+            Full duration of the video stream (timer + outro slide).  Used to
+            pad silent audio so the video is never cut short by FFmpeg's
+            -shortest flag.
+        """
         music      = cfg["music_path"]
         loop       = cfg["music_loop"]
         fadeout    = cfg["music_fadeout"]
         fade_dur   = cfg["music_fade_dur"]
-        fade_start = max(0, total_sec - fade_dur)
+        fade_start = max(0, audio_sec - fade_dur)
 
+        # Build the audio filter chain:
+        # 1. Trim music to audio_sec (may be shorter than video_sec)
+        # 2. Pad with silence up to video_sec so the full video is preserved
         af_parts = []
         if fadeout:
             af_parts.append(f"afade=t=out:st={fade_start:.2f}:d={fade_dur}")
-        af_parts.append(f"atrim=0:{total_sec}")
+        af_parts.append(f"atrim=0:{audio_sec}")
+        # Pad with silence to match the full video length so -shortest does not
+        # cut the outro slide when music ends before the video does
+        if video_sec > audio_sec:
+            af_parts.append(f"apad=whole_dur={video_sec}")
         af_str = ",".join(af_parts) if af_parts else "anull"
 
         loop_flag = ["-stream_loop", "-1"] if loop else []
