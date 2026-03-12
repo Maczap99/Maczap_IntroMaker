@@ -22,34 +22,45 @@ DEFAULTS = {
     # UI state
     "theme":              "light",
     "language":           "de",
+
     # Timer
     "timer_minutes":      5,
+
     # Music
     "music_loop":         True,
     "music_fadeout":      True,
     "music_fade_dur":     4,
+
     # Video fade
     "intro_fade_enabled": True,
     "intro_fade_dur":     3,
     "outro_fade_enabled": True,
     "outro_fade_dur":     3,
+
     # Slider timing
     "slider_from":        4,
     "slider_until":       1,
     "img_duration":       10,
     "timer_between":      15,
     "slider_loop":        True,
+
     # Transitions
     "fade_duration":      2.0,
+
     # Font & timer color
     "font_color":         "#FFFFFF",
     "font_name":          None,
+
     # Subtitle
     "subtitle_enabled":   False,
     "subtitle_text":      "",
     "subtitle_size":      60,
     "subtitle_offset":    2,
     "subtitle_color":     "#FFFFFF",
+
+    # Slider image fill color (used when image does not fill the 16:9 frame)
+    "slider_fill_color":  "#000000",
+
     # Outro slide (shown after timer reaches 0)
     "outro_slide_enabled":    False,
     "outro_slide_text":       "Herzlich Willkommen",
@@ -60,8 +71,10 @@ DEFAULTS = {
     "outro_slide_duration":   5,
     "outro_slide_fade_in":    1,
     "outro_slide_fade_out":   2,
+
     # Music behaviour during outro slide
     "music_in_outro":         False,
+
     # Remember last used output folder so the dialog opens there next time
     "last_output_folder":     "",
 }
@@ -74,7 +87,7 @@ def load() -> dict:
         try:
             with open(path, "r", encoding="utf-8") as f:
                 data = json.load(f)
-            # Back-fill any keys that were added in newer versions
+            # Back-fill any keys added in newer versions
             for k, v in DEFAULTS.items():
                 data.setdefault(k, v)
             return data

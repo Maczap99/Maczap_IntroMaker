@@ -30,7 +30,7 @@
   "simple_right": {
     "slider_title": "🖼  Slider-Bilder",
     "slider_hint": "Werden zwischen Countdown-Abschnitten eingeblendet",
-    "slider_add": "+ Bilder hinzufügen",
+    "slider_add": "+ Bilder / PDF hinzufügen",
     "slider_remove": "− Auswahl entfernen",
     "slider_clear": "Liste leeren",
     "slider_empty": "  Keine Bilder ausgewählt",
@@ -73,6 +73,8 @@
     "timer_between_hint": "Countdown-Pause zwischen zwei Bildern",
     "slider_loop": "Bilder wiederholen bis Slider-Ende",
     "slider_loop_hint": "Loop an: Bild → Timer → Bild → ...  |  Loop aus: alle Bilder einmal",
+    "slider_fill_color_label": "Füllfarbe (Balken)",
+    "slider_fill_color_hint": "Farbe der Balken bei nicht-16:9-Bildern (z. B. Hochformat)",
 
     "transitions_group": "Übergänge",
     "fade_label": "Bild-Fade Dauer",
@@ -135,6 +137,8 @@
     "error_ffmpeg_title": "FFmpeg fehlt",
     "error_ffmpeg_msg": "Für Hintergrundmusik wird FFmpeg benötigt.\n\nBitte ffmpeg.exe unter assets/bin/ ablegen.",
     "error_render_title": "Fehler beim Rendern",
+    "error_pdf_title": "PDF-Fehler",
+    "error_pdf_msg": "PyMuPDF (fitz) ist nicht installiert.\n\nBitte installieren mit:\n  pip install PyMuPDF",
     "done_title": "🎉 Fertig!",
     "done_msg": "Video wurde erfolgreich gespeichert:\n\n{0}",
     "reset_title": "Einstellungen zurücksetzen",
