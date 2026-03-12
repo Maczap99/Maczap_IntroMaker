@@ -104,7 +104,9 @@ class VideoGenerator:
             img = Image.open(cfg["bg_image"]).convert("RGB").resize((w, h))
             bg_static = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
         else:
-            bg_static = np.ones((h, w, 3), dtype=np.uint8) * 255
+            # No background source — fill with the user-chosen color
+            r, g, b   = _hex_to_rgb(cfg.get("bg_color", "#000000"))
+            bg_static = np.full((h, w, 3), (b, g, r), dtype=np.uint8)
 
         # ── Slider images (aspect-ratio-safe with fill color) ─────────────────
         slider_imgs   = []

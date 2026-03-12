@@ -14,7 +14,7 @@
     "timer_unit": "{} min",
 
     "bg_title": "🎨  Background",
-    "bg_hint": "Video takes priority over image — both optional (default: white)",
+    "bg_hint": "Video takes priority over image — both optional (default: black)",
     "bg_pick_video": "🎬  Choose video",
     "bg_pick_image": "🖼  Choose image",
 
@@ -24,16 +24,26 @@
 
     "output_title": "💾  Output File",
     "output_hint": "Filename: Intro - DD.MM.YYYY",
-    "output_pick": "📁  Choose location"
+    "output_pick": "📁  Choose location",
+
+    "preview_title": "🔍  Preview",
+    "preview_hint": "Shows background + font + color at 04:32",
+    "preview_btn": "↺  Refresh",
+    "preview_empty": "No preview yet — choose a background or click Refresh",
+    "preview_loading": "⏳  Generating preview …",
+    "preview_error": "❌  Preview could not be generated"
   },
 
   "simple_right": {
     "slider_title": "🖼  Slider Images",
     "slider_hint": "Displayed between countdown sections",
-    "slider_add": "+ Add images",
+    "slider_add": "+ Add images / PDF",
     "slider_remove": "− Remove selected",
     "slider_clear": "Clear list",
     "slider_empty": "  No images selected",
+
+    "fill_color_label": "Fill color (bars):",
+    "fill_color_title": "🎨  Slider image fill color",
 
     "font_color_title": "🎨  Timer Font Color",
     "font_color_label": "Color:",
@@ -46,6 +56,10 @@
   },
 
   "settings": {
+    "bg_group": "Background",
+    "bg_color_label": "Fallback color",
+    "bg_color_hint": "Color used when no video or image is selected",
+
     "music_group": "Music",
     "music_loop": "Loop (repeat)",
     "music_fadeout": "Fade out at end",
@@ -73,6 +87,8 @@
     "timer_between_hint": "Countdown pause between two images",
     "slider_loop": "Repeat images until slider end",
     "slider_loop_hint": "Loop on: image → timer → image → ...  |  Loop off: all images once",
+    "slider_fill_color_label": "Fill color (bars)",
+    "slider_fill_color_hint": "Color of the bars for non-16:9 images (e.g. portrait)",
 
     "transitions_group": "Transitions",
     "fade_label": "Image fade duration",
@@ -135,6 +151,8 @@
     "error_ffmpeg_title": "FFmpeg missing",
     "error_ffmpeg_msg": "FFmpeg is required for background music.\n\nPlease place ffmpeg.exe in assets/bin/.",
     "error_render_title": "Render error",
+    "error_pdf_title": "PDF Error",
+    "error_pdf_msg": "PyMuPDF (fitz) is not installed.\n\nPlease install it with:\n  pip install PyMuPDF",
     "done_title": "🎉 Done!",
     "done_msg": "Video saved successfully:\n\n{0}",
     "reset_title": "Reset settings",

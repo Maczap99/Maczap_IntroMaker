@@ -24,7 +24,14 @@
 
     "output_title": "💾  Ausgabedatei",
     "output_hint": "Dateiname: Intro - TT.MM.JJJJ",
-    "output_pick": "📁  Speicherort wählen"
+    "output_pick": "📁  Speicherort wählen",
+
+    "preview_title": "🔍  Vorschau",
+    "preview_hint": "Zeigt Hintergrund + Schriftart + Farbe bei 04:32",
+    "preview_btn": "↺  Aktualisieren",
+    "preview_empty": "Noch keine Vorschau — Hintergrund wählen oder auf Aktualisieren klicken",
+    "preview_loading": "⏳  Vorschau wird erstellt …",
+    "preview_error": "❌  Vorschau konnte nicht erstellt werden"
   },
 
   "simple_right": {
@@ -46,6 +53,10 @@
   },
 
   "settings": {
+    "bg_group": "Hintergrund",
+    "bg_color_label": "Fallback-Farbe",
+    "bg_color_hint": "Farbe wenn kein Video oder Bild ausgewählt ist",
+
     "music_group": "Musik",
     "music_loop": "Loop (wiederholen)",
     "music_fadeout": "Fade-out am Ende",

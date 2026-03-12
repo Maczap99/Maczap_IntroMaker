@@ -51,6 +51,9 @@ DEFAULTS = {
     "font_color":         "#FFFFFF",
     "font_name":          None,
 
+    # Background fallback color (used when no video/image is selected)
+    "bg_color":           "#000000",
+
     # Subtitle
     "subtitle_enabled":   False,
     "subtitle_text":      "",
