@@ -12,3 +12,6 @@ und eine fate in fate out Sekunden Einstellung
 ### Sound hinzufügen
 Wenn das Video fertig gerendert ist oder ein fehler beim rendern passiert sollen töne kommen.
 Den soll man in den einstellungen auch ein/aus schalten können
+
+### Fertig pop-up
+Das fertig/fehler popup beim rendern soll abgerundete ecken haben
