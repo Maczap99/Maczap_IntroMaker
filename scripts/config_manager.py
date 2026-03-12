@@ -21,6 +21,7 @@ def _config_path() -> str:
 DEFAULTS = {
     # UI state
     "theme":              "light",
+    "language":           "de",
     # Timer
     "timer_minutes":      5,
     # Music
@@ -46,7 +47,7 @@ DEFAULTS = {
     # Subtitle
     "subtitle_enabled":   False,
     "subtitle_text":      "",
-    "subtitle_size":      40,
+    "subtitle_size":      60,
     "subtitle_offset":    2,
     "subtitle_color":     "#FFFFFF",
     # Outro slide (shown after timer reaches 0)
@@ -54,14 +55,14 @@ DEFAULTS = {
     "outro_slide_text":       "Herzlich Willkommen",
     "outro_slide_color":      "#FFFFFF",
     "outro_slide_bg_color":   "#000000",
-    "outro_slide_font_size":  80,
+    "outro_slide_font_size":  120,
     "outro_slide_font_name":  None,
     "outro_slide_duration":   5,
     "outro_slide_fade_in":    1,
     "outro_slide_fade_out":   2,
     # Music behaviour during outro slide
     "music_in_outro":         False,
-    # FIX: remember last used output folder so the dialog opens there next time
+    # Remember last used output folder so the dialog opens there next time
     "last_output_folder":     "",
 }
 

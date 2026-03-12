@@ -1,0 +1,171 @@
+{
+  "app_title": "Intro Maker",
+
+  "header": {
+    "settings": "⚙️  Einstellungen",
+    "back": "🏠  Zurück",
+    "theme_dark": "🌙",
+    "theme_light": "☀️"
+  },
+
+  "simple_left": {
+    "timer_title": "⏱  Timer-Dauer",
+    "timer_hint": "Gesamtlänge des Countdown-Videos",
+    "timer_unit": "{} min",
+
+    "bg_title": "🎨  Hintergrund",
+    "bg_hint": "Video hat Vorrang vor Bild — beide optional (Standard: Weiß)",
+    "bg_pick_video": "🎬  Video wählen",
+    "bg_pick_image": "🖼  Bild wählen",
+
+    "music_title": "🎵  Hintergrundmusik",
+    "music_hint": "Optional — MP3, WAV, OGG",
+    "music_pick": "🎵  Musikdatei wählen",
+
+    "output_title": "💾  Ausgabedatei",
+    "output_hint": "Dateiname: Intro - TT.MM.JJJJ",
+    "output_pick": "📁  Speicherort wählen"
+  },
+
+  "simple_right": {
+    "slider_title": "🖼  Slider-Bilder",
+    "slider_hint": "Werden zwischen Countdown-Abschnitten eingeblendet",
+    "slider_add": "+ Bilder hinzufügen",
+    "slider_remove": "− Auswahl entfernen",
+    "slider_clear": "Liste leeren",
+    "slider_empty": "  Keine Bilder ausgewählt",
+
+    "font_color_title": "🎨  Schriftfarbe Timer",
+    "font_color_label": "Farbe:",
+
+    "subtitle_title": "💬  Untertitel",
+    "subtitle_hint": "Wird unterhalb des Timers angezeigt",
+    "subtitle_enable": "Untertitel aktivieren",
+    "subtitle_placeholder": "z. B. Willkommen zur Veranstaltung",
+    "subtitle_color_label": "Farbe:"
+  },
+
+  "settings": {
+    "music_group": "Musik",
+    "music_loop": "Loop (wiederholen)",
+    "music_fadeout": "Fade-out am Ende",
+    "music_fade_dur_label": "Fade-out Dauer",
+    "music_fade_dur_hint": "Wie lange die Musik am Ende ausblendet",
+    "music_in_outro": "Musik im Abschluss-Bild",
+    "music_in_outro_hint": "An: Musik läuft bis Videoende  |  Aus: Musik endet mit Timer 0:00",
+
+    "fade_group": "Video Fade In / Out",
+    "intro_fade": "Fade In am Start aktivieren",
+    "intro_fade_hint": "Video blendet am Start von Schwarz ein",
+    "intro_fade_dur_label": "Fade-In Dauer",
+    "outro_fade": "Fade Out am Ende aktivieren",
+    "outro_fade_hint": "Video blendet am Ende zu Schwarz aus",
+    "outro_fade_dur_label": "Fade-Out Dauer",
+
+    "slider_group": "Slider-Timing",
+    "slider_from_label": "Slider erst ab",
+    "slider_from_hint": "Bilder einblenden wenn noch X Minuten verbleiben",
+    "slider_until_label": "Slider bis max.",
+    "slider_until_hint": "Keine Bilder mehr ab X verbleibenden Minuten",
+    "img_dur_label": "Dauer pro Bild",
+    "img_dur_hint": "Wie lange jedes Bild angezeigt wird",
+    "timer_between_label": "Timer zwischen Bildern",
+    "timer_between_hint": "Countdown-Pause zwischen zwei Bildern",
+    "slider_loop": "Bilder wiederholen bis Slider-Ende",
+    "slider_loop_hint": "Loop an: Bild → Timer → Bild → ...  |  Loop aus: alle Bilder einmal",
+
+    "transitions_group": "Übergänge",
+    "fade_label": "Bild-Fade Dauer",
+    "fade_hint": "Sanftes Ein-/Ausblenden beim Wechsel zu Bildern",
+
+    "subtitle_group": "Untertitel",
+    "sub_size_label": "Schriftgröße",
+    "sub_size_hint": "Größe des Untertiteltextes im Video",
+    "sub_offset_label": "Abstand zum Timer",
+    "sub_offset_hint": "Wie viele Zeilen Abstand zwischen Timer und Untertitel",
+
+    "outro_group": "Abschluss-Bild",
+    "outro_enable": "Abschluss-Bild aktivieren",
+    "outro_enable_hint": "Bild mit Text nach dem Timer",
+    "outro_text_label": "Text",
+    "outro_text_hint": "Wird zentriert auf dem Abschluss-Bild angezeigt",
+    "outro_text_placeholder": "z. B. Herzlich Willkommen",
+    "outro_bg_section": "Hintergrund",
+    "outro_bg_hint": "Bild hat Vorrang — ohne Bild wird die Farbe verwendet",
+    "outro_bg_image_pick": "🖼  Hintergrundbild wählen",
+    "outro_font_color_label": "Schriftfarbe:",
+    "outro_bg_color_label": "Hintergrund-Farbe:",
+    "outro_font_label": "Schriftart",
+    "outro_font_hint": "Unabhängig vom Timer — nur für das Abschluss-Bild",
+    "outro_font_size_label": "Schriftgröße",
+    "outro_font_size_hint": "Textgröße auf dem Abschluss-Bild",
+    "outro_dur_label": "Sichtbar für",
+    "outro_dur_hint": "Wie lange das Abschluss-Bild angezeigt wird",
+    "outro_fadein_label": "Fade-In Dauer",
+    "outro_fadein_hint": "Crossfade vom Timer zum Abschluss-Bild",
+    "outro_fadeout_label": "Fade-Out Dauer",
+    "outro_fadeout_hint": "Ausblenden des Abschluss-Bilds zu Schwarz",
+
+    "language_group": "Sprache / Language",
+    "language_label": "Sprache",
+    "language_hint": "Sprachauswahl gilt nach einem Neustart sofort",
+
+    "save_btn": "💾  Speichern",
+    "save_btn_ok": "✓  Gespeichert",
+    "reset_btn": "↺  Zurücksetzen"
+  },
+
+  "bottom": {
+    "status_ready": "Bereit",
+    "create_btn": "🎬  Video erstellen",
+    "cancel_btn": "✕  Abbrechen",
+    "status_cancelled": "⛔  Abgebrochen",
+    "status_done": "✅  Fertig!",
+    "status_error": "❌  Fehler!",
+    "eta_prefix": "⏳ ETA:",
+    "rendering": "⏳ Rendere … {mm}:{ss}  ({pct}%)",
+    "mixing_audio": "🎵 Mische Audio …",
+    "outro_rendering": "🖼 Abschluss-Bild …",
+    "done_final": "✅ Fertig!"
+  },
+
+  "dialogs": {
+    "error_no_output_title": "Fehler",
+    "error_no_output_msg": "Bitte einen Speicherort wählen!",
+    "error_ffmpeg_title": "FFmpeg fehlt",
+    "error_ffmpeg_msg": "Für Hintergrundmusik wird FFmpeg benötigt.\n\nBitte ffmpeg.exe unter assets/bin/ ablegen.",
+    "error_render_title": "Fehler beim Rendern",
+    "done_title": "🎉 Fertig!",
+    "done_msg": "Video wurde erfolgreich gespeichert:\n\n{0}",
+    "reset_title": "Einstellungen zurücksetzen",
+    "reset_msg": "Alle Einstellungen auf Standard zurücksetzen?\n\nDies kann nicht rückgängig gemacht werden.",
+    "reset_confirm": "Ja, zurücksetzen",
+    "cancel": "Abbrechen",
+    "ok": "OK",
+    "icon_info": "✅",
+    "icon_error": "❌",
+    "icon_question": "↺"
+  },
+
+  "file_row": {
+    "nothing_selected": "Nichts ausgewählt",
+    "remove_tooltip": "Auswahl entfernen"
+  },
+
+  "font_picker": {
+    "title": "🔤  Schriftart"
+  },
+
+  "splash": {
+    "loading": "Wird geladen …"
+  },
+
+  "stepper": {
+    "minutes": "{} min",
+    "seconds": "{} s",
+    "points": "{} pt",
+    "lines": "{} Zeilen"
+  },
+
+  "output_filename": "Intro - {0}"
+}
