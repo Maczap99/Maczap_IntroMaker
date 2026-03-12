@@ -34,13 +34,5 @@ $RECYCLE.BIN/
 *.mov
 *.mkv
 
-# Große Assets (optional — auskommentieren wenn Fonts/Logos getrackt werden sollen)
-# assets/fonts/
-# assets/pictures/
-
 # Logs
 *.log
-
-# Fonts
-*.ttf
-*.otf
