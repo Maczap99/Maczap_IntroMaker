@@ -9,6 +9,8 @@ def make_style(dark: bool) -> str:
         QLabel#sectionLabel { color: #3B82F6; font-size: 13px; font-weight: bold; }
         QLabel#hint  { color: #64748B; font-size: 11px; }
         QLabel#dim   { color: #94A3B8; }
+        QLabel#previewLabel {
+            background: #0F172A; border: 1px solid #334155; border-radius: 6px; }
         QPushButton#primary {
             background: #3B82F6; color: white; border-radius: 10px;
             font-size: 15px; font-weight: bold; padding: 14px 28px; border: none; }
@@ -53,7 +55,6 @@ def make_style(dark: bool) -> str:
         QTextEdit {
             background: #0F172A; color: #F1F5F9; border-radius: 8px;
             border: 1px solid #334155; font-size: 12px; padding: 6px; }
-        /* Slider image list — dark mode */
         QListWidget {
             background: #0F172A; color: #F1F5F9; border-radius: 8px;
             border: 1px solid #334155; font-size: 12px; padding: 4px;
@@ -103,6 +104,8 @@ def make_style(dark: bool) -> str:
         QLabel#sectionLabel { color: #2563EB; font-size: 13px; font-weight: bold; }
         QLabel#hint  { color: #64748B; font-size: 11px; }
         QLabel#dim   { color: #64748B; }
+        QLabel#previewLabel {
+            background: #F1F5F9; border: 1px solid #CBD5E1; border-radius: 6px; }
         QPushButton#primary {
             background: #2563EB; color: white; border-radius: 10px;
             font-size: 15px; font-weight: bold; padding: 14px 28px; border: none; }
@@ -147,7 +150,6 @@ def make_style(dark: bool) -> str:
         QTextEdit {
             background: #F1F5F9; color: #0F172A; border-radius: 8px;
             border: 1px solid #CBD5E1; font-size: 12px; padding: 6px; }
-        /* Slider image list — light mode */
         QListWidget {
             background: #F1F5F9; color: #0F172A; border-radius: 8px;
             border: 1px solid #CBD5E1; font-size: 12px; padding: 4px;

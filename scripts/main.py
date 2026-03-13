@@ -1,4 +1,4 @@
-import sys, os, time
+import sys, os, time, tempfile
 from datetime import datetime
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
@@ -16,6 +16,13 @@ from video_generator import VideoGenerator, _get_ffmpeg
 from config_manager  import load as cfg_load, save as cfg_save, reset as cfg_reset, DEFAULTS
 from styles          import make_style
 from lang_manager    import tr, set_language, available_languages, current_language
+
+# Optional PyMuPDF for PDF-to-image conversion
+try:
+    import fitz  # PyMuPDF
+    _PYMUPDF_AVAILABLE = True
+except ImportError:
+    _PYMUPDF_AVAILABLE = False
 
 
 def resource_path(relative_path):
@@ -165,6 +172,152 @@ class RenderWorker(QObject):
         gen.generate()
 
 
+# ── PreviewWorker ──────────────────────────────────────────────────────────────
+class PreviewWorker(QObject):
+    """Render a single preview frame in a background thread.
+
+    The worker grabs one frame from the background source, draws the timer
+    overlay at reduced resolution, and returns a QPixmap via the `finished`
+    signal.
+    """
+    finished = pyqtSignal(object)   # QPixmap  (or None on failure)
+
+    # Preview canvas size — 1/3 of 1080p, keeps the same aspect ratio
+    PW, PH = 640, 360
+
+    def __init__(self, config):
+        super().__init__()
+        self._cfg = config
+
+    def run(self):
+        import cv2, numpy as np
+        from PIL import Image, ImageDraw, ImageFont
+        from video_generator import _hex_to_rgb, _fit_image
+        from PyQt5.QtGui import QImage, QPixmap as _QPixmap
+
+        cfg = self._cfg
+        W, H = self.PW, self.PH
+
+        try:
+            # ── Build background ───────────────────────────────────────────────
+            if cfg.get("bg_video") and os.path.isfile(cfg["bg_video"]):
+                cap     = cv2.VideoCapture(cfg["bg_video"])
+                total_f = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+                # Seek to 10 % into the video for a representative frame
+                seek    = max(0, int(total_f * 0.10))
+                cap.set(cv2.CAP_PROP_POS_FRAMES, seek)
+                ret, frame = cap.read()
+                cap.release()
+                if not ret:
+                    raise RuntimeError("Could not read video frame")
+                # Resize to preview dimensions
+                bg_bgr = cv2.resize(frame, (W, H), interpolation=cv2.INTER_AREA)
+            elif cfg.get("bg_image") and os.path.isfile(cfg["bg_image"]):
+                img    = Image.open(cfg["bg_image"]).convert("RGB").resize(
+                    (W, H), Image.LANCZOS
+                )
+                bg_bgr = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
+            else:
+                    # No background source — use the user-chosen fallback color
+                    r, g, b  = _hex_to_rgb(cfg.get("bg_color", "#000000"))
+                    bg_bgr   = np.full((H, W, 3), (b, g, r), dtype=np.uint8)
+
+            # ── Draw timer overlay at preview scale ────────────────────────────
+            # Use a fixed time (e.g. 4:32) so the preview always looks the same
+            time_left  = 4 * 60 + 32
+            font_path  = cfg.get("font_path")
+            font_color = cfg.get("font_color", "#FFFFFF")
+
+            # Scale font size proportionally to the preview canvas
+            timer_size = int(min(W, H) * 0.18)
+
+            pil_img = Image.fromarray(cv2.cvtColor(bg_bgr, cv2.COLOR_BGR2RGB))
+            draw    = ImageDraw.Draw(pil_img)
+
+            try:
+                timer_font = (
+                    ImageFont.truetype(font_path, timer_size)
+                    if font_path else ImageFont.load_default()
+                )
+            except Exception:
+                timer_font = ImageFont.load_default()
+
+            m, s    = divmod(int(time_left), 60)
+            mm_str  = f"{m:02d}"
+            ss_str  = f"{s:02d}"
+            col_str = ":"
+
+            bbox_mm  = draw.textbbox((0, 0), mm_str,  font=timer_font)
+            bbox_col = draw.textbbox((0, 0), col_str, font=timer_font)
+            bbox_ss  = draw.textbbox((0, 0), ss_str,  font=timer_font)
+
+            mm_w  = bbox_mm[2]  - bbox_mm[0]
+            col_w = bbox_col[2] - bbox_col[0]
+            ss_w  = bbox_ss[2]  - bbox_ss[0]
+            th    = bbox_mm[3]  - bbox_mm[1]
+
+            total_w = mm_w + col_w + ss_w
+            start_x = (W - total_w) // 2
+            mm_x    = start_x
+            col_x   = start_x + mm_w
+            ss_x    = start_x + mm_w + col_w
+            timer_y = (H - th) // 2
+            ty      = timer_y - bbox_mm[1]
+
+            tc     = _hex_to_rgb(font_color)
+            shadow = max(2, timer_size // 30)
+
+            for text, bbox, tx in [
+                (mm_str,  bbox_mm,  mm_x),
+                (col_str, bbox_col, col_x),
+                (ss_str,  bbox_ss,  ss_x),
+            ]:
+                draw.text((tx - bbox[0] + shadow, ty + shadow),
+                          text, font=timer_font, fill=(0, 0, 0, 180))
+                draw.text((tx - bbox[0], ty),
+                          text, font=timer_font, fill=tc)
+
+            # ── Optional subtitle preview ──────────────────────────────────────
+            if cfg.get("subtitle_enabled") and cfg.get("subtitle_text", "").strip():
+                sub_size = int(cfg.get("subtitle_size", 40) * (H / 1080))
+                sub_size = max(10, sub_size)
+                sub_path = cfg.get("subtitle_font") or font_path
+                try:
+                    sub_font = (
+                        ImageFont.truetype(sub_path, sub_size)
+                        if sub_path else ImageFont.load_default()
+                    )
+                except Exception:
+                    sub_font = ImageFont.load_default()
+
+                sub_color  = _hex_to_rgb(cfg.get("subtitle_color", "#FFFFFF"))
+                sub_shadow = max(1, sub_size // 20)
+                base_gap   = int(min(W, H) * 0.04)
+                extra_gap  = int(cfg.get("subtitle_offset", 2)) * sub_size
+                cur_y      = timer_y + th + base_gap + extra_gap
+
+                for line in cfg["subtitle_text"].strip().splitlines():
+                    if not line.strip():
+                        continue
+                    bbox_s = draw.textbbox((0, 0), line, font=sub_font)
+                    lw     = bbox_s[2] - bbox_s[0]
+                    lh     = bbox_s[3] - bbox_s[1]
+                    lx     = (W - lw) // 2 - bbox_s[0]
+                    ly     = cur_y - bbox_s[1]
+                    draw.text((lx + sub_shadow, ly + sub_shadow),
+                              line, font=sub_font, fill=(0, 0, 0, 160))
+                    draw.text((lx, ly), line, font=sub_font, fill=sub_color)
+                    cur_y += lh + int(min(W, H) * 0.012)
+
+            # ── Convert PIL image → QPixmap ────────────────────────────────────
+            data = pil_img.tobytes("raw", "RGB")
+            qi   = QImage(data, W, H, W * 3, QImage.Format_RGB888)
+            self.finished.emit(_QPixmap.fromImage(qi))
+
+        except Exception:
+            self.finished.emit(None)
+
+
 # ── Stepper ────────────────────────────────────────────────────────────────────
 class Stepper(QWidget):
     def __init__(self, min_val, max_val, value, step=1, fmt="{}", parent=None):
@@ -264,10 +417,9 @@ class FileRow(QWidget):
             self._clear_btn.setVisible(False)
 
     def retranslate(self, btn_text: str):
-        """Update the pick-button label and the clear-button tooltip."""
+        """Update button labels and placeholder text after a language change."""
         self._pick_btn.setText(btn_text)
         self._clear_btn.setToolTip(tr("file_row.remove_tooltip"))
-        # Also refresh "nothing selected" placeholder when no file is set
         if not self._clear_btn.isVisible():
             self._lbl.setText(tr("file_row.nothing_selected"))
 
@@ -284,6 +436,8 @@ class IntroMaker(QMainWindow):
         self._theme         = self._settings.get("theme", "light")
         self._font_color    = self._settings.get("font_color",     "#FFFFFF")
         self._sub_color     = self._settings.get("subtitle_color", "#FFFFFF")
+        self._slider_fill_color = self._settings.get("slider_fill_color", "#000000")
+        self._bg_color      = self._settings.get("bg_color", "#000000")
         self._image_paths   = []
         self._render_start  = 0.0
         self._thread        = None
@@ -296,9 +450,25 @@ class IntroMaker(QMainWindow):
         self._outro_slide_bg_image_path = None
         self._current_page  = self.PAGE_SIMPLE
 
+        # Preview worker state
+        self._preview_thread = None
+        self._preview_worker = None
+        self._preview_timer  = QTimer()
+        self._preview_timer.setSingleShot(True)
+        self._preview_timer.setInterval(600)   # 600 ms debounce
+        self._preview_timer.timeout.connect(self._update_preview)
+
         self.setWindowTitle(tr("app_title"))
-        self.setMinimumSize(960, 780)
-        self.resize(1060, 920)
+
+        # Adapt the startup size to the available screen height.
+        # Target: 95 % of screen height, capped between 860 px and 1080 px.
+        # Width: 1060 px, or 98 % of screen width on very small displays.
+        screen      = QApplication.primaryScreen().availableGeometry()
+        target_h    = max(860, min(1080, int(screen.height() * 0.95)))
+        target_w    = min(1060, int(screen.width()  * 0.98))
+        min_h       = min(780, target_h)   # minimum is never taller than startup
+        self.setMinimumSize(960, min_h)
+        self.resize(target_w, target_h)
 
         icon_path = resource_path("assets/pictures/icon.png")
         if os.path.exists(icon_path):
@@ -332,17 +502,32 @@ class IntroMaker(QMainWindow):
         self._img_list.setFont(QFont("Segoe UI", 10))
 
         self._font_picker = FontPickerWidget(theme=self._theme, preview_text="04:32")
+        self._font_picker.font_changed.connect(lambda _: self._schedule_preview())
 
         self._color_btn = QPushButton("  #FFFFFF  ")
         self._color_btn.setObjectName("colorBtn"); self._color_btn.setFixedHeight(32)
         self._color_btn.clicked.connect(self._pick_color)
 
+        # Fill color button for letterbox/pillarbox bars on non-16:9 slider images
+        self._fill_color_btn = QPushButton(f"  {self._slider_fill_color.upper()}  ")
+        self._fill_color_btn.setObjectName("colorBtn")
+        self._fill_color_btn.setFixedHeight(32)
+        self._fill_color_btn.clicked.connect(self._pick_fill_color)
+
+        # Background fallback color (no video / image selected)
+        self._bg_color_btn = QPushButton(f"  {self._bg_color.upper()}  ")
+        self._bg_color_btn.setObjectName("colorBtn")
+        self._bg_color_btn.setFixedHeight(32)
+        self._bg_color_btn.clicked.connect(self._pick_bg_color)
+
         self._sub_chk = StyledCheckBox(tr("simple_right.subtitle_enable"))
         self._sub_chk.stateChanged.connect(self._toggle_subtitle)
+        self._sub_chk.stateChanged.connect(lambda _: self._schedule_preview())
         self._sub_edit = QTextEdit()
         self._sub_edit.setFixedHeight(70)
         self._sub_edit.setPlaceholderText(tr("simple_right.subtitle_placeholder"))
         self._sub_edit.setEnabled(False)
+        self._sub_edit.textChanged.connect(self._schedule_preview)
         self._sub_color_btn = QPushButton("  #FFFFFF  ")
         self._sub_color_btn.setObjectName("colorBtn"); self._sub_color_btn.setFixedHeight(32)
         self._sub_color_btn.setEnabled(False)
@@ -439,7 +624,6 @@ class IntroMaker(QMainWindow):
         self._lang_combo.setFixedHeight(34)
         for code, name in available_languages():
             self._lang_combo.addItem(name, code)
-        # Pre-select current language
         cur = current_language()
         for i in range(self._lang_combo.count()):
             if self._lang_combo.itemData(i) == cur:
@@ -556,12 +740,41 @@ class IntroMaker(QMainWindow):
         cl7.addWidget(self._out_row)
         layout.addWidget(c7)
 
+        # Preview card
+        c_prev = make_card()
+        cl_prev = QVBoxLayout(c_prev)
+        cl_prev.setContentsMargins(16, 10, 16, 14); cl_prev.setSpacing(8)
+
+        # Header row: title + refresh button
+        prev_hdr = QWidget(); prev_hdr_l = QHBoxLayout(prev_hdr)
+        prev_hdr_l.setContentsMargins(0, 0, 0, 0); prev_hdr_l.setSpacing(8)
+        prev_hdr_l.addWidget(sec_lbl(tr("simple_left.preview_title")))
+        prev_hdr_l.addStretch()
+        self._preview_refresh_btn = QPushButton(tr("simple_left.preview_btn"))
+        self._preview_refresh_btn.setObjectName("secondary")
+        self._preview_refresh_btn.setFixedHeight(28)
+        self._preview_refresh_btn.clicked.connect(self._update_preview)
+        prev_hdr_l.addWidget(self._preview_refresh_btn)
+        cl_prev.addWidget(prev_hdr)
+
+        cl_prev.addWidget(hint_lbl(tr("simple_left.preview_hint")))
+
+        # The image label that holds the rendered preview frame
+        self._preview_lbl = QLabel(tr("simple_left.preview_empty"))
+        self._preview_lbl.setAlignment(Qt.AlignCenter)
+        self._preview_lbl.setObjectName("previewLabel")
+        self._preview_lbl.setFixedHeight(200)
+        # Style is fully handled by QLabel#previewLabel in styles.py
+        cl_prev.addWidget(self._preview_lbl)
+        layout.addWidget(c_prev)
+
     def _build_simple_right(self, layout):
         # Slider images card
         c4 = make_card(); cl4 = QVBoxLayout(c4); cl4.setContentsMargins(16,10,16,14); cl4.setSpacing(6)
         cl4.addWidget(sec_lbl(tr("simple_right.slider_title")))
         cl4.addWidget(hint_lbl(tr("simple_right.slider_hint")))
 
+        # Action buttons row (Add / Remove / Clear)
         br = QWidget(); brl = QHBoxLayout(br); brl.setContentsMargins(0,0,0,0); brl.setSpacing(8)
         self._add_img_btn = QPushButton(tr("simple_right.slider_add"))
         self._add_img_btn.setObjectName("secondary")
@@ -581,6 +794,7 @@ class IntroMaker(QMainWindow):
         brl.addStretch()
         cl4.addWidget(br)
         cl4.addWidget(self._img_list)
+
         layout.addWidget(c4)
 
         layout.addWidget(self._font_picker)
@@ -694,7 +908,14 @@ class IntroMaker(QMainWindow):
         return w
 
     def _build_settings_content(self, layout):
-        # Music
+        # Background fallback color — shown first so it's easy to find
+        layout.addWidget(self._settings_block("🎨", tr("settings.bg_group"), [
+            self._settings_row(tr("settings.bg_color_label"),
+                               self._bg_color_btn,
+                               tr("settings.bg_color_hint")),
+        ]))
+
+        # Music group
         layout.addWidget(self._settings_block("🎵", tr("settings.music_group"), [
             self._settings_check_row(self._music_loop_chk),
             self._settings_check_row(self._music_fadeout_chk),
@@ -703,7 +924,7 @@ class IntroMaker(QMainWindow):
                                tr("settings.music_fade_dur_hint")),
         ]))
 
-        # Video Fade In / Out
+        # Video fade-in / fade-out group
         layout.addWidget(self._settings_block("🌑", tr("settings.fade_group"), [
             self._settings_check_row(self._intro_fade_chk,
                                      tr("settings.intro_fade_hint")),
@@ -715,7 +936,7 @@ class IntroMaker(QMainWindow):
                                self._outro_fade_step),
         ]))
 
-        # Slider timing
+        # Slider timing group
         layout.addWidget(self._settings_block("🖼", tr("settings.slider_group"), [
             self._settings_row(tr("settings.slider_from_label"),
                                self._slider_from_step,
@@ -731,16 +952,19 @@ class IntroMaker(QMainWindow):
                                tr("settings.timer_between_hint")),
             self._settings_check_row(self._slider_loop_chk,
                                      tr("settings.slider_loop_hint")),
+            self._settings_row(tr("settings.slider_fill_color_label"),
+                               self._fill_color_btn,
+                               tr("settings.slider_fill_color_hint")),
         ]))
 
-        # Transitions
+        # Transitions group
         layout.addWidget(self._settings_block("✨", tr("settings.transitions_group"), [
             self._settings_row(tr("settings.fade_label"),
                                self._fade_step,
                                tr("settings.fade_hint")),
         ]))
 
-        # Subtitle
+        # Subtitle group
         layout.addWidget(self._settings_block("💬", tr("settings.subtitle_group"), [
             self._settings_row(tr("settings.sub_size_label"),
                                self._sub_size_step,
@@ -750,7 +974,7 @@ class IntroMaker(QMainWindow):
                                tr("settings.sub_offset_hint")),
         ]))
 
-        # Outro slide
+        # Outro slide group
         text_row = self._settings_check_row(
             self._outro_slide_chk, tr("settings.outro_enable_hint")
         )
@@ -830,7 +1054,7 @@ class IntroMaker(QMainWindow):
                                      tr("settings.music_in_outro_hint")),
         ]))
 
-        # ── Language block ─────────────────────────────────────────────────────
+        # Language selection block
         layout.addWidget(self._settings_block("🌐", tr("settings.language_group"), [
             self._settings_row(tr("settings.language_label"),
                                self._lang_combo,
@@ -896,13 +1120,12 @@ class IntroMaker(QMainWindow):
 
     # ── Language change ────────────────────────────────────────────────────────
     def _on_language_changed(self, _index: int):
-        """Save the selected language immediately.
-        The new language is applied on the next application start."""
+        """Persist the newly selected language immediately.
+        The new language takes effect on the next application start."""
         code = self._lang_combo.currentData()
         if code:
             self._settings["language"] = code
             cfg_save(self._settings)
-
 
     # ── Settings persistence ───────────────────────────────────────────────────
     def _collect_settings(self) -> dict:
@@ -926,6 +1149,8 @@ class IntroMaker(QMainWindow):
             "fade_duration":      self._fade_step.value(),
             "font_color":         self._font_color,
             "font_name":          self._font_picker._combo.currentText(),
+            "bg_color":           self._bg_color,
+            "slider_fill_color":  self._slider_fill_color,
             "subtitle_enabled":   self._sub_chk.isChecked(),
             "subtitle_text":      self._sub_edit.toPlainText(),
             "subtitle_size":      self._sub_size_step.value(),
@@ -966,13 +1191,26 @@ class IntroMaker(QMainWindow):
         self._timer_between_step.set_value(s.get("timer_between", 15))
         self._slider_loop_chk.setChecked(s.get("slider_loop", True))
         self._fade_step.set_value(s.get("fade_duration", 2.0))
+
         font_name = s.get("font_name")
         if font_name:
             idx = self._font_picker._combo.findText(font_name)
             if idx >= 0: self._font_picker._combo.setCurrentIndex(idx)
+
         fc = s.get("font_color", "#FFFFFF")
         self._font_color = fc
         self._update_color_btn(self._color_btn, fc)
+
+        # Restore slider fill color
+        sfc = s.get("slider_fill_color", "#000000")
+        self._slider_fill_color = sfc
+        self._update_color_btn(self._fill_color_btn, sfc)
+
+        # Restore background fallback color
+        bgc = s.get("bg_color", "#000000")
+        self._bg_color = bgc
+        self._update_color_btn(self._bg_color_btn, bgc)
+
         sub_on = s.get("subtitle_enabled", False)
         self._sub_chk.setChecked(sub_on)
         self._sub_edit.setPlainText(s.get("subtitle_text", ""))
@@ -1020,17 +1258,16 @@ class IntroMaker(QMainWindow):
 
         self._last_output_folder = s.get("last_output_folder", "")
         if self._last_output_folder and os.path.isdir(self._last_output_folder):
-            date_str   = datetime.now().strftime("%d.%m.%Y")
+            date_str     = datetime.now().strftime("%d.%m.%Y")
             default_name = tr("output_filename", date_str)
             self._out_path = os.path.join(self._last_output_folder, f"{default_name}.mp4")
             self._out_row.set_path(self._out_path)
             self._out_row_a.set_path(self._out_path)
 
-        # Restore language combo selection
+        # Restore language combo without triggering the signal
         lang = s.get("language", "de")
         for i in range(self._lang_combo.count()):
             if self._lang_combo.itemData(i) == lang:
-                # Block signal to avoid a redundant retranslate during restore
                 self._lang_combo.blockSignals(True)
                 self._lang_combo.setCurrentIndex(i)
                 self._lang_combo.blockSignals(False)
@@ -1053,6 +1290,56 @@ class IntroMaker(QMainWindow):
         self._save_btn.setText(tr("settings.save_btn"))
         self._save_btn.setStyleSheet("")
 
+    # ── Preview ────────────────────────────────────────────────────────────────
+    def _schedule_preview(self):
+        """Restart the debounce timer; preview renders 600 ms after the last change."""
+        self._preview_timer.start()
+
+    def _update_preview(self):
+        """Kick off the PreviewWorker in a background thread."""
+        # Don't start a second worker while one is already running
+        if self._preview_thread and self._preview_thread.isRunning():
+            return
+
+        self._preview_lbl.setText(tr("simple_left.preview_loading"))
+        self._preview_refresh_btn.setEnabled(False)
+
+        config = {
+            "bg_video":        self._bg_video_path,
+            "bg_image":        self._bg_image_path,
+            "bg_color":        self._bg_color,
+            "font_path":       self._font_picker.get_font_path(),
+            "font_color":      self._font_color,
+            "subtitle_enabled": self._sub_chk.isChecked(),
+            "subtitle_text":    self._sub_edit.toPlainText(),
+            "subtitle_size":    self._sub_size_step.value(),
+            "subtitle_offset":  self._sub_offset_step.value(),
+            "subtitle_color":   self._sub_color,
+            "subtitle_font":    self._font_picker.get_font_path(),
+        }
+
+        self._preview_worker = PreviewWorker(config)
+        self._preview_thread = QThread()
+        self._preview_worker.moveToThread(self._preview_thread)
+        self._preview_thread.started.connect(self._preview_worker.run)
+        self._preview_worker.finished.connect(self._on_preview_done)
+        self._preview_worker.finished.connect(self._preview_thread.quit)
+        self._preview_thread.start()
+
+    def _on_preview_done(self, pixmap):
+        """Receive the finished QPixmap and display it scaled into the label."""
+        self._preview_refresh_btn.setEnabled(True)
+        if pixmap is None:
+            self._preview_lbl.setText(tr("simple_left.preview_error"))
+            return
+        scaled = pixmap.scaled(
+            self._preview_lbl.width(),
+            self._preview_lbl.height(),
+            Qt.KeepAspectRatio,
+            Qt.SmoothTransformation,
+        )
+        self._preview_lbl.setPixmap(scaled)
+
     # ── Theme ──────────────────────────────────────────────────────────────────
     def _apply_theme(self, theme):
         self._theme = theme
@@ -1071,9 +1358,11 @@ class IntroMaker(QMainWindow):
                     self._intro_fade_chk, self._outro_fade_chk,
                     self._sub_chk, self._slider_loop_chk]:
             try: chk.update_theme(dark)
-            except: pass
+            except Exception: pass
         self._update_color_btn(self._color_btn, self._font_color)
         self._update_color_btn(self._sub_color_btn, self._sub_color)
+        self._update_color_btn(self._fill_color_btn, self._slider_fill_color)
+        self._update_color_btn(self._bg_color_btn, self._bg_color)
 
     def _toggle_theme(self):
         new_theme = "dark" if self._theme == "light" else "light"
@@ -1147,11 +1436,13 @@ class IntroMaker(QMainWindow):
             self._bg_video_path = p
             self._bg_video_row.set_path(p);   self._bg_image_row.setEnabled(False)
             self._bg_video_row_a.set_path(p); self._bg_image_row_a.setEnabled(False)
+            self._schedule_preview()
 
     def _clear_bg_video(self):
         self._bg_video_path = None
         self._bg_video_row.set_path(None);   self._bg_image_row.setEnabled(True)
         self._bg_video_row_a.set_path(None); self._bg_image_row_a.setEnabled(True)
+        self._schedule_preview()
 
     def _pick_bg_image(self):
         p, _ = QFileDialog.getOpenFileName(self, tr("simple_left.bg_title"), "", "Bild (*.png *.jpg *.jpeg *.bmp)")
@@ -1159,11 +1450,13 @@ class IntroMaker(QMainWindow):
             self._bg_image_path = p
             self._bg_image_row.set_path(p);   self._bg_video_row.setEnabled(False)
             self._bg_image_row_a.set_path(p); self._bg_video_row_a.setEnabled(False)
+            self._schedule_preview()
 
     def _clear_bg_image(self):
         self._bg_image_path = None
         self._bg_image_row.set_path(None);   self._bg_video_row.setEnabled(True)
         self._bg_image_row_a.set_path(None); self._bg_video_row_a.setEnabled(True)
+        self._schedule_preview()
 
     def _pick_music(self):
         p, _ = QFileDialog.getOpenFileName(self, tr("simple_left.music_title"), "", "Audio (*.mp3 *.wav *.ogg *.aac)")
@@ -1194,11 +1487,32 @@ class IntroMaker(QMainWindow):
 
     def _pick_color(self):
         r = self._open_color_dialog(self._font_color, tr("simple_right.font_color_title"))
-        if r: self._font_color = r; self._update_color_btn(self._color_btn, r)
+        if r:
+            self._font_color = r
+            self._update_color_btn(self._color_btn, r)
+            self._schedule_preview()
 
     def _pick_sub_color(self):
         r = self._open_color_dialog(self._sub_color, tr("simple_right.subtitle_title"))
         if r: self._sub_color = r; self._update_color_btn(self._sub_color_btn, r)
+
+    def _pick_fill_color(self):
+        """Open a color dialog for the slider image fill / letterbox color."""
+        r = self._open_color_dialog(
+            self._slider_fill_color,
+            tr("simple_right.fill_color_title")
+        )
+        if r:
+            self._slider_fill_color = r
+            self._update_color_btn(self._fill_color_btn, r)
+
+    def _pick_bg_color(self):
+        """Open a color dialog for the background fallback color."""
+        r = self._open_color_dialog(self._bg_color, tr("simple_left.bg_color_title"))
+        if r:
+            self._bg_color = r
+            self._update_color_btn(self._bg_color_btn, r)
+            self._schedule_preview()
 
     def _pick_outro_slide_color(self):
         r = self._open_color_dialog(self._outro_slide_color, tr("settings.outro_font_color_label"))
@@ -1227,10 +1541,62 @@ class IntroMaker(QMainWindow):
 
     # ── Slider image management ────────────────────────────────────────────────
     def _add_images(self):
-        paths, _ = QFileDialog.getOpenFileNames(self, tr("simple_right.slider_title"), "", "Bilder (*.png *.jpg *.jpeg *.bmp *.webp)")
-        if paths:
-            self._image_paths.extend(paths)
-            self._refresh_imgs()
+        """Open a file picker for images and PDFs, then add them to the slider list.
+
+        PDFs require PyMuPDF (fitz).  Each page of a PDF is extracted as a
+        temporary PNG file and added as a separate slide.
+        """
+        paths, _ = QFileDialog.getOpenFileNames(
+            self,
+            tr("simple_right.slider_title"),
+            "",
+            "Images & PDF (*.png *.jpg *.jpeg *.bmp *.webp *.pdf)"
+        )
+        if not paths:
+            return
+
+        pdf_paths = [p for p in paths if p.lower().endswith(".pdf")]
+        img_paths = [p for p in paths if not p.lower().endswith(".pdf")]
+
+        # Add regular image paths directly
+        self._image_paths.extend(img_paths)
+
+        # Handle PDFs — convert each page to a cached PNG in the system temp dir
+        for pdf_path in pdf_paths:
+            if not _PYMUPDF_AVAILABLE:
+                ThemedDialog.error(
+                    self,
+                    tr("dialogs.error_pdf_title"),
+                    tr("dialogs.error_pdf_msg"),
+                    dark=(self._theme == "dark")
+                )
+                continue
+            try:
+                doc      = fitz.open(pdf_path)
+                base     = os.path.splitext(os.path.basename(pdf_path))[0]
+                tmp_dir  = os.path.join(tempfile.gettempdir(), "IntroMaker_PDF_Cache")
+                os.makedirs(tmp_dir, exist_ok=True)
+
+                for page_num in range(len(doc)):
+                    page     = doc[page_num]
+                    # Render at 2× zoom for crisp quality
+                    mat      = fitz.Matrix(2.0, 2.0)
+                    pix      = page.get_pixmap(matrix=mat)
+                    out_name = f"{base}_p{page_num + 1}.png"
+                    out_path = os.path.join(tmp_dir, out_name)
+                    pix.save(out_path)
+                    self._image_paths.append(out_path)
+
+                doc.close()
+            except Exception as exc:
+                ThemedDialog.error(
+                    self,
+                    tr("dialogs.error_pdf_title"),
+                    str(exc)[:400],
+                    dark=(self._theme == "dark")
+                )
+
+        self._refresh_imgs()
 
     def _remove_selected_images(self):
         selected_rows = sorted(
@@ -1333,6 +1699,8 @@ class IntroMaker(QMainWindow):
             "fade_duration":      self._fade_step.value(),
             "font_path":          self._font_picker.get_font_path(),
             "font_color":         self._font_color,
+            "bg_color":           self._bg_color,
+            "slider_fill_color":  self._slider_fill_color,
             "output_path":        self._out_path,
             "subtitle_enabled":   self._sub_chk.isChecked(),
             "subtitle_text":      sub_text,
@@ -1412,7 +1780,7 @@ def main():
     if os.path.exists(icon_path):
         app.setWindowIcon(QIcon(icon_path))
 
-    # Load language before building the UI
+    # Load and apply the saved language before building any UI
     settings = cfg_load()
     lang     = settings.get("language", "de")
     set_language(lang)
