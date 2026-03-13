@@ -45,7 +45,7 @@ DEFAULTS = {
     "slider_loop":        True,
 
     # Transitions
-    "fade_duration":      2.0,
+    "fade_duration":      1.0,
 
     # Font & timer color
     "font_color":         "#FFFFFF",
