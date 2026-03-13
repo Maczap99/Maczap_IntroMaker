@@ -9,15 +9,16 @@ Gebaut mit Python + PyQt5. Rendering direkt über OpenCV und PIL, mit optionalem
 ## ✨ Features
 
 - **Countdown-Timer** — konfigurierbare Dauer (1–120 Min.), zentriert mit eigener Schriftart und Farbe
-- **Untertitel** — optionaler Text unterhalb des Timers mit unabhängiger Schriftgröße und Farbe
-- **Hintergrund** — Video-Loop, statisches Bild oder einfaches Weiß
-- **Bild-Slider** — Bilder zwischen Countdown-Abschnitten einblenden, mit konfigurierbarem Timing und Loop-Verhalten
+- **Untertitel** — optionaler Text unterhalb des Timers mit unabhängiger Schriftgröße, Farbe und Abstand
+- **Hintergrund** — Video-Loop, statisches Bild oder konfigurierbare Fallback-Farbe (Standard: Schwarz)
+- **Bild-Slider** — Bilder und PDFs zwischen Countdown-Abschnitten einblenden, mit konfigurierbarem Timing, Loop-Verhalten und Füllfarbe für nicht-16:9-Formate
 - **Hintergrundmusik** — MP3 / WAV / OGG mit Loop und Fade-out (erfordert FFmpeg)
 - **Abschluss-Bild** — optionaler Slide nach dem Timer mit eigenem Text, Schriftart, Farbe und Hintergrundbild
 - **Fade-Effekte** — Fade-in aus Schwarz am Start, Fade-out zu Schwarz am Ende, Crossfade zwischen Timer und Bildern
 - **Eigene Schriftarten** — beliebige `.ttf` / `.otf` Fonts aus `assets/fonts/`, mit Live-Vorschau
+- **Echtzeit-Vorschau** — generiert einen Vorschau-Frame mit Hintergrund, Schriftart und Farbe vor dem Rendern
 - **Hell- & Dunkel-Modus** — vollständiges UI-Theming mit persistenten Einstellungen
-- **Mehrsprachig** — Deutsch, Englisch und Russisch, umschaltbar in den Einstellungen (gilt ab Neustart)
+- **Mehrsprachig** — Deutsch, Englisch und Russisch, umschaltbar in den Einstellungen
 - **Einstellungsseite** — alle Timing-, Fade- und Slider-Parameter übersichtlich konfigurierbar
 
 ---
@@ -105,9 +106,10 @@ Alle Einstellungen werden automatisch zwischen Sitzungen gespeichert und können
 | Einstellung | Beschreibung |
 |---|---|
 | Timer-Dauer | Gesamtlänge des Countdown-Videos (1–120 Min.) |
-| Hintergrund | Videodatei, Bilddatei oder reines Weiß |
+| Hintergrund | Videodatei, Bilddatei oder Fallback-Farbe (Standard: Schwarz) |
 | Musik | Audiodatei mit optionalem Loop und Fade-out (erfordert FFmpeg) |
-| Slider-Bilder | Bilder zwischen Countdown-Abschnitten |
+| Slider-Bilder | Bilder und PDFs zwischen Countdown-Abschnitten |
+| Füllfarbe (Slider) | Farbe der Balken bei nicht-16:9-Bildern (z. B. Hochformat) |
 | Schrift & Farben | Eigene Schriftart, Timer-Farbe, Untertitel-Farbe |
 | Untertitel | Optionaler Text unter dem Timer mit Größen- und Farbsteuerung |
 | Untertitel-Abstand | Extra-Abstand zwischen Timer und Untertitel in Zeilenhöhen |
@@ -117,11 +119,27 @@ Alle Einstellungen werden automatisch zwischen Sitzungen gespeichert und können
 | Slider-Loop | Bilder bis Zonen-Ende wiederholen oder jeden einmal zeigen |
 | Übergänge | Crossfade-Dauer zwischen Timer und Slider-Bildern |
 | Musik-Fade-out | Dauer des Musik-Fade am Videoende |
-| Sprache | Deutsch / Englisch / Russisch — wirkt ab dem nächsten Start |
+| Sprache | Deutsch / Englisch / Russisch — wirkt sofort |
 
 Einstellungen werden gespeichert unter:
 ```
 %APPDATA%\MaczapIntroMaker\settings.json
+```
+
+---
+
+## 🔍 Vorschau
+
+Vor dem Rendern kann ein Vorschau-Frame generiert werden, der Hintergrund, Schriftart, Farbe und Untertitel exakt so zeigt wie das fertige Video — bei fester Uhrzeit 04:32. Die Vorschau aktualisiert sich automatisch (600 ms Debounce) wenn Hintergrund, Schrift oder Farbe geändert wird, oder manuell per Button.
+
+---
+
+## 📄 PDF-Support
+
+Slider-Bilder können auch als PDF ausgewählt werden. Jede Seite wird automatisch als Einzelbild übernommen. Erfordert **PyMuPDF**:
+
+```bash
+pip install PyMuPDF
 ```
 
 ---
@@ -136,7 +154,7 @@ Die App unterstützt aktuell drei Sprachen:
 | `en` | English |
 | `ru` | Русский |
 
-Die Sprache wird in den **Einstellungen** gewählt und gilt ab dem nächsten Programmstart. Weitere Sprachen können einfach durch Ablegen einer neuen `xx.json` im `lang/`-Ordner hinzugefügt werden — sie werden automatisch erkannt.
+Die Sprache wird in den **Einstellungen** gewählt und gilt sofort. Weitere Sprachen können einfach durch Ablegen einer neuen `xx.json` im `lang/`-Ordner hinzugefügt werden — sie werden automatisch erkannt.
 
 ---
 
@@ -163,6 +181,7 @@ Wird FFmpeg nicht gefunden, wird das Video ohne Audio gerendert.
 | `Pillow` (`PIL`) | Text-Rendering, Font-Handling |
 | `NumPy` | Frame-Compositing |
 | `FFmpeg` | Audio-Mixing (optional, extern) |
+| `PyMuPDF` (`fitz`) | PDF-zu-Bild-Konvertierung (optional) |
 | `PyInstaller` | EXE-Bundling |
 
 ---
