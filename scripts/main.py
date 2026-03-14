@@ -225,9 +225,10 @@ class RenderWorker(QObject):
     progress = pyqtSignal(float, str, int, int)
     finished = pyqtSignal(bool, str)
 
-    def __init__(self, config):
+    def __init__(self, config, cancel_event):
         super().__init__()
-        self._config = config
+        self._config       = config
+        self._cancel_event = cancel_event
 
     def run(self):
         """Entry point called by QThread.started. Delegates to VideoGenerator."""
@@ -235,7 +236,8 @@ class RenderWorker(QObject):
             cur, total = frame_info if frame_info else (0, 0)
             self.progress.emit(value, msg, cur, total)
         gen = VideoGenerator(self._config, cb,
-                             lambda ok, msg: self.finished.emit(ok, msg))
+                             lambda ok, msg: self.finished.emit(ok, msg),
+                             cancel_event=self._cancel_event)
         gen.generate()
 
 
@@ -1806,7 +1808,9 @@ class IntroMaker(QMainWindow):
             "outro_slide_fade_out":  self._outro_slide_fadeout_step.value(),
         }
 
-        self._worker = RenderWorker(config)
+        import threading
+        self._cancel_event = threading.Event()
+        self._worker = RenderWorker(config, self._cancel_event)
         self._thread = QThread()
         self._worker.moveToThread(self._thread)
         self._thread.started.connect(self._worker.run)
@@ -1816,12 +1820,10 @@ class IntroMaker(QMainWindow):
         self._thread.start()
 
     def _cancel_render(self):
-        """Request interruption of the render thread and transition the UI back to idle state."""
-        if self._thread and self._thread.isRunning():
-            self._thread.requestInterruption()
-            self._thread.quit()
-            self._thread.wait(3000)
-        self._on_done(False, tr("bottom.status_cancelled"))
+        """Signal the render worker to stop cleanly via the cancel event.
+        The worker will delete any partial output files and call _on_done automatically."""
+        if self._cancel_event:
+            self._cancel_event.set()
 
     def _on_progress(self, value, msg, cur, total):
         """Update the progress bar, status label, frame counter, and ETA display."""
@@ -1842,8 +1844,17 @@ class IntroMaker(QMainWindow):
         self._create_btn.setEnabled(True)
         self._cancel_btn.setVisible(False)
         self._eta_lbl.setText("")
+        self._frames_lbl.setText("")
         dark      = (self._theme == "dark")
         sounds_on = self._sounds_chk.isChecked()
+
+        if msg == "CANCELLED":
+            # Clean reset — progress back to zero, status label only, no dialog
+            self._progress.setValue(0)
+            self._pct_lbl.setText("")
+            self._status_lbl.setText(tr("bottom.status_cancelled"))
+            return
+
         if ok:
             self._progress.setValue(1000)
             self._pct_lbl.setText("100%")
@@ -1855,15 +1866,12 @@ class IntroMaker(QMainWindow):
                               tr("dialogs.done_msg", self._out_path),
                               dark=dark)
         else:
-            cancelled_msg = tr("bottom.status_cancelled")
-            if cancelled_msg.strip("⛔ ") in msg or "Abgebrochen" in msg or "Cancelled" in msg:
-                self._progress.setValue(0); self._pct_lbl.setText("")
-                self._status_lbl.setText(cancelled_msg)
-            else:
-                if sounds_on:
-                    _play_sound("error")
-                self._status_lbl.setText(tr("bottom.status_error"))
-                ThemedDialog.error(self, tr("dialogs.error_render_title"), msg[:600], dark=dark)
+            self._progress.setValue(0)
+            self._pct_lbl.setText("")
+            if sounds_on:
+                _play_sound("error")
+            self._status_lbl.setText(tr("bottom.status_error"))
+            ThemedDialog.error(self, tr("dialogs.error_render_title"), msg[:600], dark=dark)
 
 
 # ── Entry point ────────────────────────────────────────────────────────────────

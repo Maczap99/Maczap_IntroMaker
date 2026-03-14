@@ -1,6 +1,3 @@
-### Abbrechen button
-fix einbauen, das er funtkioniert und nicht nur das programm schließt
-
 ## Output Option
 Output Option hinzufügen (Kein timer, kein Abschluss Bild)
 es soll nur das Video/Bild mit Musik und einem Outro Titel in der Mitte angezeigt werden

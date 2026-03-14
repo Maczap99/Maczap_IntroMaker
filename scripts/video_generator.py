@@ -69,16 +69,61 @@ def _fit_image(img_pil: Image.Image, w: int, h: int,
     return canvas
 
 
+def _subtitle_layout(w: int, h: int, timer_y: int, timer_h: int,
+                     sub_offset: int, sub_size: int) -> int:
+    """Return the y-coordinate at which subtitle text begins.
+
+    A single shared helper so that subtitle position is pixel-identical
+    across every render path — fade frames and normal timer frames alike.
+
+    Parameters
+    ----------
+    w, h        : int — frame dimensions
+    timer_y     : int — top edge of the timer text block (pixels)
+    timer_h     : int — pixel height of the timer text block
+    sub_offset  : int — user-configured line-offset value
+    sub_size    : int — subtitle font size in points (used for extra gap)
+
+    Returns
+    -------
+    int — pixel y-coordinate for the first subtitle line
+    """
+    base_gap  = int(min(w, h) * 0.04)
+    extra_gap = sub_offset * sub_size
+    return timer_y + timer_h + base_gap + extra_gap
+
+
+class _CancelledError(Exception):
+    """Raised internally when the cancel event is set during rendering."""
+
+
 class VideoGenerator:
-    def __init__(self, config, progress_cb, done_cb):
-        self.cfg  = config
-        self.cb   = progress_cb
-        self.done = done_cb
+    def __init__(self, config, progress_cb, done_cb, cancel_event=None):
+        self.cfg           = config
+        self.cb            = progress_cb
+        self.done          = done_cb
+        self._cancel_event = cancel_event
+
+    def _check_cancel(self):
+        """Raise _CancelledError if the cancel event has been set."""
+        if self._cancel_event and self._cancel_event.is_set():
+            raise _CancelledError()
 
     def generate(self):
+        out_path  = self.cfg.get("output_path", "")
+        tmp_video = out_path.replace(".mp4", "_noaudio.mp4") if out_path else ""
         try:
             self._run()
             self.done(True, "OK")
+        except _CancelledError:
+            # Remove any partially written output files so no corrupt files remain
+            for path in [tmp_video, out_path]:
+                if path and os.path.isfile(path):
+                    try:
+                        os.remove(path)
+                    except Exception:
+                        pass
+            self.done(False, "CANCELLED")
         except Exception:
             self.done(False, traceback.format_exc())
 
@@ -109,13 +154,13 @@ class VideoGenerator:
             bg_static = np.full((h, w, 3), (b, g, r), dtype=np.uint8)
 
         # ── Slider images (aspect-ratio-safe with fill color) ─────────────────
-        slider_imgs   = []
-        fill_color    = cfg.get("slider_fill_color", "#000000")
+        slider_imgs = []
+        fill_color  = cfg.get("slider_fill_color", "#000000")
 
         for p in cfg.get("image_paths", []):
             try:
-                raw_img  = Image.open(p).convert("RGB")
-                fitted   = _fit_image(raw_img, w, h, fill_color)
+                raw_img = Image.open(p).convert("RGB")
+                fitted  = _fit_image(raw_img, w, h, fill_color)
                 slider_imgs.append(cv2.cvtColor(np.array(fitted), cv2.COLOR_RGB2BGR))
             except Exception:
                 pass  # Skip unreadable images silently
@@ -263,8 +308,9 @@ class VideoGenerator:
                         frame = cv2.addWeighted(frame, a, black, 1 - a, 0)
 
                     write_frame(frame)
-                    elapsed += 1.0 / fps
+                    elapsed   += 1.0 / fps
                     last_frame = frame
+                    self._check_cancel()
 
                     frame_idx = int(elapsed * fps)
                     if frame_idx % 15 == 0:
@@ -311,6 +357,7 @@ class VideoGenerator:
                         frame = cv2.addWeighted(frame, a, black, 1 - a, 0)
 
                     write_frame(frame)
+                    self._check_cancel()
 
                     if f % 15 == 0:
                         self.cb(0.95 + 0.04 * (f / outro_frames),
@@ -461,23 +508,15 @@ class VideoGenerator:
 
         line_spacing = int(min(w, h) * 0.012)
         sub_data     = []
-        sub_block_h  = 0
 
         if sub_lines:
-            for i, line in enumerate(sub_lines):
+            for line in sub_lines:
                 bbox_s = draw.textbbox((0, 0), line, font=sub_font)
                 lh     = bbox_s[3] - bbox_s[1]
                 sub_data.append((line, bbox_s, lh))
-                sub_block_h += lh
-                if i < len(sub_lines) - 1:
-                    sub_block_h += line_spacing
 
         timer_y = (h - th) // 2
         ty      = timer_y - bbox_mm[1]
-
-        base_gap  = int(min(w, h) * 0.04)
-        extra_gap = sub_offset_lines * sub_size
-        gap       = base_gap + extra_gap
 
         timer_color = _hex_to_rgb(cfg["font_color"])
         shadow      = max(3, timer_size // 30)
@@ -493,7 +532,8 @@ class VideoGenerator:
         if sub_data:
             sub_color  = _hex_to_rgb(cfg.get("subtitle_color", "#FFFFFF"))
             sub_shadow = max(2, sub_size // 20)
-            cur_y      = timer_y + th + gap
+            # Use shared helper so subtitle y-position is consistent across all render paths
+            cur_y = _subtitle_layout(w, h, timer_y, th, sub_offset_lines, sub_size)
             for i, (line, bbox_s, lh) in enumerate(sub_data):
                 lw  = bbox_s[2] - bbox_s[0]
                 lx  = (w - lw) // 2 - bbox_s[0]
