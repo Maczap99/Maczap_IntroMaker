@@ -569,6 +569,9 @@ class IntroMaker(QMainWindow):
         self._img_list.setFixedHeight(110)
         self._img_list.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self._img_list.setFont(QFont("Segoe UI", 10))
+        self._img_list.setDragDropMode(QAbstractItemView.InternalMove)
+        self._img_list.setDefaultDropAction(Qt.MoveAction)
+        self._img_list.model().rowsMoved.connect(self._sync_image_paths_from_list)
 
         self._font_picker = FontPickerWidget(theme=self._theme, preview_text="04:32")
         self._font_picker.font_changed.connect(lambda _: self._schedule_preview())
@@ -1680,6 +1683,14 @@ class IntroMaker(QMainWindow):
         """Remove all images from the slider list."""
         self._image_paths = []
         self._refresh_imgs()
+
+    def _sync_image_paths_from_list(self):
+        """Rebuild _image_paths to match the current visual order of the list widget.
+        Called automatically after the user reorders items via drag and drop."""
+        self._image_paths = [
+            self._img_list.item(i).toolTip()
+            for i in range(self._img_list.count())
+        ]
 
     def _refresh_imgs(self):
         """Rebuild the slider image list widget from the current _image_paths list.
