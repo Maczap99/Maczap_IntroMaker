@@ -17,14 +17,17 @@
     "bg_hint": "Video takes priority over image — both optional (default: black)",
     "bg_pick_video": "🎬  Choose video",
     "bg_pick_image": "🖼  Choose image",
+    "bg_color_title": "🎨  Background color",
 
     "music_title": "🎵  Background Music",
     "music_hint": "Optional — MP3, WAV, OGG",
     "music_pick": "🎵  Choose music file",
+    "music_title_dialog": "🎵  Music file",
 
     "output_title": "💾  Output File",
     "output_hint": "Filename: Intro - DD.MM.YYYY",
     "output_pick": "📁  Choose location",
+    "output_title_dialog": "💾  Choose location",
 
     "preview_title": "🔍  Preview",
     "preview_hint": "Shows background + font + color at 04:32",

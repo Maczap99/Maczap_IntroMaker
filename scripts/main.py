@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import (
     QComboBox
 )
 from PyQt5.QtCore import Qt, QThread, pyqtSignal, QObject, QTimer
-from PyQt5.QtGui  import QPixmap, QFont, QColor, QIcon, QPalette
+from PyQt5.QtGui  import QPixmap, QFont, QColor, QIcon, QPalette, QPainter
 
 from splash          import SplashScreen
 from font_picker     import FontPickerWidget
@@ -54,6 +54,53 @@ def _play_sound(name: str):
         pass
 
 _play_sound._players: list = []
+
+
+# ── ElidedLabel ────────────────────────────────────────────────────────────────
+class ElidedLabel(QLabel):
+    """A QLabel that draws elided text directly in paintEvent.
+
+    Unlike a standard QLabel, this widget never requests more horizontal space
+    than it is given — it simply draws '…' when the text is too long.  A small
+    horizontal padding keeps the text from touching the border of the field.
+    """
+
+    # Left/right padding in pixels so text never touches the widget border
+    _PADDING = 8
+
+    def __init__(self, text: str = "", parent=None):
+        super().__init__(parent)
+        self._full_text = text
+        # Never force the layout to grow to fit the text
+        self.setMinimumWidth(0)
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+
+    def setText(self, text: str):
+        """Store the full text; the visible elided version is produced in paintEvent."""
+        self._full_text = text
+        # Pass an empty string to the base class so the layout never measures
+        # the full text width and pushes sibling widgets off-screen.
+        super().setText("")
+        self.update()
+
+    def text(self) -> str:
+        """Return the original unelided text."""
+        return self._full_text
+
+    def paintEvent(self, event):
+        """Draw the text elided to fit within (width - 2 * _PADDING) pixels."""
+        painter = QPainter(self)
+        fm      = self.fontMetrics()
+        # Subtract padding from both sides so the text never touches the border
+        available = max(0, self.width() - 2 * self._PADDING)
+        elided    = fm.elidedText(self._full_text, Qt.ElideMiddle, available)
+        # Respect the stylesheet-derived foreground colour
+        painter.setPen(self.palette().color(self.foregroundRole()))
+        painter.setFont(self.font())
+        # Vertically centre the text, start at _PADDING from the left edge
+        y_offset = (self.height() - fm.height()) // 2 + fm.ascent()
+        painter.drawText(self._PADDING, y_offset, elided)
+        painter.end()
 
 
 # ── ThemedDialog ───────────────────────────────────────────────────────────────
@@ -456,17 +503,19 @@ def stepper_row(label, stepper, suffix=""):
 # ── FileRow ────────────────────────────────────────────────────────────────────
 class FileRow(QWidget):
     """A compact row showing a selected file path, a pick button, and a clear button.
+    The path label elides overflowing text with '…' so it never displaces sibling widgets.
     The clear button is hidden when no file is selected."""
 
     def __init__(self, btn_text, on_pick, on_clear, parent=None):
         super().__init__(parent)
         layout = QHBoxLayout(self)
         layout.setContentsMargins(0,2,0,2); layout.setSpacing(6)
-        self._lbl = QLabel(tr("file_row.nothing_selected"))
+
+        self._lbl = ElidedLabel(tr("file_row.nothing_selected"))
         self._lbl.setObjectName("pathLabel")
         self._lbl.setFont(QFont("Segoe UI", 10))
         self._lbl.setFixedHeight(28)
-        self._lbl.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+
         self._pick_btn = QPushButton(btn_text)
         self._pick_btn.setObjectName("secondary"); self._pick_btn.setFixedHeight(28)
         self._pick_btn.clicked.connect(on_pick)
@@ -475,6 +524,7 @@ class FileRow(QWidget):
         self._clear_btn.setToolTip(tr("file_row.remove_tooltip"))
         self._clear_btn.clicked.connect(on_clear)
         self._clear_btn.setVisible(False)
+
         layout.addWidget(self._lbl, 1)
         layout.addWidget(self._pick_btn)
         layout.addWidget(self._clear_btn)
@@ -920,7 +970,7 @@ class IntroMaker(QMainWindow):
         rl.setContentsMargins(16, 10, 16, 10); rl.setSpacing(12)
         left = QWidget(); ll = QVBoxLayout(left)
         ll.setContentsMargins(0, 0, 0, 0); ll.setSpacing(2)
-        lbl = QLabel(label); lbl.setFont(QFont("Segoe UI", 11)); lbl.setObjectName("dim")
+        lbl = QLabel(label); lbl.setFont(QFont("Segoe UI", 11)); lbl.setObjectName("settingsLabel")
         ll.addWidget(lbl)
         if hint:
             h = QLabel(hint); h.setFont(QFont("Segoe UI", 9)); h.setObjectName("hint")

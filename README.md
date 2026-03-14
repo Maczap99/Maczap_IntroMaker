@@ -17,6 +17,9 @@ Gebaut mit Python + PyQt5. Rendering direkt über OpenCV und PIL, mit optionalem
 - **Fade-Effekte** — Fade-in aus Schwarz am Start, Fade-out zu Schwarz am Ende, Crossfade zwischen Timer und Bildern
 - **Eigene Schriftarten** — beliebige `.ttf` / `.otf` Fonts aus `assets/fonts/`, mit Live-Vorschau
 - **Echtzeit-Vorschau** — generiert einen Vorschau-Frame mit Hintergrund, Schriftart und Farbe vor dem Rendern
+- **Render abbrechen** — laufendes Rendering jederzeit abbrechbar; unfertige Dateien werden automatisch gelöscht
+- **Hardware-Encoding** — automatische Erkennung von NVIDIA (`h264_nvenc`) und AMD (`h264_amf`); fällt auf `libx264` zurück wenn keine GPU verfügbar ist
+- **Töne** — optionale Audio-Benachrichtigung bei erfolgreichem Abschluss oder Fehler
 - **Hell- & Dunkel-Modus** — vollständiges UI-Theming mit persistenten Einstellungen
 - **Mehrsprachig** — Deutsch, Englisch und Russisch, umschaltbar in den Einstellungen
 - **Einstellungsseite** — alle Timing-, Fade- und Slider-Parameter übersichtlich konfigurierbar
@@ -77,7 +80,8 @@ IntroMaker/
 ├── assets/
 │   ├── bin/                # ffmpeg.exe (optional, nicht enthalten)
 │   ├── fonts/              # Eigene .ttf / .otf Schriftarten
-│   └── pictures/           # Icons, Logos, Splash-Bilder
+│   ├── pictures/           # Icons, Logos, Splash-Bilder
+│   └── sounds/             # success.mp3, error.mp3 (optional)
 ├── build/
 │   └── build.bat           # PyInstaller Build-Skript
 ├── config/
@@ -118,7 +122,9 @@ Alle Einstellungen werden automatisch zwischen Sitzungen gespeichert und können
 | Slider-Timing | Wann Bilder erscheinen, wie lange, Pause dazwischen |
 | Slider-Loop | Bilder bis Zonen-Ende wiederholen oder jeden einmal zeigen |
 | Übergänge | Crossfade-Dauer zwischen Timer und Slider-Bildern |
+| Musik im Abschluss-Bild | Musik läuft bis Videoende oder endet mit Timer 0:00 |
 | Musik-Fade-out | Dauer des Musik-Fade am Videoende |
+| Töne | Audio-Benachrichtigung bei Abschluss oder Fehler |
 | Sprache | Deutsch / Englisch / Russisch — wirkt sofort |
 
 Einstellungen werden gespeichert unter:
@@ -169,6 +175,35 @@ assets/bin/ffmpeg.exe
 Einen statischen Build gibt es auf [ffmpeg.org](https://ffmpeg.org/download.html) oder [gyan.dev](https://www.gyan.dev/ffmpeg/builds/).
 
 Wird FFmpeg nicht gefunden, wird das Video ohne Audio gerendert.
+
+---
+
+## ⚡ Hardware-Encoding
+
+Beim Rendern erkennt die App automatisch verfügbare Hardware-Encoder und wählt den schnellsten:
+
+| Encoder | Voraussetzung |
+|---|---|
+| `h264_nvenc` | NVIDIA-GPU mit NVENC-Support |
+| `h264_amf` | AMD-GPU mit AMF-Support |
+| `libx264` | CPU-Fallback, immer verfügbar |
+
+Die Erkennung läuft einmalig beim ersten Render und wird für die Sitzung gecacht. Es ist keine Konfiguration nötig.
+
+---
+
+## 🔔 Töne
+
+Die App spielt optionale Benachrichtigungsgeräusche ab, wenn das Rendering abgeschlossen ist oder ein Fehler aufgetreten ist. Die Sounds können in den Einstellungen deaktiviert werden.
+
+Erwartet werden folgende Dateien unter `assets/sounds/`:
+
+```
+assets/sounds/success.mp3
+assets/sounds/error.mp3
+```
+
+Fehlen die Dateien, läuft die App ohne Töne — es gibt keine Fehlermeldung.
 
 ---
 

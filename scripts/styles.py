@@ -7,6 +7,7 @@ def make_style(dark: bool) -> str:
         QWidget { color: #F1F5F9; }
         QFrame#card { background: #1E293B; border-radius: 12px; border: 1px solid #334155; }
         QLabel#sectionLabel { color: #3B82F6; font-size: 13px; font-weight: bold; }
+        QLabel#settingsLabel { color: #F1F5F9; }
         QLabel#hint  { color: #64748B; font-size: 11px; }
         QLabel#dim   { color: #94A3B8; }
         QLabel#previewLabel {
@@ -102,6 +103,7 @@ def make_style(dark: bool) -> str:
         QWidget { color: #0F172A; }
         QFrame#card { background: #FFFFFF; border-radius: 12px; border: 1px solid #E2E8F0; }
         QLabel#sectionLabel { color: #2563EB; font-size: 13px; font-weight: bold; }
+        QLabel#settingsLabel { color: #0F172A; }
         QLabel#hint  { color: #64748B; font-size: 11px; }
         QLabel#dim   { color: #64748B; }
         QLabel#previewLabel {

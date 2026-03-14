@@ -17,14 +17,17 @@
     "bg_hint": "Video hat Vorrang vor Bild — beide optional (Standard: Weiß)",
     "bg_pick_video": "🎬  Video wählen",
     "bg_pick_image": "🖼  Bild wählen",
+    "bg_color_title": "🎨  Hintergrundfarbe",
 
     "music_title": "🎵  Hintergrundmusik",
     "music_hint": "Optional — MP3, WAV, OGG",
     "music_pick": "🎵  Musikdatei wählen",
+    "music_title_dialog": "🎵  Musikdatei",
 
     "output_title": "💾  Ausgabedatei",
     "output_hint": "Dateiname: Intro - TT.MM.JJJJ",
     "output_pick": "📁  Speicherort wählen",
+    "output_title_dialog": "💾  Speicherort wählen",
 
     "preview_title": "🔍  Vorschau",
     "preview_hint": "Zeigt Hintergrund + Schriftart + Farbe bei 04:32",
@@ -44,6 +47,8 @@
 
     "font_color_title": "🎨  Schriftfarbe Timer",
     "font_color_label": "Farbe:",
+
+    "fill_color_title": "🎨  Füllfarbe (Balken)",
 
     "subtitle_title": "💬  Untertitel",
     "subtitle_hint": "Wird unterhalb des Timers angezeigt",
