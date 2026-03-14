@@ -123,6 +123,10 @@
     "language_label": "Sprache",
     "language_hint": "Sprachauswahl gilt nach einem Neustart sofort",
 
+    "sounds_group": "Töne",
+    "sounds_label": "Töne aktivieren",
+    "sounds_hint": "Spielt einen Ton wenn das Video fertig oder ein Fehler aufgetreten ist",
+
     "save_btn": "💾  Speichern",
     "save_btn_ok": "✓  Gespeichert",
     "reset_btn": "↺  Zurücksetzen"

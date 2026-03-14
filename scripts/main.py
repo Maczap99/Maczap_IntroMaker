@@ -31,6 +31,31 @@ def resource_path(relative_path):
     return os.path.join(os.path.abspath("."), relative_path)
 
 
+def _play_sound(name: str):
+    """Play assets/sounds/<name>.mp3 non-blocking. Silently no-ops if unavailable."""
+    try:
+        from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
+        from PyQt5.QtCore import QUrl
+        path = resource_path(f"assets/sounds/{name}.mp3")
+        if not os.path.isfile(path):
+            return
+        player = QMediaPlayer()
+        player.setMedia(QMediaContent(QUrl.fromLocalFile(os.path.abspath(path))))
+        player.setVolume(80)
+        player.play()
+        # Keep a reference so the player isn't garbage-collected mid-playback
+        _play_sound._players.append(player)
+        # Clean up finished players
+        player.stateChanged.connect(
+            lambda s, p=player: _play_sound._players.remove(p)
+            if s == QMediaPlayer.StoppedState and p in _play_sound._players else None
+        )
+    except Exception:
+        pass
+
+_play_sound._players: list = []
+
+
 # ── ThemedDialog ───────────────────────────────────────────────────────────────
 class ThemedDialog(QDialog):
     @staticmethod
@@ -45,11 +70,20 @@ class ThemedDialog(QDialog):
     def question(parent, title, message, dark) -> bool:
         return ThemedDialog(parent, title, message, dark, mode="question").exec_() == QDialog.Accepted
 
+    _RADIUS = 16
+
     def __init__(self, parent, title, message, dark, mode="info"):
         super().__init__(parent)
         self.setWindowTitle(title)
         self.setMinimumWidth(420)
-        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
+        # Frameless + translucent so we can paint our own rounded background
+        self.setWindowFlags(
+            Qt.Dialog |
+            Qt.FramelessWindowHint |
+            Qt.WindowStaysOnTopHint
+        )
+        self.setAttribute(Qt.WA_TranslucentBackground)
+
         if dark:
             bg, fg, border = "#1E293B", "#F1F5F9", "#334155"
             btn_bg, btn_fg = "#3B82F6", "white"
@@ -58,14 +92,29 @@ class ThemedDialog(QDialog):
             bg, fg, border = "#FFFFFF", "#0F172A", "#E2E8F0"
             btn_bg, btn_fg = "#2563EB", "white"
             btn_cancel_bg, btn_cancel_fg = "#F1F5F9", "#64748B"
-        self.setStyleSheet(f"""
-            QDialog {{ background: {bg}; border-radius: 12px; }}
-            QLabel  {{ color: {fg}; background: transparent; }}
+
+        # Outer transparent widget — just for paintEvent shadow
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(12, 12, 12, 12)   # room for shadow
+
+        # Inner card with rounded style
+        self._card = QFrame()
+        self._card.setObjectName("dialogCard")
+        self._card.setStyleSheet(f"""
+            QFrame#dialogCard {{
+                background: {bg};
+                border-radius: {self._RADIUS}px;
+                border: 1px solid {border};
+            }}
+            QLabel  {{ color: {fg}; background: transparent; border: none; }}
             QPushButton {{ border-radius: 8px; padding: 8px 20px;
                 font-size: 12px; font-weight: bold; border: none; }}
         """)
-        layout = QVBoxLayout(self)
+        outer.addWidget(self._card)
+
+        layout = QVBoxLayout(self._card)
         layout.setContentsMargins(28, 24, 28, 20); layout.setSpacing(16)
+
         hdr = QWidget(); hl = QHBoxLayout(hdr)
         hl.setContentsMargins(0,0,0,0); hl.setSpacing(12)
         icon_key = {"info": "dialogs.icon_info", "error": "dialogs.icon_error",
@@ -77,13 +126,16 @@ class ThemedDialog(QDialog):
         title_lbl.setStyleSheet(f"color: {fg};")
         hl.addWidget(icon_lbl); hl.addWidget(title_lbl); hl.addStretch()
         layout.addWidget(hdr)
+
         line = QFrame(); line.setFrameShape(QFrame.HLine)
-        line.setStyleSheet(f"background: {border}; max-height: 1px;")
+        line.setStyleSheet(f"background: {border}; max-height: 1px; border: none;")
         layout.addWidget(line)
+
         msg_lbl = QLabel(message)
         msg_lbl.setFont(QFont("Segoe UI", 11))
         msg_lbl.setWordWrap(True); msg_lbl.setStyleSheet(f"color: {fg};")
         layout.addWidget(msg_lbl)
+
         btn_row = QWidget(); bl = QHBoxLayout(btn_row)
         bl.setContentsMargins(0,0,0,0); bl.setSpacing(10); bl.addStretch()
         if mode == "question":
@@ -98,6 +150,20 @@ class ThemedDialog(QDialog):
             ok.setStyleSheet(f"background:{btn_bg}; color:{btn_fg};")
             ok.setMinimumWidth(90); ok.clicked.connect(self.accept); bl.addWidget(ok)
         layout.addWidget(btn_row)
+
+    def paintEvent(self, event):
+        """Paint a soft drop-shadow behind the card."""
+        from PyQt5.QtGui import QPainter, QColor, QPainterPath
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing)
+        # Semi-transparent shadow
+        for i in range(8, 0, -1):
+            alpha = int(60 * (i / 8) ** 2)
+            painter.setPen(Qt.NoPen)
+            painter.setBrush(QColor(0, 0, 0, alpha))
+            rect = self.rect().adjusted(i, i, -i + 8, -i + 8)
+            painter.drawRoundedRect(rect, self._RADIUS + 2, self._RADIUS + 2)
+        painter.end()
 
 
 # ── StyledCheckBox ─────────────────────────────────────────────────────────────
@@ -619,6 +685,9 @@ class IntroMaker(QMainWindow):
         self._outro_font_picker.setEnabled(False)
 
         # ── Language combo ─────────────────────────────────────────────────────
+        self._sounds_chk = StyledCheckBox(tr("settings.sounds_label"))
+        self._sounds_chk.setChecked(self._settings.get("sounds_enabled", True))
+
         self._lang_combo = QComboBox()
         self._lang_combo.setFont(QFont("Segoe UI", 11))
         self._lang_combo.setFixedHeight(34)
@@ -836,7 +905,7 @@ class IntroMaker(QMainWindow):
         vl.setContentsMargins(0,0,0,0); vl.setSpacing(0)
 
         center = QWidget(); center.setObjectName("root")
-        center.setMaximumWidth(680)
+        center.setMaximumWidth(760)
         cl = QVBoxLayout(center)
         cl.setContentsMargins(0, 16, 0, 32); cl.setSpacing(6)
 
@@ -952,16 +1021,12 @@ class IntroMaker(QMainWindow):
                                tr("settings.timer_between_hint")),
             self._settings_check_row(self._slider_loop_chk,
                                      tr("settings.slider_loop_hint")),
-            self._settings_row(tr("settings.slider_fill_color_label"),
-                               self._fill_color_btn,
-                               tr("settings.slider_fill_color_hint")),
-        ]))
-
-        # Transitions group
-        layout.addWidget(self._settings_block("✨", tr("settings.transitions_group"), [
             self._settings_row(tr("settings.fade_label"),
                                self._fade_step,
                                tr("settings.fade_hint")),
+            self._settings_row(tr("settings.slider_fill_color_label"),
+                               self._fill_color_btn,
+                               tr("settings.slider_fill_color_hint")),
         ]))
 
         # Subtitle group
@@ -1052,6 +1117,12 @@ class IntroMaker(QMainWindow):
                                tr("settings.outro_fadeout_hint")),
             self._settings_check_row(self._music_in_outro_chk,
                                      tr("settings.music_in_outro_hint")),
+        ]))
+
+        # Sounds block
+        layout.addWidget(self._settings_block("🔔", tr("settings.sounds_group"), [
+            self._settings_check_row(self._sounds_chk,
+                                     tr("settings.sounds_hint")),
         ]))
 
         # Language selection block
@@ -1166,6 +1237,7 @@ class IntroMaker(QMainWindow):
             "outro_slide_fade_in":     self._outro_slide_fadein_step.value(),
             "outro_slide_fade_out":    self._outro_slide_fadeout_step.value(),
             "last_output_folder":      self._last_output_folder,
+            "sounds_enabled":          self._sounds_chk.isChecked(),
         }
 
     def _restore_settings(self):
@@ -1264,6 +1336,8 @@ class IntroMaker(QMainWindow):
             self._out_row.set_path(self._out_path)
             self._out_row_a.set_path(self._out_path)
 
+        self._sounds_chk.setChecked(s.get("sounds_enabled", True))
+
         # Restore language combo without triggering the signal
         lang = s.get("language", "de")
         for i in range(self._lang_combo.count()):
@@ -1356,7 +1430,7 @@ class IntroMaker(QMainWindow):
         dark = (theme == "dark")
         for chk in [self._music_loop_chk, self._music_fadeout_chk, self._music_in_outro_chk,
                     self._intro_fade_chk, self._outro_fade_chk,
-                    self._sub_chk, self._slider_loop_chk]:
+                    self._sub_chk, self._slider_loop_chk, self._sounds_chk]:
             try: chk.update_theme(dark)
             except Exception: pass
         self._update_color_btn(self._color_btn, self._font_color)
@@ -1754,10 +1828,13 @@ class IntroMaker(QMainWindow):
         self._cancel_btn.setVisible(False)
         self._eta_lbl.setText("")
         dark = (self._theme == "dark")
+        sounds_on = self._sounds_chk.isChecked()
         if ok:
             self._progress.setValue(1000)
             self._pct_lbl.setText("100%")
             self._status_lbl.setText(tr("bottom.status_done"))
+            if sounds_on:
+                _play_sound("success")
             ThemedDialog.info(self,
                               tr("dialogs.done_title"),
                               tr("dialogs.done_msg", self._out_path),
@@ -1768,6 +1845,8 @@ class IntroMaker(QMainWindow):
                 self._progress.setValue(0); self._pct_lbl.setText("")
                 self._status_lbl.setText(cancelled_msg)
             else:
+                if sounds_on:
+                    _play_sound("error")
                 self._status_lbl.setText(tr("bottom.status_error"))
                 ThemedDialog.error(self, tr("dialogs.error_render_title"), msg[:600], dark=dark)
 

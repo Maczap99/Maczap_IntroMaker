@@ -126,6 +126,10 @@
     "language_label": "Language",
     "language_hint": "The selected language is applied immediately",
 
+    "sounds_group": "Sounds",
+    "sounds_label": "Enable sounds",
+    "sounds_hint": "Plays a sound when the video is done or an error occurs",
+
     "save_btn": "💾  Save",
     "save_btn_ok": "✓  Saved",
     "reset_btn": "↺  Reset"

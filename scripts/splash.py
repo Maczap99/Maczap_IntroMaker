@@ -104,7 +104,7 @@ class SplashScreen(QWidget):
             logo_lbl.setStyleSheet(f"color: {fg}; background: transparent; border: none;")
         layout.addWidget(logo_lbl)
 
-        layout.addSpacing(4)
+        layout.addSpacing(1)   # slightly less gap between logo and loading text
 
         # "Loading" label — translated
         loading_lbl = QLabel(tr("splash.loading"))
