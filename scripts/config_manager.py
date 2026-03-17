@@ -38,14 +38,14 @@ DEFAULTS = {
     "outro_fade_dur":     3,
 
     # Slider timing
-    "slider_from":        4,
-    "slider_until":       1,
+    "slider_from":        240,
+    "slider_until":       60,
     "img_duration":       10,
     "timer_between":      15,
     "slider_loop":        True,
 
     # Transitions
-    "fade_duration":      1.0,
+    "fade_duration":      2.0,
 
     # Font & timer color
     "font_color":         "#FFFFFF",
@@ -80,6 +80,8 @@ DEFAULTS = {
 
     # Remember last used output folder so the dialog opens there next time
     "last_output_folder":     "",
+    # UI sounds (success.mp3 / error.mp3)
+    "sounds_enabled":         True,
 }
 
 

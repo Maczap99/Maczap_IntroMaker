@@ -96,7 +96,7 @@ class SplashScreen(QWidget):
         logo_lbl.setAlignment(Qt.AlignCenter)
         logo_lbl.setStyleSheet("background: transparent; border: none;")
         if os.path.exists(logo_path):
-            pix = QPixmap(logo_path).scaledToHeight(180, Qt.SmoothTransformation)
+            pix = QPixmap(logo_path).scaledToHeight(155, Qt.SmoothTransformation)
             logo_lbl.setPixmap(pix)
         else:
             logo_lbl.setText(tr("app_title"))
@@ -104,7 +104,7 @@ class SplashScreen(QWidget):
             logo_lbl.setStyleSheet(f"color: {fg}; background: transparent; border: none;")
         layout.addWidget(logo_lbl)
 
-        layout.addSpacing(4)
+        layout.addSpacing(1)   # slightly less gap between logo and loading text
 
         # "Loading" label — translated
         loading_lbl = QLabel(tr("splash.loading"))
