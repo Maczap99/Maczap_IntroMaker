@@ -423,7 +423,13 @@ class PreviewWorker(QObject):
 
 # ── Stepper ────────────────────────────────────────────────────────────────────
 class Stepper(QWidget):
-    """A numeric +/− stepper widget with configurable min, max, step, and format string."""
+    """A numeric +/− stepper widget with configurable min, max, step, and format.
+
+    fmt may be either a str.format-style string (e.g. '{} min') or a callable
+    that receives the current value and returns the display string.  The callable
+    form is used when the display format cannot be expressed as a simple template
+    — for example when showing seconds internally but displaying as MM:SS.
+    """
 
     def __init__(self, min_val, max_val, value, step=1, fmt="{}", parent=None):
         super().__init__(parent)
@@ -433,7 +439,7 @@ class Stepper(QWidget):
         layout.setContentsMargins(0,0,0,0); layout.setSpacing(4)
         self._dec_btn = QPushButton("−"); self._dec_btn.setObjectName("stepper")
         self._dec_btn.clicked.connect(self._dec)
-        self._lbl = QLabel(fmt.format(value))
+        self._lbl = QLabel(self._render(value))
         self._lbl.setAlignment(Qt.AlignCenter)
         self._lbl.setFont(QFont("Segoe UI", 12, QFont.Bold))
         self._lbl.setMinimumWidth(72)
@@ -441,27 +447,31 @@ class Stepper(QWidget):
         self._inc_btn.clicked.connect(self._inc)
         layout.addWidget(self._dec_btn); layout.addWidget(self._lbl); layout.addWidget(self._inc_btn)
 
+    def _render(self, v) -> str:
+        """Return the display string for value v, supporting both str and callable fmt."""
+        return self._fmt(v) if callable(self._fmt) else self._fmt.format(v)
+
     def _dec(self):
         """Decrement the value by one step, clamped to the minimum."""
         self._val = max(self._min, round(self._val - self._step, 4))
-        self._lbl.setText(self._fmt.format(self._val))
+        self._lbl.setText(self._render(self._val))
 
     def _inc(self):
         """Increment the value by one step, clamped to the maximum."""
         self._val = min(self._max, round(self._val + self._step, 4))
-        self._lbl.setText(self._fmt.format(self._val))
+        self._lbl.setText(self._render(self._val))
 
     def value(self):        return self._val
 
     def set_value(self, v):
         """Set the stepper value programmatically, clamped to [min, max]."""
         self._val = max(self._min, min(self._max, v))
-        self._lbl.setText(self._fmt.format(self._val))
+        self._lbl.setText(self._render(self._val))
 
-    def set_fmt(self, fmt: str):
-        """Update the display format string and refresh the label immediately."""
+    def set_fmt(self, fmt):
+        """Update the display format (string or callable) and refresh the label immediately."""
         self._fmt = fmt
-        self._lbl.setText(fmt.format(self._val))
+        self._lbl.setText(self._render(self._val))
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
@@ -498,6 +508,10 @@ def stepper_row(label, stepper, suffix=""):
     if suffix: l.addWidget(dim_lbl(suffix))
     l.addStretch()
     return w
+
+def _fmt_mmss(seconds: int) -> str:
+    """Format an integer second count as MM:SS for slider boundary steppers."""
+    return f"{int(seconds) // 60:02d}:{int(seconds) % 60:02d}"
 
 
 # ── FileRow ────────────────────────────────────────────────────────────────────
@@ -671,8 +685,13 @@ class IntroMaker(QMainWindow):
         self._outro_fade_step = Stepper(1, 30, 3, step=1, fmt=tr("stepper.seconds"))
         self._outro_fade_step.setEnabled(False)
 
-        self._slider_from_step   = Stepper(1, 120, 4,  step=1, fmt=tr("stepper.minutes"))
-        self._slider_until_step  = Stepper(0, 120, 1,  step=1, fmt=tr("stepper.minutes"))
+        # Slider boundary steppers store seconds internally and display as MM:SS.
+        # Step size is 10 seconds; range is 0:10 … 2:00:00 (7200 s).
+        # Default: slider_from = 4:00 (240 s), slider_until = 1:00 (60 s).
+        # Values are divided by 60 before being passed to video_generator (minutes).
+        self._slider_from_step  = Stepper(10, 7200, 240, step=10, fmt=_fmt_mmss)
+        self._slider_until_step = Stepper(0,  7200,  60, step=10, fmt=_fmt_mmss)
+
         self._img_dur_step       = Stepper(5, 120, 10, step=1, fmt=tr("stepper.seconds"))
         self._timer_between_step = Stepper(0, 120, 15, step=1, fmt=tr("stepper.seconds"))
         self._slider_loop_chk    = StyledCheckBox(tr("settings.slider_loop"))
@@ -1248,8 +1267,10 @@ class IntroMaker(QMainWindow):
             "intro_fade_dur":     self._intro_fade_step.value(),
             "outro_fade_enabled": self._outro_fade_chk.isChecked(),
             "outro_fade_dur":     self._outro_fade_step.value(),
-            "slider_from":        self._slider_from_step.value(),
-            "slider_until":       self._slider_until_step.value(),
+            # Slider boundary values are stored in seconds internally; divide by 60
+            # before saving so the settings file and video_generator stay in minutes.
+            "slider_from":        self._slider_from_step.value()  / 60,
+            "slider_until":       self._slider_until_step.value() / 60,
             "img_duration":       self._img_dur_step.value(),
             "timer_between":      self._timer_between_step.value(),
             "slider_loop":        self._slider_loop_chk.isChecked(),
@@ -1294,8 +1315,13 @@ class IntroMaker(QMainWindow):
         self._outro_fade_chk.setChecked(s.get("outro_fade_enabled", False))
         self._outro_fade_step.set_value(s.get("outro_fade_dur", 3))
         self._outro_fade_step.setEnabled(s.get("outro_fade_enabled", False))
-        self._slider_from_step.set_value(s.get("slider_from", 4))
-        self._slider_until_step.set_value(s.get("slider_until", 1))
+        # Saved value is in minutes; multiply by 60 to restore the internal seconds
+        # representation.  Round to the nearest 10-second step to handle legacy
+        # settings that were stored at whole-minute granularity.
+        self._slider_from_step.set_value(
+            round(s.get("slider_from", 4) * 60 / 10) * 10)
+        self._slider_until_step.set_value(
+            round(s.get("slider_until", 1) * 60 / 10) * 10)
         self._img_dur_step.set_value(s.get("img_duration", 10))
         self._timer_between_step.set_value(s.get("timer_between", 15))
         self._slider_loop_chk.setChecked(s.get("slider_loop", True))
@@ -1832,8 +1858,8 @@ class IntroMaker(QMainWindow):
             "img_duration":       self._img_dur_step.value(),
             "timer_between":      self._timer_between_step.value(),
             "slider_loop":        self._slider_loop_chk.isChecked(),
-            "slider_from":        self._slider_from_step.value(),
-            "slider_until":       self._slider_until_step.value(),
+            "slider_from":        self._slider_from_step.value()  / 60,
+            "slider_until":       self._slider_until_step.value() / 60,
             "fade_duration":      self._fade_step.value(),
             "font_path":          self._font_picker.get_font_path(),
             "font_color":         self._font_color,
