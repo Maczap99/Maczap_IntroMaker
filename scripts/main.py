@@ -1,3 +1,4 @@
+# main.py
 import sys, os, time, tempfile
 from datetime import datetime
 from PyQt5.QtWidgets import (

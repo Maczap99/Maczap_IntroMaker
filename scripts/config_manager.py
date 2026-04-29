@@ -1,3 +1,4 @@
+# config_manager.py
 import json, os, sys
 
 APP_NAME = "MaczapIntroMaker"

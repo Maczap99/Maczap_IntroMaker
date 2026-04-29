@@ -1,3 +1,4 @@
+# styles.py
 def make_style(dark: bool) -> str:
     if dark:
         return """

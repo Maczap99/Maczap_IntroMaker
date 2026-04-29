@@ -1,3 +1,4 @@
+# video_generator.py
 import cv2, numpy as np, os, traceback, subprocess, shutil, sys
 from PIL import Image, ImageDraw, ImageFont
 
