@@ -8,8 +8,9 @@ from PyQt5.QtWidgets import (
     QColorDialog, QListWidget, QListWidgetItem, QAbstractItemView,
     QComboBox
 )
-from PyQt5.QtCore import Qt, QThread, pyqtSignal, QObject, QTimer
+from PyQt5.QtCore import Qt, QThread, pyqtSignal, QObject, QTimer, QEvent
 from PyQt5.QtGui  import QPixmap, QFont, QColor, QIcon, QPalette, QPainter
+from PyQt5.QtWidgets import QGraphicsOpacityEffect
 
 from splash          import SplashScreen
 from font_picker     import FontPickerWidget
@@ -240,6 +241,17 @@ class StyledCheckBox(QWidget):
                     border:2px solid {border}; border-radius:5px; }}
                 QPushButton:hover {{ border-color:{hover}; }}""")
 
+    def changeEvent(self, e):
+        if e.type() == QEvent.EnabledChange:
+            enabled = self.isEnabled()
+            eff = QGraphicsOpacityEffect(self)
+            eff.setOpacity(1.0 if enabled else 0.35)
+            self.setGraphicsEffect(eff)
+            cursor = Qt.PointingHandCursor if enabled else Qt.ForbiddenCursor
+            self._box.setCursor(cursor)
+            self._label.setCursor(cursor)
+        super().changeEvent(e)
+
 
 # ── RenderWorker ───────────────────────────────────────────────────────────────
 class RenderWorker(QObject):
@@ -414,6 +426,13 @@ class Stepper(QWidget):
         self._inc_btn.clicked.connect(self._inc)
         layout.addWidget(self._dec_btn); layout.addWidget(self._lbl); layout.addWidget(self._inc_btn)
 
+    def changeEvent(self, e):
+        if e.type() == QEvent.EnabledChange:
+            eff = QGraphicsOpacityEffect(self)
+            eff.setOpacity(0.35 if not self.isEnabled() else 1.0)
+            self.setGraphicsEffect(eff)
+        super().changeEvent(e)
+
     def _render(self, v) -> str:
         return self._fmt(v) if callable(self._fmt) else self._fmt.format(v)
 
@@ -437,6 +456,14 @@ class Stepper(QWidget):
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
+def _set_dim(widget, enabled: bool):
+    """Enable/disable a widget and apply matching opacity so disabled state is clearly visible."""
+    widget.setEnabled(enabled)
+    eff = QGraphicsOpacityEffect(widget)
+    eff.setOpacity(1.0 if enabled else 0.35)
+    widget.setGraphicsEffect(eff)
+
+
 def make_card():
     f = QFrame(); f.setObjectName("card"); return f
 
@@ -644,7 +671,7 @@ class IntroMaker(QMainWindow):
         self._timer_between_chk.setChecked(True)
         self._timer_between_step = Stepper(1, 120, 15, step=1, fmt=tr("stepper.seconds"))
         self._timer_between_chk.stateChanged.connect(
-            lambda s: self._timer_between_step.setEnabled(s == 2)
+            lambda s: _set_dim(self._timer_between_step, s == 2)
         )
         self._slider_loop_chk    = StyledCheckBox(tr("settings.slider_loop"))
         self._slider_loop_chk.setChecked(True)
@@ -684,18 +711,19 @@ class IntroMaker(QMainWindow):
         # Overlay-Checkbox steuert alle abhängigen Widgets
         def _on_overlay_chk(state):
             on = (state == 2)
-            self._slider_timer_pos_combo.setEnabled(on)
-            self._slider_timer_size_step.setEnabled(on)
-            self._slider_timer_bg_transparent_chk.setEnabled(on)
+            _set_dim(self._slider_timer_pos_combo, on)
+            _set_dim(self._slider_timer_size_step, on)
+            _set_dim(self._slider_timer_bg_transparent_chk, on)
             # Hintergrundfarbe nur aktiv wenn Overlay an UND NICHT transparent
             transp = self._slider_timer_bg_transparent_chk.isChecked()
-            self._slider_timer_bg_color_btn.setEnabled(on and not transp)
+            _set_dim(self._slider_timer_bg_color_btn, on and not transp)
 
         self._slider_timer_overlay_chk.stateChanged.connect(_on_overlay_chk)
 
         # Transparent-Checkbox steuert Farbbutton
         self._slider_timer_bg_transparent_chk.stateChanged.connect(
-            lambda s: self._slider_timer_bg_color_btn.setEnabled(
+            lambda s: _set_dim(
+                self._slider_timer_bg_color_btn,
                 self._slider_timer_overlay_chk.isChecked() and s != 2
             )
         )
@@ -1047,8 +1075,8 @@ class IntroMaker(QMainWindow):
                                self._outro_fade_step),
         ]))
 
-        # ── Slider block ─────────────────────────────────────────────────────────
-        layout.addWidget(self._settings_block("🖼", tr("settings.slider_group"), [
+        # ── Slider-Dauer block ────────────────────────────────────────────────────
+        layout.addWidget(self._settings_block("🖼", tr("settings.slider_dur_group"), [
             self._settings_row(tr("settings.slider_from_label"),
                                self._slider_from_step,
                                tr("settings.slider_from_hint")),
@@ -1058,11 +1086,6 @@ class IntroMaker(QMainWindow):
             self._settings_row(tr("settings.img_dur_label"),
                                self._img_dur_step,
                                tr("settings.img_dur_hint")),
-            self._settings_check_row(self._timer_between_chk,
-                                     tr("settings.timer_between_enable_hint")),
-            self._settings_row(tr("settings.timer_between_label"),
-                               self._timer_between_step,
-                               tr("settings.timer_between_hint")),
             self._settings_check_row(self._slider_loop_chk,
                                      tr("settings.slider_loop_hint")),
             self._settings_row(tr("settings.fade_label"),
@@ -1071,7 +1094,15 @@ class IntroMaker(QMainWindow):
             self._settings_row(tr("settings.slider_fill_color_label"),
                                self._fill_color_btn,
                                tr("settings.slider_fill_color_hint")),
-            # ── Timer overlay rows ────────────────────────────────────────────
+        ]))
+
+        # ── Slider-Timer block ────────────────────────────────────────────────────
+        layout.addWidget(self._settings_block("⏱", tr("settings.slider_timer_group"), [
+            self._settings_check_row(self._timer_between_chk,
+                                     tr("settings.timer_between_enable_hint")),
+            self._settings_row(tr("settings.timer_between_label"),
+                               self._timer_between_step,
+                               tr("settings.timer_between_hint")),
             self._settings_check_row(self._slider_timer_overlay_chk,
                                      tr("settings.slider_timer_overlay_hint")),
             self._settings_row(tr("settings.slider_timer_pos_label"),
@@ -1085,7 +1116,6 @@ class IntroMaker(QMainWindow):
             self._settings_row(tr("settings.slider_timer_bg_color_label"),
                                self._slider_timer_bg_color_btn,
                                tr("settings.slider_timer_bg_color_hint")),
-            # ─────────────────────────────────────────────────────────────────
         ]))
 
         layout.addWidget(self._settings_block("💬", tr("settings.subtitle_group"), [
@@ -1311,10 +1341,10 @@ class IntroMaker(QMainWindow):
         self._music_in_outro_chk.setChecked(s.get("music_in_outro", False))
         self._intro_fade_chk.setChecked(s.get("intro_fade_enabled", False))
         self._intro_fade_step.set_value(s.get("intro_fade_dur", 3))
-        self._intro_fade_step.setEnabled(s.get("intro_fade_enabled", False))
+        _set_dim(self._intro_fade_step, s.get("intro_fade_enabled", False))
         self._outro_fade_chk.setChecked(s.get("outro_fade_enabled", False))
         self._outro_fade_step.set_value(s.get("outro_fade_dur", 3))
-        self._outro_fade_step.setEnabled(s.get("outro_fade_enabled", False))
+        _set_dim(self._outro_fade_step, s.get("outro_fade_enabled", False))
 
         self._slider_from_step.set_value(
             round(s.get("slider_from", 4) * 60 / 10) * 10)
@@ -1329,7 +1359,7 @@ class IntroMaker(QMainWindow):
             tb_enabled = (tb_stored > 0)
         self._timer_between_chk.setChecked(tb_enabled)
         self._timer_between_step.set_value(max(1, tb_stored))
-        self._timer_between_step.setEnabled(tb_enabled)
+        _set_dim(self._timer_between_step, tb_enabled)
 
         self._slider_loop_chk.setChecked(s.get("slider_loop", True))
         self._fade_step.set_value(s.get("fade_duration", 2.0))
@@ -1355,14 +1385,14 @@ class IntroMaker(QMainWindow):
         self._sub_chk.setChecked(sub_on)
         self._sub_edit.setPlainText(s.get("subtitle_text", ""))
         self._sub_size_step.set_value(s.get("subtitle_size", 40))
-        self._sub_size_step.setEnabled(sub_on)
+        _set_dim(self._sub_size_step, sub_on)
         self._sub_offset_step.set_value(s.get("subtitle_offset", 2))
-        self._sub_offset_step.setEnabled(sub_on)
+        _set_dim(self._sub_offset_step, sub_on)
         sc = s.get("subtitle_color", "#FFFFFF")
         self._sub_color = sc
         self._update_color_btn(self._sub_color_btn, sc)
-        self._sub_edit.setEnabled(sub_on)
-        self._sub_color_btn.setEnabled(sub_on)
+        _set_dim(self._sub_edit, sub_on)
+        _set_dim(self._sub_color_btn, sub_on)
 
         # ── restore overlay settings ──────────────────────────────────────────
         overlay_on = s.get("slider_timer_overlay", False)
@@ -1376,19 +1406,19 @@ class IntroMaker(QMainWindow):
             if self._slider_timer_pos_combo.itemData(i) == pos:
                 self._slider_timer_pos_combo.setCurrentIndex(i)
                 break
-        self._slider_timer_pos_combo.setEnabled(overlay_on)
+        _set_dim(self._slider_timer_pos_combo, overlay_on)
 
         self._slider_timer_size_step.set_value(s.get("slider_timer_size", 6.5))
-        self._slider_timer_size_step.setEnabled(overlay_on)
+        _set_dim(self._slider_timer_size_step, overlay_on)
 
         transp = s.get("slider_timer_bg_transparent", True)
         self._slider_timer_bg_transparent_chk.setChecked(transp)
-        self._slider_timer_bg_transparent_chk.setEnabled(overlay_on)
+        _set_dim(self._slider_timer_bg_transparent_chk, overlay_on)
 
         stbg = s.get("slider_timer_bg_color", "#FFFFFF")
         self._slider_timer_bg_color = stbg
         self._update_color_btn(self._slider_timer_bg_color_btn, stbg)
-        self._slider_timer_bg_color_btn.setEnabled(overlay_on and not transp)
+        _set_dim(self._slider_timer_bg_color_btn, overlay_on and not transp)
         # ─────────────────────────────────────────────────────────────────────
 
         outro_on = s.get("outro_slide_enabled", False)
@@ -1421,7 +1451,7 @@ class IntroMaker(QMainWindow):
             self._outro_font_picker,
         ]
         for w in outro_widgets:
-            w.setEnabled(outro_on)
+            _set_dim(w, outro_on)
 
         self._last_output_folder = s.get("last_output_folder", "")
         if self._last_output_folder and os.path.isdir(self._last_output_folder):
@@ -1558,6 +1588,11 @@ class IntroMaker(QMainWindow):
             f"background:{hex_color}; color:{tc}; border-radius:8px;"
             f"padding:4px 14px; border:1px solid {border};")
         btn.setText(f"  {hex_color.upper()}  ")
+        # Re-apply opacity if the button is currently disabled
+        if not btn.isEnabled():
+            eff = QGraphicsOpacityEffect(btn)
+            eff.setOpacity(0.35)
+            btn.setGraphicsEffect(eff)
 
     def _open_color_dialog(self, current, title):
         dialog = QColorDialog(QColor(current), self)
@@ -1795,16 +1830,16 @@ class IntroMaker(QMainWindow):
     # ── Toggle handlers ────────────────────────────────────────────────────────
     def _toggle_subtitle(self, state):
         on = (state == 2)
-        self._sub_edit.setEnabled(on)
-        self._sub_size_step.setEnabled(on)
-        self._sub_offset_step.setEnabled(on)
-        self._sub_color_btn.setEnabled(on)
+        _set_dim(self._sub_edit, on)
+        _set_dim(self._sub_size_step, on)
+        _set_dim(self._sub_offset_step, on)
+        _set_dim(self._sub_color_btn, on)
 
     def _toggle_intro_fade(self, state):
-        self._intro_fade_step.setEnabled(state == 2)
+        _set_dim(self._intro_fade_step, state == 2)
 
     def _toggle_outro_fade(self, state):
-        self._outro_fade_step.setEnabled(state == 2)
+        _set_dim(self._outro_fade_step, state == 2)
 
     def _toggle_outro_slide(self, state):
         on = (state == 2)
@@ -1819,7 +1854,7 @@ class IntroMaker(QMainWindow):
             self._outro_slide_font_size_step,
             self._outro_font_picker,
         ]:
-            w.setEnabled(on)
+            _set_dim(w, on)
 
     # ── Render ─────────────────────────────────────────────────────────────────
     def _start_render(self):

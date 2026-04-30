@@ -78,6 +78,8 @@
     "outro_fade_hint": "Video blendet am Ende zu Schwarz aus",
     "outro_fade_dur_label": "Fade-Out Dauer",
 
+    "slider_dur_group": "Slider-Dauer",
+    "slider_timer_group": "Slider-Timer",
     "slider_group": "Slider-Timing",
     "slider_from_label": "Slider erst ab",
     "slider_from_hint": "Bilder einblenden wenn noch X Minuten verbleiben",

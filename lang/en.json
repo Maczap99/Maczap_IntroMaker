@@ -79,6 +79,8 @@
     "outro_fade_hint": "Video fades out to black at the end",
     "outro_fade_dur_label": "Fade-out duration",
 
+    "slider_dur_group": "Slider Duration",
+    "slider_timer_group": "Slider Timer",
     "slider_group": "Slider Timing",
     "slider_from_label": "Slider starts at",
     "slider_from_hint": "Show images when X minutes remain",
@@ -86,12 +88,29 @@
     "slider_until_hint": "No more images from X remaining minutes",
     "img_dur_label": "Duration per image",
     "img_dur_hint": "How long each image is displayed",
-    "timer_between_label": "Timer between images",
-    "timer_between_hint": "Countdown pause between two images",
     "slider_loop": "Repeat images until slider end",
     "slider_loop_hint": "Loop on: image → timer → image → ...  |  Loop off: all images once",
     "slider_fill_color_label": "Fill color (bars)",
     "slider_fill_color_hint": "Color of the bars for non-16:9 images (e.g. portrait)",
+
+    "timer_between_enable": "Show timer between images",
+    "timer_between_enable_hint": "On: countdown pause between slides  |  Off: images crossfade directly",
+    "timer_between_label": "Timer duration",
+    "timer_between_hint": "Duration of the countdown pause between two images",
+    "slider_timer_overlay": "Show timer on slider images",
+    "slider_timer_overlay_hint": "Timer stays visible during images — animates to a corner and back",
+    "slider_timer_pos_label": "Timer corner",
+    "slider_timer_pos_hint": "Position of the small timer on slider images",
+    "slider_timer_pos_right_bottom": "Bottom right",
+    "slider_timer_pos_left_bottom": "Bottom left",
+    "slider_timer_pos_right_top": "Top right",
+    "slider_timer_pos_left_top": "Top left",
+    "slider_timer_size_label": "Timer size",
+    "slider_timer_size_hint": "Size of the corner timer (% of image height)",
+    "slider_timer_bg_transparent": "Transparent background",
+    "slider_timer_bg_transparent_hint": "Off: coloured area behind timer for better readability",
+    "slider_timer_bg_color_label": "Background color",
+    "slider_timer_bg_color_hint": "Color of the area behind the timer on slider images",
 
     "transitions_group": "Transitions",
     "fade_label": "Image fade duration",
@@ -189,7 +208,8 @@
     "minutes": "{} min",
     "seconds": "{} s",
     "points": "{} pt",
-    "lines": "{} lines"
+    "lines": "{} lines",
+    "percent": "{} %"
   },
 
   "output_filename": "Intro - {0}"

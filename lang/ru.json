@@ -79,6 +79,8 @@
     "outro_fade_hint": "Видео плавно исчезает в чёрный экран",
     "outro_fade_dur_label": "Длительность исчезновения",
 
+    "slider_dur_group": "Длительность слайдера",
+    "slider_timer_group": "Таймер слайдера",
     "slider_group": "Настройки слайдера",
     "slider_from_label": "Слайдер начинается с",
     "slider_from_hint": "Показывать изображения когда осталось X минут",
@@ -86,12 +88,29 @@
     "slider_until_hint": "Больше нет изображений с X оставшихся минут",
     "img_dur_label": "Длительность изображения",
     "img_dur_hint": "Как долго отображается каждое изображение",
-    "timer_between_label": "Таймер между изображениями",
-    "timer_between_hint": "Пауза обратного отсчёта между двумя изображениями",
     "slider_loop": "Повторять изображения до конца слайдера",
     "slider_loop_hint": "Цикл вкл: изобр. → таймер → изобр. → ...  |  Цикл выкл: все изображения один раз",
     "slider_fill_color_label": "Цвет заливки (полосы)",
     "slider_fill_color_hint": "Цвет полос для изображений не 16:9 (например, портретная ориентация)",
+
+    "timer_between_enable": "Показывать таймер между изображениями",
+    "timer_between_enable_hint": "Вкл: пауза обратного отсчёта между слайдами  |  Выкл: изображения переходят напрямую",
+    "timer_between_label": "Длительность таймера",
+    "timer_between_hint": "Продолжительность паузы обратного отсчёта между двумя изображениями",
+    "slider_timer_overlay": "Показывать таймер на слайдах",
+    "slider_timer_overlay_hint": "Таймер остаётся виден во время показа слайдов — перемещается в угол и обратно",
+    "slider_timer_pos_label": "Угол таймера",
+    "slider_timer_pos_hint": "Положение маленького таймера на изображениях слайдера",
+    "slider_timer_pos_right_bottom": "Правый нижний",
+    "slider_timer_pos_left_bottom": "Левый нижний",
+    "slider_timer_pos_right_top": "Правый верхний",
+    "slider_timer_pos_left_top": "Левый верхний",
+    "slider_timer_size_label": "Размер таймера",
+    "slider_timer_size_hint": "Размер таймера в углу (% высоты изображения)",
+    "slider_timer_bg_transparent": "Прозрачный фон",
+    "slider_timer_bg_transparent_hint": "Выкл: цветная область за таймером для лучшей читаемости",
+    "slider_timer_bg_color_label": "Цвет фона",
+    "slider_timer_bg_color_hint": "Цвет области за таймером на изображениях слайдера",
 
     "transitions_group": "Переходы",
     "fade_label": "Длительность перехода",
@@ -189,7 +208,8 @@
     "minutes": "{} мин",
     "seconds": "{} с",
     "points": "{} пт",
-    "lines": "{} строк"
+    "lines": "{} строк",
+    "percent": "{} %"
   },
 
   "output_filename": "Intro - {0}"
