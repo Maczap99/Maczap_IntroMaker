@@ -40,29 +40,13 @@ def _fit_image(img_pil: Image.Image, w: int, h: int,
                fill_color_hex: str = "#000000") -> Image.Image:
     """
     Fit *img_pil* into a w×h canvas while preserving its aspect ratio.
-
-    The image is scaled down (or up) so that it fits entirely within the
-    target dimensions without cropping.  Any remaining area is filled with
-    *fill_color_hex* (default black).
-
-    Parameters
-    ----------
-    img_pil       : PIL.Image.Image  — source image (any size / ratio)
-    w, h          : int              — target canvas dimensions
-    fill_color_hex: str              — hex color for letterbox/pillarbox bars
-
-    Returns
-    -------
-    PIL.Image.Image — new RGB image of exactly (w, h) pixels
+    Any remaining area is filled with *fill_color_hex*.
     """
     r, g, b = _hex_to_rgb(fill_color_hex)
     canvas  = Image.new("RGB", (w, h), (r, g, b))
-
-    # Scale to fit while maintaining aspect ratio
-    scale = min(w / img_pil.width, h / img_pil.height)
-    new_w = int(img_pil.width  * scale)
-    new_h = int(img_pil.height * scale)
-
+    scale   = min(w / img_pil.width, h / img_pil.height)
+    new_w   = int(img_pil.width  * scale)
+    new_h   = int(img_pil.height * scale)
     resized  = img_pil.resize((new_w, new_h), Image.LANCZOS)
     offset_x = (w - new_w) // 2
     offset_y = (h - new_h) // 2
@@ -72,26 +56,16 @@ def _fit_image(img_pil: Image.Image, w: int, h: int,
 
 def _subtitle_layout(w: int, h: int, timer_y: int, timer_h: int,
                      sub_offset: int, sub_size: int) -> int:
-    """Return the y-coordinate at which subtitle text begins.
-
-    A single shared helper so that subtitle position is pixel-identical
-    across every render path — fade frames and normal timer frames alike.
-
-    Parameters
-    ----------
-    w, h        : int — frame dimensions
-    timer_y     : int — top edge of the timer text block (pixels)
-    timer_h     : int — pixel height of the timer text block
-    sub_offset  : int — user-configured line-offset value
-    sub_size    : int — subtitle font size in points (used for extra gap)
-
-    Returns
-    -------
-    int — pixel y-coordinate for the first subtitle line
-    """
+    """Return the y-coordinate at which subtitle text begins."""
     base_gap  = int(min(w, h) * 0.04)
     extra_gap = sub_offset * sub_size
     return timer_y + timer_h + base_gap + extra_gap
+
+
+def _smoothstep(t: float) -> float:
+    """Smooth cubic easing — t is clamped to [0, 1]."""
+    t = max(0.0, min(1.0, t))
+    return t * t * (3.0 - 2.0 * t)
 
 
 class _CancelledError(Exception):
@@ -117,7 +91,6 @@ class VideoGenerator:
             self._run()
             self.done(True, "OK")
         except _CancelledError:
-            # Remove any partially written output files so no corrupt files remain
             for path in [tmp_video, out_path]:
                 if path and os.path.isfile(path):
                     try:
@@ -150,11 +123,10 @@ class VideoGenerator:
             img = Image.open(cfg["bg_image"]).convert("RGB").resize((w, h))
             bg_static = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
         else:
-            # No background source — fill with the user-chosen color
             r, g, b   = _hex_to_rgb(cfg.get("bg_color", "#000000"))
             bg_static = np.full((h, w, 3), (b, g, r), dtype=np.uint8)
 
-        # ── Slider images (aspect-ratio-safe with fill color) ─────────────────
+        # ── Slider images ─────────────────────────────────────────────────────
         slider_imgs = []
         fill_color  = cfg.get("slider_fill_color", "#000000")
 
@@ -164,7 +136,7 @@ class VideoGenerator:
                 fitted  = _fit_image(raw_img, w, h, fill_color)
                 slider_imgs.append(cv2.cvtColor(np.array(fitted), cv2.COLOR_RGB2BGR))
             except Exception:
-                pass  # Skip unreadable images silently
+                pass
 
         # ── Settings ──────────────────────────────────────────────────────────
         slider_from   = cfg["slider_from"]  * 60
@@ -174,14 +146,16 @@ class VideoGenerator:
         slider_loop   = cfg.get("slider_loop", True)
         fade_dur      = float(cfg["fade_duration"])
 
-        # Start / end fades
         intro_fade         = cfg.get("intro_fade_enabled", False)
-        # If an outro slide is active we crossfade into it instead of fading to black
         outro_slide_active = (cfg.get("outro_slide_enabled", False) and
                               cfg.get("outro_slide_text", "").strip())
         outro_fade         = cfg.get("outro_fade_enabled", False) and not outro_slide_active
         intro_fade_dur     = float(cfg.get("intro_fade_dur", 3.0))
         outro_fade_dur     = float(cfg.get("outro_fade_dur", 3.0))
+
+        # ── NEW: overlay / position settings ──────────────────────────────────
+        overlay_mode = cfg.get("slider_timer_overlay", False)
+        overlay_pos  = cfg.get("slider_timer_overlay_position", "right")
 
         # ── Fonts ─────────────────────────────────────────────────────────────
         font_path     = cfg.get("font_path")
@@ -206,7 +180,7 @@ class VideoGenerator:
             slider_imgs, img_dur, timer_between, slider_loop)
         total_frames = int(total_sec * fps)
 
-        # ── Start FFmpeg pipe process ─────────────────────────────────────────
+        # ── Start FFmpeg pipe ─────────────────────────────────────────────────
         tmp_video   = out_path.replace(".mp4", "_noaudio.mp4")
         ffmpeg_path = _get_ffmpeg()
 
@@ -251,15 +225,23 @@ class VideoGenerator:
         # ── Render frames ─────────────────────────────────────────────────────
         bg_frame_idx = 0
         elapsed      = 0.0
+        n_segs       = len(segments)
 
         try:
-            for seg_type, seg_dur in segments:
+            for seg_idx, (seg_type, seg_dur) in enumerate(segments):
                 seg_frames = int(seg_dur * fps)
 
-                for f in range(seg_frames):
-                    time_left = max(0.0, total_sec - elapsed)
+                # Look one step ahead/behind to decide crossfade behaviour
+                prev_seg      = segments[seg_idx - 1] if seg_idx > 0 else None
+                next_seg      = segments[seg_idx + 1] if seg_idx < n_segs - 1 else None
+                prev_is_slide = (prev_seg is not None and isinstance(prev_seg[0], int))
+                next_is_slide = (next_seg is not None and isinstance(next_seg[0], int))
 
-                    # Advance or loop the background video
+                for f in range(seg_frames):
+                    time_left  = max(0.0, total_sec - elapsed)
+                    pos_in_seg = f / fps
+
+                    # ── Advance / loop background video ──────────────────────
                     if bg_cap:
                         if bg_frame_idx >= bg_total - 1:
                             bg_cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
@@ -272,41 +254,115 @@ class VideoGenerator:
                     else:
                         bg = bg_static.copy()
 
+                    # ── Compose frame ─────────────────────────────────────────
                     if seg_type == "timer":
+                        # Pure timer frame — always drawn normally
                         frame = self._draw_timer_and_subtitle(
                             bg.copy(), time_left, cfg, w, h,
                             get_font, font_path, sub_font_path)
+
                     else:
-                        img_idx    = seg_type % len(slider_imgs)
-                        slide      = slider_imgs[img_idx]
-                        pos_in_seg = f / fps
+                        # ── Slide segment ─────────────────────────────────────
+                        img_idx = seg_type % len(slider_imgs)
+                        slide   = slider_imgs[img_idx]
 
-                        # Crossfade slider image in/out over the timer background
-                        if fade_dur > 0 and pos_in_seg < fade_dur:
-                            a = pos_in_seg / fade_dur
-                            timer_bg = self._draw_timer_and_subtitle(
-                                bg.copy(), time_left, cfg, w, h,
-                                get_font, font_path, sub_font_path)
-                            frame = cv2.addWeighted(slide, a, timer_bg, 1 - a, 0)
-                        elif fade_dur > 0 and pos_in_seg > seg_dur - fade_dur:
-                            a = (seg_dur - pos_in_seg) / fade_dur
-                            timer_bg = self._draw_timer_and_subtitle(
-                                bg.copy(), time_left, cfg, w, h,
-                                get_font, font_path, sub_font_path)
-                            frame = cv2.addWeighted(slide, a, timer_bg, 1 - a, 0)
+                        # Pre-compute next slide image (needed for S→S crossfade)
+                        if next_is_slide:
+                            next_slide = slider_imgs[next_seg[0] % len(slider_imgs)]
                         else:
-                            frame = slide.copy()
+                            next_slide = None
 
-                    # Global intro fade-in from black
+                        # Detect which fade phase we are in
+                        in_fade_in  = (fade_dur > 0
+                                       and not prev_is_slide
+                                       and pos_in_seg < fade_dur)
+                        in_fade_out = (fade_dur > 0
+                                       and pos_in_seg > seg_dur - fade_dur)
+
+                        if overlay_mode:
+                            # ─────────────────────────────────────────────────
+                            # OVERLAY MODE
+                            # Timer is always visible; it shrinks and moves to a
+                            # corner while a slide is shown, then returns to
+                            # centre when the slide ends.
+                            #
+                            # anim_t = 0.0 → timer at centre, full size
+                            # anim_t = 1.0 → timer in corner, small
+                            # ─────────────────────────────────────────────────
+                            if in_fade_in:
+                                # Entering slide from a timer segment:
+                                # slide fades in over raw background while
+                                # timer simultaneously moves toward the corner.
+                                a      = pos_in_seg / fade_dur
+                                anim_t = a
+                                base   = cv2.addWeighted(slide, a, bg, 1.0 - a, 0)
+
+                            elif in_fade_out and next_is_slide:
+                                # Leaving into another slide (timer_between=0):
+                                # crossfade directly to the next slide image,
+                                # timer stays pinned in the corner.
+                                a      = (seg_dur - pos_in_seg) / fade_dur
+                                anim_t = 1.0
+                                base   = cv2.addWeighted(slide, a, next_slide, 1.0 - a, 0)
+
+                            elif in_fade_out and not next_is_slide:
+                                # Leaving to a timer segment:
+                                # slide fades back out while timer grows back
+                                # toward the centre.
+                                a      = (seg_dur - pos_in_seg) / fade_dur
+                                anim_t = a
+                                base   = cv2.addWeighted(slide, a, bg, 1.0 - a, 0)
+
+                            else:
+                                # Steady state (or entering after a slide where
+                                # the prev slide's fade-out already covered us):
+                                anim_t = 1.0
+                                base   = slide.copy()
+
+                            frame = self._draw_timer_animated(
+                                base, time_left, cfg, w, h,
+                                get_font, font_path, anim_t, overlay_pos)
+
+                        else:
+                            # ─────────────────────────────────────────────────
+                            # STANDARD MODE  (slides fully cover the timer)
+                            # ─────────────────────────────────────────────────
+                            if in_fade_in:
+                                # Blend: slide fades in over a timer frame
+                                a        = pos_in_seg / fade_dur
+                                timer_bg = self._draw_timer_and_subtitle(
+                                    bg.copy(), time_left, cfg, w, h,
+                                    get_font, font_path, sub_font_path)
+                                frame = cv2.addWeighted(slide, a, timer_bg, 1.0 - a, 0)
+
+                            elif in_fade_out and next_is_slide:
+                                # Direct slide→slide crossfade (timer_between=0)
+                                a     = (seg_dur - pos_in_seg) / fade_dur
+                                frame = cv2.addWeighted(slide, a, next_slide, 1.0 - a, 0)
+
+                            elif in_fade_out and not next_is_slide:
+                                # Slide fades out back to timer
+                                a        = (seg_dur - pos_in_seg) / fade_dur
+                                timer_bg = self._draw_timer_and_subtitle(
+                                    bg.copy(), time_left, cfg, w, h,
+                                    get_font, font_path, sub_font_path)
+                                frame = cv2.addWeighted(slide, a, timer_bg, 1.0 - a, 0)
+
+                            else:
+                                # Steady state (also covers prev_is_slide fade-in
+                                # which was already handled by the previous
+                                # segment's fade-out)
+                                frame = slide.copy()
+
+                    # ── Global intro / outro fades ────────────────────────────
                     if intro_fade and elapsed < intro_fade_dur:
                         a = elapsed / intro_fade_dur
-                        frame = cv2.addWeighted(frame, a, black, 1 - a, 0)
+                        frame = cv2.addWeighted(frame, a, black, 1.0 - a, 0)
 
-                    # Global outro fade-out to black
                     if outro_fade and elapsed > total_sec - outro_fade_dur:
                         a = (total_sec - elapsed) / outro_fade_dur
                         a = max(0.0, min(1.0, a))
-                        frame = cv2.addWeighted(frame, a, black, 1 - a, 0)
+                        frame = cv2.addWeighted(frame, a, black, 1.0 - a, 0)
 
                     write_frame(frame)
                     elapsed   += 1.0 / fps
@@ -322,11 +378,10 @@ class VideoGenerator:
                                 f"⏳ Rendering … {m:02d}:{s:02d}  ({int(pct*100)}%)",
                                 frame_info=(frame_idx, total_frames))
 
-            # ── Outro slide — rendered before stdin is closed ──────────────────
+            # ── Outro slide ───────────────────────────────────────────────────
             outro_enabled    = cfg.get("outro_slide_enabled", False)
             outro_text       = cfg.get("outro_slide_text", "").strip()
             outro_color      = cfg.get("outro_slide_color", "#FFFFFF")
-            # Background: image path takes priority over solid color
             outro_bg_image   = cfg.get("outro_slide_bg_image")
             outro_bg_color   = cfg.get("outro_slide_bg_color", "#000000")
             outro_font_size  = int(cfg.get("outro_slide_font_size", 80))
@@ -346,16 +401,14 @@ class VideoGenerator:
                     frame = outro_base.copy()
                     t     = f / fps
 
-                    # Crossfade from last timer frame into the outro slide
                     if outro_fade_in > 0 and t < outro_fade_in:
                         a = t / outro_fade_in
-                        frame = cv2.addWeighted(frame, a, last_frame, 1 - a, 0)
+                        frame = cv2.addWeighted(frame, a, last_frame, 1.0 - a, 0)
 
-                    # Fade outro slide to black at the end
                     if outro_fade_out > 0 and t > outro_dur - outro_fade_out:
                         a = (outro_dur - t) / outro_fade_out
                         a = max(0.0, min(1.0, a))
-                        frame = cv2.addWeighted(frame, a, black, 1 - a, 0)
+                        frame = cv2.addWeighted(frame, a, black, 1.0 - a, 0)
 
                     write_frame(frame)
                     self._check_cancel()
@@ -367,7 +420,6 @@ class VideoGenerator:
                                             total_frames + outro_frames))
 
         finally:
-            # Always close the pipe / writer and release the background capture
             if ff_proc:
                 ff_proc.stdin.close()
                 ff_proc.stderr.close()
@@ -380,20 +432,15 @@ class VideoGenerator:
             if bg_cap:
                 bg_cap.release()
 
-        # ── Determine audio duration ──────────────────────────────────────────
-        #
-        # music_in_outro=True  → music plays through the entire video incl. outro
-        # music_in_outro=False → music stops at timer 0:00; outro plays silently
+        # ── Audio mix ─────────────────────────────────────────────────────────
         outro_enabled_  = cfg.get("outro_slide_enabled", False)
         outro_text_set  = cfg.get("outro_slide_text", "").strip()
         music_in_outro  = cfg.get("music_in_outro", False)
         outro_dur_val   = float(cfg.get("outro_slide_duration", 5)) \
                           if (outro_enabled_ and outro_text_set) else 0.0
 
-        # Full video length = timer + outro slide
         full_video_dur = total_sec + outro_dur_val
-
-        audio_total = full_video_dur if music_in_outro else total_sec
+        audio_total    = full_video_dur if music_in_outro else total_sec
 
         if cfg.get("music_path") and ffmpeg_path:
             self.cb(0.98, "🎵 Mixing audio …", frame_info=(total_frames, total_frames))
@@ -427,20 +474,25 @@ class VideoGenerator:
 
     def _build_slider_zone(self, zone_dur, slider_imgs,
                             img_dur, timer_between, slider_loop):
-        """Build the alternating image/timer segments within the slider zone."""
+        """Build the alternating image / timer segments within the slider zone.
+
+        When timer_between == 0 the image segments are placed back-to-back with
+        no timer gap between them.  The render loop detects consecutive slide
+        segments (prev_is_slide / next_is_slide) and crossfades them directly.
+        """
         segs  = []
         n     = len(slider_imgs)
         used  = 0.0
 
         if not slider_loop:
-            # Play each image once in order, then fill remaining time with timer
             for i in range(n):
                 if used >= zone_dur:
                     break
                 dur = min(img_dur, zone_dur - used)
                 segs.append((i, dur))
                 used += dur
-                if i < n - 1 and timer_between > 0 and used < zone_dur:
+                # Only insert a timer gap when timer_between > 0
+                if timer_between > 0 and i < n - 1 and used < zone_dur:
                     dur_t = min(timer_between, zone_dur - used)
                     segs.append(("timer", dur_t))
                     used += dur_t
@@ -448,13 +500,13 @@ class VideoGenerator:
             if rest > 0.05:
                 segs.append(("timer", rest))
         else:
-            # Loop images indefinitely until the zone is filled
             img_idx = 0
             while used < zone_dur - 0.05:
                 remaining = zone_dur - used
                 dur_img   = min(img_dur, remaining)
                 segs.append((img_idx % n, dur_img))
                 used += dur_img
+                # Only insert a timer gap when timer_between > 0
                 if timer_between > 0 and used < zone_dur - 0.05:
                     dur_t = min(timer_between, zone_dur - used)
                     segs.append(("timer", dur_t))
@@ -462,10 +514,10 @@ class VideoGenerator:
                 img_idx += 1
         return segs
 
-    # ── Draw timer + subtitle ─────────────────────────────────────────────────
+    # ── Draw timer + subtitle (standard, centred) ─────────────────────────────
     def _draw_timer_and_subtitle(self, frame_bgr, time_left, cfg,
                                   w, h, get_font, font_path, sub_font_path):
-        """Overlay the countdown timer (and optional subtitle) onto *frame_bgr*."""
+        """Overlay the full-size centred countdown timer (and optional subtitle)."""
         time_left = max(0, time_left)
         m         = int(time_left // 60)
         s         = int(time_left % 60)
@@ -522,7 +574,6 @@ class VideoGenerator:
         timer_color = _hex_to_rgb(cfg["font_color"])
         shadow      = max(3, timer_size // 30)
 
-        # Draw each digit group with a drop shadow for readability
         draw.text((mm_x  - bbox_mm[0]  + shadow, ty + shadow), mm_str,  font=timer_font, fill=(0,0,0,180))
         draw.text((mm_x  - bbox_mm[0],            ty),          mm_str,  font=timer_font, fill=timer_color)
         draw.text((col_x - bbox_col[0] + shadow, ty + shadow), col_str, font=timer_font, fill=(0,0,0,180))
@@ -533,7 +584,6 @@ class VideoGenerator:
         if sub_data:
             sub_color  = _hex_to_rgb(cfg.get("subtitle_color", "#FFFFFF"))
             sub_shadow = max(2, sub_size // 20)
-            # Use shared helper so subtitle y-position is consistent across all render paths
             cur_y = _subtitle_layout(w, h, timer_y, th, sub_offset_lines, sub_size)
             for i, (line, bbox_s, lh) in enumerate(sub_data):
                 lw  = bbox_s[2] - bbox_s[0]
@@ -545,18 +595,88 @@ class VideoGenerator:
 
         return cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
 
+    # ── Draw animated timer (overlay mode) ────────────────────────────────────
+    def _draw_timer_animated(self, frame_bgr, time_left, cfg,
+                              w, h, get_font, font_path,
+                              anim_t: float, position: str):
+        """
+        Draw the countdown timer with an animated size and position.
+
+        Parameters
+        ----------
+        anim_t   : float in [0, 1]
+                   0 → timer centred at full size (same as normal timer frame)
+                   1 → timer shrunk into the chosen corner
+        position : "right" | "left"
+                   Which corner to animate toward / away from
+        """
+        time_left = max(0, time_left)
+        m         = int(time_left // 60)
+        s_int     = int(time_left % 60)
+
+        ease = _smoothstep(anim_t)
+
+        full_size   = int(min(w, h) * 0.18)
+        corner_size = int(min(w, h) * 0.065)
+        timer_size  = max(8, int(full_size + (corner_size - full_size) * ease))
+
+        timer_font = get_font(font_path, timer_size)
+
+        pil_img = Image.fromarray(cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB))
+        draw    = ImageDraw.Draw(pil_img)
+
+        mm_str  = f"{m:02d}"
+        ss_str  = f"{s_int:02d}"
+        col_str = ":"
+
+        bbox_mm  = draw.textbbox((0, 0), mm_str,  font=timer_font)
+        bbox_col = draw.textbbox((0, 0), col_str, font=timer_font)
+        bbox_ss  = draw.textbbox((0, 0), ss_str,  font=timer_font)
+
+        mm_w    = bbox_mm[2]  - bbox_mm[0]
+        col_w   = bbox_col[2] - bbox_col[0]
+        ss_w    = bbox_ss[2]  - bbox_ss[0]
+        th      = bbox_mm[3]  - bbox_mm[1]
+        total_w = mm_w + col_w + ss_w
+
+        # Centre position (anim_t=0)
+        cx = (w - total_w) // 2
+        cy = (h - th)      // 2
+
+        # Corner position (anim_t=1)
+        margin = int(min(w, h) * 0.035)
+        if position == "left":
+            corner_x = margin
+        else:   # "right"
+            corner_x = w - total_w - margin
+        corner_y = h - th - margin
+
+        # Interpolated start position
+        start_x = int(cx + (corner_x - cx) * ease)
+        start_y = int(cy + (corner_y - cy) * ease)
+
+        mm_x  = start_x
+        col_x = start_x + mm_w
+        ss_x  = start_x + mm_w + col_w
+        ty    = start_y - bbox_mm[1]
+
+        timer_color = _hex_to_rgb(cfg["font_color"])
+        shadow      = max(2, timer_size // 30)
+
+        draw.text((mm_x  - bbox_mm[0]  + shadow, ty + shadow), mm_str,  font=timer_font, fill=(0,0,0,180))
+        draw.text((mm_x  - bbox_mm[0],            ty),          mm_str,  font=timer_font, fill=timer_color)
+        draw.text((col_x - bbox_col[0] + shadow, ty + shadow), col_str, font=timer_font, fill=(0,0,0,180))
+        draw.text((col_x - bbox_col[0],           ty),          col_str, font=timer_font, fill=timer_color)
+        draw.text((ss_x  - bbox_ss[0]  + shadow, ty + shadow), ss_str,  font=timer_font, fill=(0,0,0,180))
+        draw.text((ss_x  - bbox_ss[0],            ty),          ss_str,  font=timer_font, fill=timer_color)
+
+        return cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
+
     # ── Draw outro slide ──────────────────────────────────────────────────────
     def _draw_outro_slide(self, text, hex_color,
                           bg_image_path, bg_hex_color,
                           font_size, font_path, w, h, get_font):
-        """
-        Render the static outro slide frame.
-
-        Background priority:
-          1. bg_image_path — valid image file → scaled to fill the frame
-          2. bg_hex_color  — solid color fill when no image is provided
-        """
-        # Build the background canvas
+        """Render the static outro slide frame."""
         if bg_image_path and os.path.isfile(bg_image_path):
             try:
                 bg_pil = Image.open(bg_image_path).convert("RGB").resize(
@@ -577,7 +697,6 @@ class VideoGenerator:
         line_spacing = int(font_size * 0.3)
         shadow_off   = max(2, font_size // 25)
 
-        # Measure total text block height
         line_data = []
         total_h   = 0
         for i, line in enumerate(lines):
@@ -589,7 +708,6 @@ class VideoGenerator:
             if i < len(lines) - 1:
                 total_h += line_spacing
 
-        # Draw each line centered vertically and horizontally
         cur_y = (h - total_h) // 2
         for line, bbox, lw, lh in line_data:
             x = (w - lw) // 2 - bbox[0]
@@ -603,35 +721,18 @@ class VideoGenerator:
 
     # ── Audio mix ─────────────────────────────────────────────────────────────
     def _mix_audio(self, tmp_video, out_path, audio_sec, video_sec, cfg, ffmpeg_path):
-        """
-        Mix background music into the video.
-
-        Parameters
-        ----------
-        audio_sec : float
-            How long the music should play.  May be shorter than the video when
-            music_in_outro=False so the outro slide plays in silence.
-        video_sec : float
-            Full duration of the video stream (timer + outro slide).  Used to
-            pad the audio track with silence so FFmpeg's -shortest flag never
-            cuts the outro slide off.
-        """
+        """Mix background music into the video."""
         music      = cfg["music_path"]
         loop       = cfg["music_loop"]
         fadeout    = cfg["music_fadeout"]
         fade_dur   = cfg["music_fade_dur"]
         fade_start = max(0, audio_sec - fade_dur)
 
-        # Build the audio filter chain:
-        # 1. Optional fade-out
-        # 2. Trim music to audio_sec
-        # 3. Pad with silence up to video_sec so the full video is preserved
         af_parts = []
         if fadeout:
             af_parts.append(f"afade=t=out:st={fade_start:.2f}:d={fade_dur}")
         af_parts.append(f"atrim=0:{audio_sec}")
         if video_sec > audio_sec:
-            # Pad with silence so the outro slide is not cut short by -shortest
             af_parts.append(f"apad=whole_dur={video_sec}")
         af_str = ",".join(af_parts) if af_parts else "anull"
 
