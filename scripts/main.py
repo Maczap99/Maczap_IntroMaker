@@ -526,6 +526,7 @@ class IntroMaker(QMainWindow):
         self._sub_color     = self._settings.get("subtitle_color", "#FFFFFF")
         self._slider_fill_color = self._settings.get("slider_fill_color", "#000000")
         self._bg_color      = self._settings.get("bg_color", "#000000")
+        self._slider_timer_bg_color = self._settings.get("slider_timer_bg_color", "#FFFFFF")
         self._image_paths   = []
         self._render_start  = 0.0
         self._thread        = None
@@ -638,8 +639,13 @@ class IntroMaker(QMainWindow):
         self._slider_until_step = Stepper(0,  7200,  60, step=10, fmt=_fmt_mmss)
 
         self._img_dur_step       = Stepper(5, 120, 10, step=1, fmt=tr("stepper.seconds"))
-        # Minimum is 0 so slides can crossfade directly without a timer gap
-        self._timer_between_step = Stepper(0, 120, 15, step=1, fmt=tr("stepper.seconds"))
+        # Timer-zwischen-Bildern: Checkbox + Stepper (Checkbox aus → Stepper grau, timer_between=0)
+        self._timer_between_chk  = StyledCheckBox(tr("settings.timer_between_enable"))
+        self._timer_between_chk.setChecked(True)
+        self._timer_between_step = Stepper(1, 120, 15, step=1, fmt=tr("stepper.seconds"))
+        self._timer_between_chk.stateChanged.connect(
+            lambda s: self._timer_between_step.setEnabled(s == 2)
+        )
         self._slider_loop_chk    = StyledCheckBox(tr("settings.slider_loop"))
         self._slider_loop_chk.setChecked(True)
 
@@ -650,19 +656,48 @@ class IntroMaker(QMainWindow):
         self._sub_offset_step = Stepper(0,  20,  2.5, step=0.5, fmt=tr("stepper.lines"))
         self._sub_offset_step.setEnabled(False)
 
-        # ── NEW: Timer overlay on slider images ──────────────────────────────
+        # ── Timer overlay on slider images ────────────────────────────────────
         self._slider_timer_overlay_chk = StyledCheckBox(tr("settings.slider_timer_overlay"))
 
         self._slider_timer_pos_combo = QComboBox()
         self._slider_timer_pos_combo.setFont(QFont("Segoe UI", 11))
         self._slider_timer_pos_combo.setFixedHeight(34)
-        self._slider_timer_pos_combo.addItem(tr("settings.slider_timer_pos_right"), "right")
-        self._slider_timer_pos_combo.addItem(tr("settings.slider_timer_pos_left"),  "left")
-        self._slider_timer_pos_combo.setEnabled(False)   # disabled until overlay is checked
+        self._slider_timer_pos_combo.addItem(tr("settings.slider_timer_pos_right_bottom"), "right_bottom")
+        self._slider_timer_pos_combo.addItem(tr("settings.slider_timer_pos_left_bottom"),  "left_bottom")
+        self._slider_timer_pos_combo.addItem(tr("settings.slider_timer_pos_right_top"),    "right_top")
+        self._slider_timer_pos_combo.addItem(tr("settings.slider_timer_pos_left_top"),     "left_top")
+        self._slider_timer_pos_combo.setEnabled(False)
 
-        # Enable / disable the position combo whenever the overlay checkbox changes
-        self._slider_timer_overlay_chk.stateChanged.connect(
-            lambda s: self._slider_timer_pos_combo.setEnabled(s == 2)
+        self._slider_timer_size_step = Stepper(3, 15, 6.5, step=0.5, fmt=tr("stepper.percent"))
+        self._slider_timer_size_step.setEnabled(False)
+
+        self._slider_timer_bg_transparent_chk = StyledCheckBox(tr("settings.slider_timer_bg_transparent"))
+        self._slider_timer_bg_transparent_chk.setChecked(True)
+        self._slider_timer_bg_transparent_chk.setEnabled(False)
+
+        self._slider_timer_bg_color_btn = QPushButton(f"  {self._slider_timer_bg_color.upper()}  ")
+        self._slider_timer_bg_color_btn.setObjectName("colorBtn")
+        self._slider_timer_bg_color_btn.setFixedHeight(32)
+        self._slider_timer_bg_color_btn.setEnabled(False)
+        self._slider_timer_bg_color_btn.clicked.connect(self._pick_slider_timer_bg_color)
+
+        # Overlay-Checkbox steuert alle abhängigen Widgets
+        def _on_overlay_chk(state):
+            on = (state == 2)
+            self._slider_timer_pos_combo.setEnabled(on)
+            self._slider_timer_size_step.setEnabled(on)
+            self._slider_timer_bg_transparent_chk.setEnabled(on)
+            # Hintergrundfarbe nur aktiv wenn Overlay an UND NICHT transparent
+            transp = self._slider_timer_bg_transparent_chk.isChecked()
+            self._slider_timer_bg_color_btn.setEnabled(on and not transp)
+
+        self._slider_timer_overlay_chk.stateChanged.connect(_on_overlay_chk)
+
+        # Transparent-Checkbox steuert Farbbutton
+        self._slider_timer_bg_transparent_chk.stateChanged.connect(
+            lambda s: self._slider_timer_bg_color_btn.setEnabled(
+                self._slider_timer_overlay_chk.isChecked() and s != 2
+            )
         )
         # ─────────────────────────────────────────────────────────────────────
 
@@ -1012,7 +1047,7 @@ class IntroMaker(QMainWindow):
                                self._outro_fade_step),
         ]))
 
-        # ── Slider block — includes timer_between (0 allowed) + overlay options ──
+        # ── Slider block ─────────────────────────────────────────────────────────
         layout.addWidget(self._settings_block("🖼", tr("settings.slider_group"), [
             self._settings_row(tr("settings.slider_from_label"),
                                self._slider_from_step,
@@ -1023,6 +1058,8 @@ class IntroMaker(QMainWindow):
             self._settings_row(tr("settings.img_dur_label"),
                                self._img_dur_step,
                                tr("settings.img_dur_hint")),
+            self._settings_check_row(self._timer_between_chk,
+                                     tr("settings.timer_between_enable_hint")),
             self._settings_row(tr("settings.timer_between_label"),
                                self._timer_between_step,
                                tr("settings.timer_between_hint")),
@@ -1034,12 +1071,20 @@ class IntroMaker(QMainWindow):
             self._settings_row(tr("settings.slider_fill_color_label"),
                                self._fill_color_btn,
                                tr("settings.slider_fill_color_hint")),
-            # ── NEW: timer overlay rows ───────────────────────────────────────
+            # ── Timer overlay rows ────────────────────────────────────────────
             self._settings_check_row(self._slider_timer_overlay_chk,
                                      tr("settings.slider_timer_overlay_hint")),
             self._settings_row(tr("settings.slider_timer_pos_label"),
                                self._slider_timer_pos_combo,
                                tr("settings.slider_timer_pos_hint")),
+            self._settings_row(tr("settings.slider_timer_size_label"),
+                               self._slider_timer_size_step,
+                               tr("settings.slider_timer_size_hint")),
+            self._settings_check_row(self._slider_timer_bg_transparent_chk,
+                                     tr("settings.slider_timer_bg_transparent_hint")),
+            self._settings_row(tr("settings.slider_timer_bg_color_label"),
+                               self._slider_timer_bg_color_btn,
+                               tr("settings.slider_timer_bg_color_hint")),
             # ─────────────────────────────────────────────────────────────────
         ]))
 
@@ -1222,7 +1267,8 @@ class IntroMaker(QMainWindow):
             "slider_from":        self._slider_from_step.value()  / 60,
             "slider_until":       self._slider_until_step.value() / 60,
             "img_duration":       self._img_dur_step.value(),
-            "timer_between":      self._timer_between_step.value(),
+            "slider_timer_between_enabled": self._timer_between_chk.isChecked(),
+            "timer_between":      self._timer_between_step.value() if self._timer_between_chk.isChecked() else 0,
             "slider_loop":        self._slider_loop_chk.isChecked(),
             "fade_duration":      self._fade_step.value(),
             "font_color":         self._font_color,
@@ -1234,10 +1280,11 @@ class IntroMaker(QMainWindow):
             "subtitle_size":      self._sub_size_step.value(),
             "subtitle_offset":    self._sub_offset_step.value(),
             "subtitle_color":     self._sub_color,
-            # ── NEW ──────────────────────────────────────────────────────────
             "slider_timer_overlay":          self._slider_timer_overlay_chk.isChecked(),
-            "slider_timer_overlay_position": self._slider_timer_pos_combo.currentData() or "right",
-            # ─────────────────────────────────────────────────────────────────
+            "slider_timer_overlay_position": self._slider_timer_pos_combo.currentData() or "right_bottom",
+            "slider_timer_size":             self._slider_timer_size_step.value(),
+            "slider_timer_bg_transparent":   self._slider_timer_bg_transparent_chk.isChecked(),
+            "slider_timer_bg_color":         self._slider_timer_bg_color,
             "outro_slide_enabled":     self._outro_slide_chk.isChecked(),
             "outro_slide_text":        self._outro_slide_edit.toPlainText(),
             "outro_slide_color":       self._outro_slide_color,
@@ -1274,7 +1321,16 @@ class IntroMaker(QMainWindow):
         self._slider_until_step.set_value(
             round(s.get("slider_until", 1) * 60 / 10) * 10)
         self._img_dur_step.set_value(s.get("img_duration", 10))
-        self._timer_between_step.set_value(s.get("timer_between", 15))
+
+        # timer_between: backward compat — derive enabled-state if key missing
+        tb_stored = s.get("timer_between", 15)
+        tb_enabled = s.get("slider_timer_between_enabled", None)
+        if tb_enabled is None:
+            tb_enabled = (tb_stored > 0)
+        self._timer_between_chk.setChecked(tb_enabled)
+        self._timer_between_step.set_value(max(1, tb_stored))
+        self._timer_between_step.setEnabled(tb_enabled)
+
         self._slider_loop_chk.setChecked(s.get("slider_loop", True))
         self._fade_step.set_value(s.get("fade_duration", 2.0))
 
@@ -1308,15 +1364,31 @@ class IntroMaker(QMainWindow):
         self._sub_edit.setEnabled(sub_on)
         self._sub_color_btn.setEnabled(sub_on)
 
-        # ── NEW: restore overlay settings ────────────────────────────────────
+        # ── restore overlay settings ──────────────────────────────────────────
         overlay_on = s.get("slider_timer_overlay", False)
         self._slider_timer_overlay_chk.setChecked(overlay_on)
-        self._slider_timer_pos_combo.setEnabled(overlay_on)
-        pos = s.get("slider_timer_overlay_position", "right")
+
+        # position: backward compat ("right"→"right_bottom", "left"→"left_bottom")
+        pos = s.get("slider_timer_overlay_position", "right_bottom")
+        if pos == "right": pos = "right_bottom"
+        if pos == "left":  pos = "left_bottom"
         for i in range(self._slider_timer_pos_combo.count()):
             if self._slider_timer_pos_combo.itemData(i) == pos:
                 self._slider_timer_pos_combo.setCurrentIndex(i)
                 break
+        self._slider_timer_pos_combo.setEnabled(overlay_on)
+
+        self._slider_timer_size_step.set_value(s.get("slider_timer_size", 6.5))
+        self._slider_timer_size_step.setEnabled(overlay_on)
+
+        transp = s.get("slider_timer_bg_transparent", True)
+        self._slider_timer_bg_transparent_chk.setChecked(transp)
+        self._slider_timer_bg_transparent_chk.setEnabled(overlay_on)
+
+        stbg = s.get("slider_timer_bg_color", "#FFFFFF")
+        self._slider_timer_bg_color = stbg
+        self._update_color_btn(self._slider_timer_bg_color_btn, stbg)
+        self._slider_timer_bg_color_btn.setEnabled(overlay_on and not transp)
         # ─────────────────────────────────────────────────────────────────────
 
         outro_on = s.get("outro_slide_enabled", False)
@@ -1449,13 +1521,16 @@ class IntroMaker(QMainWindow):
         for chk in [self._music_loop_chk, self._music_fadeout_chk, self._music_in_outro_chk,
                     self._intro_fade_chk, self._outro_fade_chk,
                     self._sub_chk, self._slider_loop_chk, self._sounds_chk,
-                    self._slider_timer_overlay_chk]:   # ← NEW
+                    self._slider_timer_overlay_chk,
+                    self._timer_between_chk,
+                    self._slider_timer_bg_transparent_chk]:
             try: chk.update_theme(dark)
             except Exception: pass
         self._update_color_btn(self._color_btn, self._font_color)
         self._update_color_btn(self._sub_color_btn, self._sub_color)
         self._update_color_btn(self._fill_color_btn, self._slider_fill_color)
         self._update_color_btn(self._bg_color_btn, self._bg_color)
+        self._update_color_btn(self._slider_timer_bg_color_btn, self._slider_timer_bg_color)
 
     def _toggle_theme(self):
         new_theme = "dark" if self._theme == "light" else "light"
@@ -1613,6 +1688,12 @@ class IntroMaker(QMainWindow):
         if r:
             self._outro_slide_bg_color = r
             self._update_color_btn(self._outro_slide_bg_color_btn, r)
+
+    def _pick_slider_timer_bg_color(self):
+        r = self._open_color_dialog(self._slider_timer_bg_color, tr("settings.slider_timer_bg_color_label"))
+        if r:
+            self._slider_timer_bg_color = r
+            self._update_color_btn(self._slider_timer_bg_color_btn, r)
 
     def _pick_outro_slide_bg_image(self):
         p, _ = QFileDialog.getOpenFileName(
@@ -1778,7 +1859,7 @@ class IntroMaker(QMainWindow):
             "timer_minutes":      self._timer_step.value(),
             "image_paths":        list(self._image_paths),
             "img_duration":       self._img_dur_step.value(),
-            "timer_between":      self._timer_between_step.value(),
+            "timer_between":      self._timer_between_step.value() if self._timer_between_chk.isChecked() else 0,
             "slider_loop":        self._slider_loop_chk.isChecked(),
             "slider_from":        self._slider_from_step.value()  / 60,
             "slider_until":       self._slider_until_step.value() / 60,
@@ -1794,10 +1875,11 @@ class IntroMaker(QMainWindow):
             "subtitle_offset":    self._sub_offset_step.value(),
             "subtitle_color":     self._sub_color,
             "subtitle_font":      self._font_picker.get_font_path(),
-            # ── NEW ──────────────────────────────────────────────────────────
             "slider_timer_overlay":          self._slider_timer_overlay_chk.isChecked(),
-            "slider_timer_overlay_position": self._slider_timer_pos_combo.currentData() or "right",
-            # ─────────────────────────────────────────────────────────────────
+            "slider_timer_overlay_position": self._slider_timer_pos_combo.currentData() or "right_bottom",
+            "slider_timer_size":             self._slider_timer_size_step.value(),
+            "slider_timer_bg_transparent":   self._slider_timer_bg_transparent_chk.isChecked(),
+            "slider_timer_bg_color":         self._slider_timer_bg_color,
             "outro_slide_enabled":   self._outro_slide_chk.isChecked(),
             "outro_slide_text":      self._outro_slide_edit.toPlainText().strip(),
             "outro_slide_color":     self._outro_slide_color,

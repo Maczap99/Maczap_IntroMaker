@@ -1,3 +1,4 @@
+# config_manager.py
 import json, os, sys
 APP_NAME = "MaczapIntroMaker"
 
@@ -51,11 +52,16 @@ DEFAULTS = {
     "subtitle_color":     "#FFFFFF",
     # Slider image fill color (used when image does not fill the 16:9 frame)
     "slider_fill_color":  "#000000",
+    # Timer between slider images (checkbox + duration)
+    "slider_timer_between_enabled":  True,       # False → slides crossfade directly (timer_between=0)
     # Timer overlay on slider images
     # When True: countdown stays visible during slides, animates to a corner.
     # When False (default): slides fully cover the timer as before.
     "slider_timer_overlay":          False,
-    "slider_timer_overlay_position": "right",   # "right" | "left"
+    "slider_timer_overlay_position": "right_bottom",  # "right_bottom"|"left_bottom"|"right_top"|"left_top"
+    "slider_timer_size":             6.5,        # corner timer size as % of min(w,h), range 3–15
+    "slider_timer_bg_transparent":   True,       # False → draw coloured pill behind corner timer
+    "slider_timer_bg_color":         "#FFFFFF",  # background colour of the corner timer pill
     # Outro slide (shown after timer reaches 0)
     "outro_slide_enabled":    False,
     "outro_slide_text":       "Herzlich Willkommen",

@@ -153,9 +153,15 @@ class VideoGenerator:
         intro_fade_dur     = float(cfg.get("intro_fade_dur", 3.0))
         outro_fade_dur     = float(cfg.get("outro_fade_dur", 3.0))
 
-        # ── NEW: overlay / position settings ──────────────────────────────────
-        overlay_mode = cfg.get("slider_timer_overlay", False)
-        overlay_pos  = cfg.get("slider_timer_overlay_position", "right")
+        # ── Overlay / position / appearance settings ───────────────────────────
+        overlay_mode     = cfg.get("slider_timer_overlay", False)
+        overlay_pos      = cfg.get("slider_timer_overlay_position", "right_bottom")
+        # backward compat: old "right"/"left" keys
+        if overlay_pos == "right": overlay_pos = "right_bottom"
+        if overlay_pos == "left":  overlay_pos = "left_bottom"
+        overlay_size_pct      = cfg.get("slider_timer_size", 6.5) / 100.0
+        overlay_bg_transparent = cfg.get("slider_timer_bg_transparent", True)
+        overlay_bg_color       = cfg.get("slider_timer_bg_color", "#FFFFFF")
 
         # ── Fonts ─────────────────────────────────────────────────────────────
         font_path     = cfg.get("font_path")
@@ -321,7 +327,10 @@ class VideoGenerator:
 
                             frame = self._draw_timer_animated(
                                 base, time_left, cfg, w, h,
-                                get_font, font_path, anim_t, overlay_pos)
+                                get_font, font_path, anim_t, overlay_pos,
+                                size_pct=overlay_size_pct,
+                                bg_transparent=overlay_bg_transparent,
+                                bg_color_hex=overlay_bg_color)
 
                         else:
                             # ─────────────────────────────────────────────────
@@ -598,17 +607,22 @@ class VideoGenerator:
     # ── Draw animated timer (overlay mode) ────────────────────────────────────
     def _draw_timer_animated(self, frame_bgr, time_left, cfg,
                               w, h, get_font, font_path,
-                              anim_t: float, position: str):
+                              anim_t: float, position: str,
+                              size_pct: float = 0.065,
+                              bg_transparent: bool = True,
+                              bg_color_hex: str = "#FFFFFF"):
         """
         Draw the countdown timer with an animated size and position.
 
         Parameters
         ----------
-        anim_t   : float in [0, 1]
-                   0 → timer centred at full size (same as normal timer frame)
-                   1 → timer shrunk into the chosen corner
-        position : "right" | "left"
-                   Which corner to animate toward / away from
+        anim_t        : float in [0, 1]
+                        0 → timer centred at full size
+                        1 → timer shrunk into the chosen corner
+        position      : "right_bottom" | "left_bottom" | "right_top" | "left_top"
+        size_pct      : corner timer size as fraction of min(w, h)  (e.g. 0.065)
+        bg_transparent: if False, draw a coloured pill behind the corner timer
+        bg_color_hex  : hex colour of that pill
         """
         time_left = max(0, time_left)
         m         = int(time_left // 60)
@@ -617,7 +631,7 @@ class VideoGenerator:
         ease = _smoothstep(anim_t)
 
         full_size   = int(min(w, h) * 0.18)
-        corner_size = int(min(w, h) * 0.065)
+        corner_size = int(min(w, h) * size_pct)
         timer_size  = max(8, int(full_size + (corner_size - full_size) * ease))
 
         timer_font = get_font(font_path, timer_size)
@@ -643,15 +657,22 @@ class VideoGenerator:
         cx = (w - total_w) // 2
         cy = (h - th)      // 2
 
-        # Corner position (anim_t=1)
+        # Corner position (anim_t=1) — 4 corners supported
         margin = int(min(w, h) * 0.035)
-        if position == "left":
+        if position == "left_bottom":
             corner_x = margin
-        else:   # "right"
+            corner_y = h - th - margin
+        elif position == "left_top":
+            corner_x = margin
+            corner_y = margin
+        elif position == "right_top":
             corner_x = w - total_w - margin
-        corner_y = h - th - margin
+            corner_y = margin
+        else:  # "right_bottom" (default, also accepts old "right")
+            corner_x = w - total_w - margin
+            corner_y = h - th - margin
 
-        # Interpolated start position
+        # Interpolated position
         start_x = int(cx + (corner_x - cx) * ease)
         start_y = int(cy + (corner_y - cy) * ease)
 
@@ -660,6 +681,29 @@ class VideoGenerator:
         ss_x  = start_x + mm_w + col_w
         ty    = start_y - bbox_mm[1]
 
+        # ── Background pill (only when ease > 0 and not transparent) ─────────
+        if not bg_transparent and ease > 0:
+            pad_x  = max(6, timer_size // 5)
+            pad_y  = max(4, timer_size // 7)
+            radius = max(4, timer_size // 5)
+            alpha  = int(ease * 210)   # fades in as timer moves to corner
+            r, g, b = _hex_to_rgb(bg_color_hex)
+
+            rgba    = pil_img.convert("RGBA")
+            overlay = Image.new("RGBA", rgba.size, (0, 0, 0, 0))
+            d_ov    = ImageDraw.Draw(overlay)
+            d_ov.rounded_rectangle(
+                [start_x - pad_x,
+                 start_y - pad_y,
+                 start_x + total_w + pad_x,
+                 start_y + th + pad_y],
+                radius=radius,
+                fill=(r, g, b, alpha)
+            )
+            pil_img = Image.alpha_composite(rgba, overlay).convert("RGB")
+            draw    = ImageDraw.Draw(pil_img)
+
+        # ── Timer text ────────────────────────────────────────────────────────
         timer_color = _hex_to_rgb(cfg["font_color"])
         shadow      = max(2, timer_size // 30)
 

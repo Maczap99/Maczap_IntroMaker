@@ -85,8 +85,10 @@
     "slider_until_hint": "Keine Bilder mehr ab X verbleibenden Minuten",
     "img_dur_label": "Dauer pro Bild",
     "img_dur_hint": "Wie lange jedes Bild angezeigt wird",
-    "timer_between_label": "Timer zwischen Bildern",
-    "timer_between_hint": "Countdown-Pause zwischen zwei Bildern  •  0 s = keine Pause, Bilder überblenden direkt",
+    "timer_between_enable": "Timer zwischen Bildern anzeigen",
+    "timer_between_enable_hint": "An: Countdown-Pause zwischen den Folien  |  Aus: Bilder überblenden direkt",
+    "timer_between_label": "Timer-Dauer",
+    "timer_between_hint": "Dauer der Countdown-Pause zwischen zwei Bildern",
     "slider_loop": "Bilder wiederholen bis Slider-Ende",
     "slider_loop_hint": "Loop an: Bild → Timer → Bild → ...  |  Loop aus: alle Bilder einmal",
     "slider_fill_color_label": "Füllfarbe (Balken)",
@@ -95,8 +97,16 @@
     "slider_timer_overlay_hint": "Timer bleibt während der Bilder sichtbar — animiert sich in eine Ecke und zurück",
     "slider_timer_pos_label": "Timer-Ecke",
     "slider_timer_pos_hint": "Position des kleinen Timers auf Slider-Bildern",
-    "slider_timer_pos_right": "Rechts unten",
-    "slider_timer_pos_left": "Links unten",
+    "slider_timer_pos_right_bottom": "Rechts unten",
+    "slider_timer_pos_left_bottom": "Links unten",
+    "slider_timer_pos_right_top": "Rechts oben",
+    "slider_timer_pos_left_top": "Links oben",
+    "slider_timer_size_label": "Timer-Größe",
+    "slider_timer_size_hint": "Größe des Timers in der Ecke (% der Bildhöhe)",
+    "slider_timer_bg_transparent": "Transparenter Hintergrund",
+    "slider_timer_bg_transparent_hint": "Aus: farbige Fläche hinter dem Timer für bessere Lesbarkeit",
+    "slider_timer_bg_color_label": "Hintergrundfarbe",
+    "slider_timer_bg_color_hint": "Farbe der Fläche hinter dem Timer auf Slider-Bildern",
 
     "transitions_group": "Übergänge",
     "fade_label": "Bild-Fade Dauer",
@@ -194,7 +204,8 @@
     "minutes": "{} min",
     "seconds": "{} s",
     "points": "{} pt",
-    "lines": "{} Zeilen"
+    "lines": "{} Zeilen",
+    "percent": "{} %"
   },
 
   "output_filename": "Intro - {0}"
