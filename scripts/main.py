@@ -553,7 +553,7 @@ class IntroMaker(QMainWindow):
         self._sub_color     = self._settings.get("subtitle_color", "#FFFFFF")
         self._slider_fill_color = self._settings.get("slider_fill_color", "#000000")
         self._bg_color      = self._settings.get("bg_color", "#000000")
-        self._slider_timer_bg_color = self._settings.get("slider_timer_bg_color", "#FFFFFF")
+        self._slider_timer_bg_color = self._settings.get("slider_timer_bg_color", "#36393E")
         self._image_paths   = []
         self._render_start  = 0.0
         self._thread        = None
@@ -668,7 +668,7 @@ class IntroMaker(QMainWindow):
         self._img_dur_step       = Stepper(5, 120, 10, step=1, fmt=tr("stepper.seconds"))
         # Timer-zwischen-Bildern: Checkbox + Stepper (Checkbox aus → Stepper grau, timer_between=0)
         self._timer_between_chk  = StyledCheckBox(tr("settings.timer_between_enable"))
-        self._timer_between_chk.setChecked(True)
+        self._timer_between_chk.setChecked(False)
         self._timer_between_step = Stepper(1, 120, 15, step=1, fmt=tr("stepper.seconds"))
         self._timer_between_chk.stateChanged.connect(
             lambda s: _set_dim(self._timer_between_step, s == 2)
@@ -695,11 +695,11 @@ class IntroMaker(QMainWindow):
         self._slider_timer_pos_combo.addItem(tr("settings.slider_timer_pos_left_top"),     "left_top")
         self._slider_timer_pos_combo.setEnabled(False)
 
-        self._slider_timer_size_step = Stepper(3, 15, 6.5, step=0.5, fmt=tr("stepper.percent"))
+        self._slider_timer_size_step = Stepper(3, 15, 15.0, step=0.5, fmt=tr("stepper.percent"))
         self._slider_timer_size_step.setEnabled(False)
 
         self._slider_timer_bg_transparent_chk = StyledCheckBox(tr("settings.slider_timer_bg_transparent"))
-        self._slider_timer_bg_transparent_chk.setChecked(True)
+        self._slider_timer_bg_transparent_chk.setChecked(False)
         self._slider_timer_bg_transparent_chk.setEnabled(False)
 
         self._slider_timer_bg_color_btn = QPushButton(f"  {self._slider_timer_bg_color.upper()}  ")
