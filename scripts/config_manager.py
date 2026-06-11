@@ -52,16 +52,16 @@ DEFAULTS = {
     # Slider image fill color (used when image does not fill the 16:9 frame)
     "slider_fill_color":  "#000000",
     # Timer between slider images (checkbox + duration)
-    "slider_timer_between_enabled":  False,      # False → slides crossfade directly (timer_between=0)
+    "slider_timer_between_enabled":  False,      # False -> slides crossfade directly (timer_between=0)
     # Timer overlay on slider images
     # When True: countdown stays visible during slides, animates to a corner.
     # When False (default): slides fully cover the timer as before.
     "slider_timer_overlay":          False,
     "slider_timer_overlay_position": "right_bottom",  # "right_bottom"|"left_bottom"|"right_top"|"left_top"
-    "slider_timer_size":             15.0,       # corner timer size as % of min(w,h), range 3–15
-    "slider_timer_bg_transparent":   False,      # False → draw coloured pill behind corner timer
+    "slider_timer_size":             15.0,       # corner timer size as % of min(w,h), range 3-15
+    "slider_timer_bg_transparent":   False,      # False -> draw coloured pill behind corner timer
     "slider_timer_bg_color":         "#36393E",  # background colour of the corner timer pill
-    # Outro slide (shown after timer reaches 0)
+    # Outro slide (= "Abschluss-Bild": EIN Standbild mit Text, am Ende des Intros)
     "outro_slide_enabled":    False,
     "outro_slide_text":       "Herzlich Willkommen",
     "outro_slide_color":      "#FFFFFF",
@@ -73,6 +73,19 @@ DEFAULTS = {
     "outro_slide_fade_out":   2,
     # Music behaviour during outro slide
     "music_in_outro":         False,
+
+    # -- Outro-VIDEO (eigenstaendige zweite MP4) ----------------------------
+    # Spielt NUR die Slider-Bilder hintereinander ab (kein Countdown-Timer).
+    # Wird zusaetzlich zum Intro erstellt, wenn die Checkbox auf der Hauptseite
+    # aktiviert ist. Das Intro wird immer erstellt, das Outro ist optional.
+    "outro_video_enabled":    False,        # Hauptseiten-Checkbox "Outro erstellen"
+    "outro_video_folder":     "",           # Ordner fuer die Outro-*.mp4
+    "outro_video_fade_in":    2.0,          # Einblenden aus Schwarz (s)
+    "outro_video_fade_out":   2.0,          # Ausblenden zu Schwarz (s)
+    "outro_video_crossfade":  1.0,          # Ueberblendung zwischen zwei Bildern (s)
+    "outro_video_loops":      2,            # Wie oft die Bildfolge wiederholt wird
+    "outro_video_use_music":  False,        # Intro-MP3 auch im Outro verwenden (optional)
+
     # Remember last used output folder so the dialog opens there next time
     "last_output_folder":     "",
     # UI sounds (success.mp3 / error.mp3)

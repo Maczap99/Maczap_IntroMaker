@@ -58,7 +58,7 @@ def _play_sound(name: str):
 _play_sound._players: list = []
 
 
-# ── ElidedLabel ────────────────────────────────────────────────────────────────
+# -- ElidedLabel ----------------------------------------------------------------
 class ElidedLabel(QLabel):
     """A QLabel that draws elided text directly in paintEvent."""
 
@@ -90,7 +90,7 @@ class ElidedLabel(QLabel):
         painter.end()
 
 
-# ── ThemedDialog ───────────────────────────────────────────────────────────────
+# -- ThemedDialog ---------------------------------------------------------------
 class ThemedDialog(QDialog):
     """A frameless, rounded modal dialog that adapts to the current light/dark theme."""
 
@@ -185,7 +185,7 @@ class ThemedDialog(QDialog):
         layout.addWidget(btn_row)
 
 
-# ── StyledCheckBox ─────────────────────────────────────────────────────────────
+# -- StyledCheckBox -------------------------------------------------------------
 class StyledCheckBox(QWidget):
     """A custom checkbox that renders as a filled blue box when checked."""
 
@@ -253,9 +253,11 @@ class StyledCheckBox(QWidget):
         super().changeEvent(e)
 
 
-# ── RenderWorker ───────────────────────────────────────────────────────────────
+# -- RenderWorker ---------------------------------------------------------------
 class RenderWorker(QObject):
-    """Runs VideoGenerator.generate() in a background thread."""
+    """Runs VideoGenerator.generate() in a background thread.
+    A single run produces the intro and -- if enabled in the config -- the
+    optional outro video as a second MP4."""
 
     progress = pyqtSignal(float, str, int, int)
     finished = pyqtSignal(bool, str)
@@ -275,9 +277,9 @@ class RenderWorker(QObject):
         gen.generate()
 
 
-# ── PreviewWorker ──────────────────────────────────────────────────────────────
+# -- PreviewWorker --------------------------------------------------------------
 class PreviewWorker(QObject):
-    """Renders a single 640×360 preview frame in a background thread."""
+    """Renders a single 640x360 preview frame in a background thread."""
 
     finished = pyqtSignal(object)
 
@@ -406,9 +408,9 @@ class PreviewWorker(QObject):
             self.finished.emit(None)
 
 
-# ── Stepper ────────────────────────────────────────────────────────────────────
+# -- Stepper --------------------------------------------------------------------
 class Stepper(QWidget):
-    """A numeric +/− stepper widget with configurable min, max, step, and format."""
+    """A numeric +/- stepper widget with configurable min, max, step, and format."""
 
     def __init__(self, min_val, max_val, value, step=1, fmt="{}", parent=None):
         super().__init__(parent)
@@ -455,7 +457,7 @@ class Stepper(QWidget):
         self._lbl.setText(self._render(self._val))
 
 
-# ── Helpers ────────────────────────────────────────────────────────────────────
+# -- Helpers --------------------------------------------------------------------
 def _set_dim(widget, enabled: bool):
     """Enable/disable a widget and apply matching opacity so disabled state is clearly visible."""
     widget.setEnabled(enabled)
@@ -496,7 +498,7 @@ def _fmt_mmss(seconds: int) -> str:
     return f"{int(seconds) // 60:02d}:{int(seconds) % 60:02d}"
 
 
-# ── FileRow ────────────────────────────────────────────────────────────────────
+# -- FileRow --------------------------------------------------------------------
 class FileRow(QWidget):
     """A compact row showing a selected file path, a pick button, and a clear button."""
 
@@ -538,7 +540,7 @@ class FileRow(QWidget):
             self._lbl.setText(tr("file_row.nothing_selected"))
 
 
-# ── Main Window ────────────────────────────────────────────────────────────────
+# -- Main Window ----------------------------------------------------------------
 class IntroMaker(QMainWindow):
     """Main application window."""
 
@@ -564,6 +566,9 @@ class IntroMaker(QMainWindow):
         self._out_path      = None
         self._last_output_folder = self._settings.get("last_output_folder", "")
         self._outro_slide_bg_image_path = None
+        # Outro-Video: gewaehlter Zielordner + zuletzt erzeugter Outro-Pfad
+        self._outro_video_folder = self._settings.get("outro_video_folder", "")
+        self._last_outro_path    = None
         self._current_page  = self.PAGE_SIMPLE
 
         self._preview_thread = None
@@ -592,7 +597,7 @@ class IntroMaker(QMainWindow):
         self._restore_settings()
         self._apply_theme(self._theme)
 
-    # ── Shared widgets ─────────────────────────────────────────────────────────
+    # -- Shared widgets ---------------------------------------------------------
     def _build_shared_widgets(self):
         """Instantiate all widgets that are referenced from multiple places in the UI."""
         self._timer_step = Stepper(1, 120, 5, step=1, fmt=tr("stepper.minutes"))
@@ -666,7 +671,7 @@ class IntroMaker(QMainWindow):
         self._slider_until_step = Stepper(0,  7200,  60, step=10, fmt=_fmt_mmss)
 
         self._img_dur_step       = Stepper(5, 120, 10, step=1, fmt=tr("stepper.seconds"))
-        # Timer-zwischen-Bildern: Checkbox + Stepper (Checkbox aus → Stepper grau, timer_between=0)
+        # Timer-zwischen-Bildern: Checkbox + Stepper (Checkbox aus -> Stepper grau, timer_between=0)
         self._timer_between_chk  = StyledCheckBox(tr("settings.timer_between_enable"))
         self._timer_between_chk.setChecked(False)
         self._timer_between_step = Stepper(1, 120, 15, step=1, fmt=tr("stepper.seconds"))
@@ -683,7 +688,7 @@ class IntroMaker(QMainWindow):
         self._sub_offset_step = Stepper(0,  20,  2.5, step=0.5, fmt=tr("stepper.lines"))
         self._sub_offset_step.setEnabled(False)
 
-        # ── Timer overlay on slider images ────────────────────────────────────
+        # -- Timer overlay on slider images ------------------------------------
         self._slider_timer_overlay_chk = StyledCheckBox(tr("settings.slider_timer_overlay"))
 
         self._slider_timer_pos_combo = QComboBox()
@@ -708,7 +713,7 @@ class IntroMaker(QMainWindow):
         self._slider_timer_bg_color_btn.setEnabled(False)
         self._slider_timer_bg_color_btn.clicked.connect(self._pick_slider_timer_bg_color)
 
-        # Overlay-Checkbox steuert alle abhängigen Widgets
+        # Overlay-Checkbox steuert alle abhaengigen Widgets
         def _on_overlay_chk(state):
             on = (state == 2)
             _set_dim(self._slider_timer_pos_combo, on)
@@ -727,7 +732,7 @@ class IntroMaker(QMainWindow):
                 self._slider_timer_overlay_chk.isChecked() and s != 2
             )
         )
-        # ─────────────────────────────────────────────────────────────────────
+        # ----------------------------------------------------------------------
 
         self._outro_slide_chk = StyledCheckBox(tr("settings.outro_enable"))
         self._outro_slide_chk.stateChanged.connect(self._toggle_outro_slide)
@@ -770,6 +775,32 @@ class IntroMaker(QMainWindow):
         self._outro_font_picker = FontPickerWidget(theme=self._theme, preview_text="Beispiel")
         self._outro_font_picker.setEnabled(False)
 
+        # -- Outro-Video (eigenstaendige zweite MP4 nur mit Slider-Bildern) ----
+        # Hauptseiten-Checkbox "Outro-Video erstellen".
+        self._outro_video_chk = StyledCheckBox(tr("simple_left.outro_video_enable"))
+
+        # Ziel-Ordner fuer das Outro (Auswahl in den Einstellungen).
+        self._outro_video_row = FileRow(
+            tr("settings.outro_video_pick_folder"),
+            self._pick_outro_video_folder,
+            self._clear_outro_video_folder,
+        )
+        self._outro_video_row.setEnabled(False)
+
+        self._outro_video_fadein_step    = Stepper(0, 10, 2, step=0.5, fmt=tr("stepper.seconds"))
+        self._outro_video_fadeout_step   = Stepper(0, 10, 2, step=0.5, fmt=tr("stepper.seconds"))
+        self._outro_video_crossfade_step = Stepper(0,  8, 1, step=0.5, fmt=tr("stepper.seconds"))
+        self._outro_video_loops_step     = Stepper(1, 20, 2, step=1,   fmt=tr("stepper.times"))
+        self._outro_video_music_chk      = StyledCheckBox(tr("settings.outro_video_music"))
+        for w in (self._outro_video_fadein_step, self._outro_video_fadeout_step,
+                  self._outro_video_crossfade_step, self._outro_video_loops_step,
+                  self._outro_video_music_chk):
+            w.setEnabled(False)
+
+        # Hauptseiten-Checkbox steuert die Outro-Einstellungen (erst NACH dem
+        # Anlegen aller abhaengigen Widgets verbinden).
+        self._outro_video_chk.stateChanged.connect(self._toggle_outro_video)
+
         self._sounds_chk = StyledCheckBox(tr("settings.sounds_label"))
         self._sounds_chk.setChecked(self._settings.get("sounds_enabled", True))
 
@@ -785,7 +816,7 @@ class IntroMaker(QMainWindow):
                 break
         self._lang_combo.currentIndexChanged.connect(self._on_language_changed)
 
-    # ── UI build ───────────────────────────────────────────────────────────────
+    # -- UI build ---------------------------------------------------------------
     def _build_ui(self):
         root = QWidget(); root.setObjectName("root")
         self.setCentralWidget(root)
@@ -811,7 +842,7 @@ class IntroMaker(QMainWindow):
         scroll.setWidget(inner)
         return scroll
 
-    # ── Header ─────────────────────────────────────────────────────────────────
+    # -- Header -----------------------------------------------------------------
     def _make_header(self):
         hdr = QFrame(); hdr.setObjectName("header"); hdr.setFixedHeight(72)
         layout = QHBoxLayout(hdr)
@@ -855,7 +886,7 @@ class IntroMaker(QMainWindow):
         self._stack.setCurrentIndex(self._current_page)
         self._update_mode_btn()
 
-    # ── Simple page ────────────────────────────────────────────────────────────
+    # -- Simple page ------------------------------------------------------------
     def _make_simple_page(self):
         page = QWidget()
         bl = QHBoxLayout(page)
@@ -961,7 +992,16 @@ class IntroMaker(QMainWindow):
         cl8.addWidget(so)
         layout.addWidget(c8)
 
-    # ── Advanced settings page ─────────────────────────────────────────────────
+        # Outro-Video: nur die Checkbox auf der Hauptseite. Alle weiteren
+        # Optionen liegen unter Einstellungen -> Outro-Video.
+        c_outro = make_card(); cl_outro = QVBoxLayout(c_outro)
+        cl_outro.setContentsMargins(16,10,16,14); cl_outro.setSpacing(6)
+        cl_outro.addWidget(sec_lbl(tr("simple_left.outro_video_title")))
+        cl_outro.addWidget(hint_lbl(tr("simple_left.outro_video_hint")))
+        cl_outro.addWidget(self._outro_video_chk)
+        layout.addWidget(c_outro)
+
+    # -- Advanced settings page -------------------------------------------------
     def _make_advanced_page(self):
         page = QWidget(); page.setObjectName("root")
         outer = QHBoxLayout(page)
@@ -1075,7 +1115,7 @@ class IntroMaker(QMainWindow):
                                self._outro_fade_step),
         ]))
 
-        # ── Slider-Dauer block ────────────────────────────────────────────────────
+        # -- Slider-Dauer block ------------------------------------------------------
         layout.addWidget(self._settings_block("🖼", tr("settings.slider_dur_group"), [
             self._settings_row(tr("settings.slider_from_label"),
                                self._slider_from_step,
@@ -1096,7 +1136,7 @@ class IntroMaker(QMainWindow):
                                tr("settings.slider_fill_color_hint")),
         ]))
 
-        # ── Slider-Timer block ────────────────────────────────────────────────────
+        # -- Slider-Timer block ------------------------------------------------------
         layout.addWidget(self._settings_block("⏱", tr("settings.slider_timer_group"), [
             self._settings_check_row(self._timer_between_chk,
                                      tr("settings.timer_between_enable_hint")),
@@ -1206,6 +1246,37 @@ class IntroMaker(QMainWindow):
                                      tr("settings.music_in_outro_hint")),
         ]))
 
+        # -- Outro-VIDEO block (eigenstaendige zweite MP4 mit Slider-Bildern) --
+        ov_folder_row = QWidget(); ov_folder_row.setObjectName("card")
+        ovfl = QVBoxLayout(ov_folder_row)
+        ovfl.setContentsMargins(16, 10, 16, 10); ovfl.setSpacing(6)
+        ovf_lbl = QLabel(tr("settings.outro_video_folder_label"))
+        ovf_lbl.setFont(QFont("Segoe UI", 11)); ovf_lbl.setObjectName("dim")
+        ovfl.addWidget(ovf_lbl)
+        ovf_hint = QLabel(tr("settings.outro_video_folder_hint"))
+        ovf_hint.setFont(QFont("Segoe UI", 9)); ovf_hint.setObjectName("hint")
+        ovf_hint.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
+        ovfl.addWidget(ovf_hint)
+        ovfl.addWidget(self._outro_video_row)
+
+        layout.addWidget(self._settings_block("🎞", tr("settings.outro_video_group"), [
+            ov_folder_row,
+            self._settings_row(tr("settings.outro_video_fadein_label"),
+                               self._outro_video_fadein_step,
+                               tr("settings.outro_video_fadein_hint")),
+            self._settings_row(tr("settings.outro_video_fadeout_label"),
+                               self._outro_video_fadeout_step,
+                               tr("settings.outro_video_fadeout_hint")),
+            self._settings_row(tr("settings.outro_video_crossfade_label"),
+                               self._outro_video_crossfade_step,
+                               tr("settings.outro_video_crossfade_hint")),
+            self._settings_row(tr("settings.outro_video_loops_label"),
+                               self._outro_video_loops_step,
+                               tr("settings.outro_video_loops_hint")),
+            self._settings_check_row(self._outro_video_music_chk,
+                                     tr("settings.outro_video_music_hint")),
+        ]))
+
         layout.addWidget(self._settings_block("🔔", tr("settings.sounds_group"), [
             self._settings_check_row(self._sounds_chk,
                                      tr("settings.sounds_hint")),
@@ -1237,7 +1308,7 @@ class IntroMaker(QMainWindow):
         brl.addWidget(self._reset_btn, 1)
         layout.addWidget(btn_row)
 
-    # ── Bottom bar ─────────────────────────────────────────────────────────────
+    # -- Bottom bar -------------------------------------------------------------
     def _make_bottom(self):
         bar = QFrame(); bar.setObjectName("bottomBar"); bar.setFixedHeight(110)
         layout = QHBoxLayout(bar)
@@ -1273,14 +1344,14 @@ class IntroMaker(QMainWindow):
         layout.addWidget(btn_col)
         return bar
 
-    # ── Language change ────────────────────────────────────────────────────────
+    # -- Language change --------------------------------------------------------
     def _on_language_changed(self, _index: int):
         code = self._lang_combo.currentData()
         if code:
             self._settings["language"] = code
             cfg_save(self._settings)
 
-    # ── Settings persistence ───────────────────────────────────────────────────
+    # -- Settings persistence ---------------------------------------------------
     def _collect_settings(self) -> dict:
         return {
             "theme":              self._theme,
@@ -1324,6 +1395,14 @@ class IntroMaker(QMainWindow):
             "outro_slide_duration":    self._outro_slide_dur_step.value(),
             "outro_slide_fade_in":     self._outro_slide_fadein_step.value(),
             "outro_slide_fade_out":    self._outro_slide_fadeout_step.value(),
+            # -- Outro-Video (separate MP4) --
+            "outro_video_enabled":     self._outro_video_chk.isChecked(),
+            "outro_video_folder":      self._outro_video_folder,
+            "outro_video_fade_in":     self._outro_video_fadein_step.value(),
+            "outro_video_fade_out":    self._outro_video_fadeout_step.value(),
+            "outro_video_crossfade":   self._outro_video_crossfade_step.value(),
+            "outro_video_loops":       self._outro_video_loops_step.value(),
+            "outro_video_use_music":   self._outro_video_music_chk.isChecked(),
             "last_output_folder":      self._last_output_folder,
             "sounds_enabled":          self._sounds_chk.isChecked(),
         }
@@ -1352,7 +1431,7 @@ class IntroMaker(QMainWindow):
             round(s.get("slider_until", 1) * 60 / 10) * 10)
         self._img_dur_step.set_value(s.get("img_duration", 10))
 
-        # timer_between: backward compat — derive enabled-state if key missing
+        # timer_between: backward compat -- derive enabled-state if key missing
         tb_stored = s.get("timer_between", 15)
         tb_enabled = s.get("slider_timer_between_enabled", None)
         if tb_enabled is None:
@@ -1394,11 +1473,11 @@ class IntroMaker(QMainWindow):
         _set_dim(self._sub_edit, sub_on)
         _set_dim(self._sub_color_btn, sub_on)
 
-        # ── restore overlay settings ──────────────────────────────────────────
+        # -- restore overlay settings ------------------------------------------
         overlay_on = s.get("slider_timer_overlay", False)
         self._slider_timer_overlay_chk.setChecked(overlay_on)
 
-        # position: backward compat ("right"→"right_bottom", "left"→"left_bottom")
+        # position: backward compat ("right"->"right_bottom", "left"->"left_bottom")
         pos = s.get("slider_timer_overlay_position", "right_bottom")
         if pos == "right": pos = "right_bottom"
         if pos == "left":  pos = "left_bottom"
@@ -1419,7 +1498,7 @@ class IntroMaker(QMainWindow):
         self._slider_timer_bg_color = stbg
         self._update_color_btn(self._slider_timer_bg_color_btn, stbg)
         _set_dim(self._slider_timer_bg_color_btn, overlay_on and not transp)
-        # ─────────────────────────────────────────────────────────────────────
+        # ----------------------------------------------------------------------
 
         outro_on = s.get("outro_slide_enabled", False)
         self._outro_slide_chk.setChecked(outro_on)
@@ -1452,6 +1531,28 @@ class IntroMaker(QMainWindow):
         ]
         for w in outro_widgets:
             _set_dim(w, outro_on)
+
+        # -- restore Outro-Video settings --------------------------------------
+        ov_on = s.get("outro_video_enabled", False)
+        self._outro_video_chk.setChecked(ov_on)
+        self._outro_video_folder = s.get("outro_video_folder", "")
+        if self._outro_video_folder and os.path.isdir(self._outro_video_folder):
+            self._outro_video_row.set_path(self._outro_video_folder)
+        else:
+            self._outro_video_row.set_path(None)
+        self._outro_video_fadein_step.set_value(s.get("outro_video_fade_in", 2))
+        self._outro_video_fadeout_step.set_value(s.get("outro_video_fade_out", 2))
+        self._outro_video_crossfade_step.set_value(s.get("outro_video_crossfade", 1))
+        self._outro_video_loops_step.set_value(s.get("outro_video_loops", 2))
+        self._outro_video_music_chk.setChecked(s.get("outro_video_use_music", False))
+        for w in [self._outro_video_row,
+                  self._outro_video_fadein_step,
+                  self._outro_video_fadeout_step,
+                  self._outro_video_crossfade_step,
+                  self._outro_video_loops_step,
+                  self._outro_video_music_chk]:
+            _set_dim(w, ov_on)
+        # ----------------------------------------------------------------------
 
         self._last_output_folder = s.get("last_output_folder", "")
         if self._last_output_folder and os.path.isdir(self._last_output_folder):
@@ -1488,7 +1589,7 @@ class IntroMaker(QMainWindow):
         self._save_btn.setText(tr("settings.save_btn"))
         self._save_btn.setStyleSheet("")
 
-    # ── Preview ────────────────────────────────────────────────────────────────
+    # -- Preview ----------------------------------------------------------------
     def _schedule_preview(self):
         self._preview_timer.start()
 
@@ -1534,7 +1635,7 @@ class IntroMaker(QMainWindow):
         )
         self._preview_lbl.setPixmap(scaled)
 
-    # ── Theme ──────────────────────────────────────────────────────────────────
+    # -- Theme ------------------------------------------------------------------
     def _apply_theme(self, theme):
         self._theme = theme
         QApplication.instance().setStyleSheet(make_style(theme == "dark"))
@@ -1553,7 +1654,9 @@ class IntroMaker(QMainWindow):
                     self._sub_chk, self._slider_loop_chk, self._sounds_chk,
                     self._slider_timer_overlay_chk,
                     self._timer_between_chk,
-                    self._slider_timer_bg_transparent_chk]:
+                    self._slider_timer_bg_transparent_chk,
+                    self._outro_video_chk,
+                    self._outro_video_music_chk]:
             try: chk.update_theme(dark)
             except Exception: pass
         self._update_color_btn(self._color_btn, self._font_color)
@@ -1568,7 +1671,7 @@ class IntroMaker(QMainWindow):
         self._settings["theme"] = new_theme
         cfg_save(self._settings)
 
-    # ── Reset ──────────────────────────────────────────────────────────────────
+    # -- Reset ------------------------------------------------------------------
     def _confirm_reset(self):
         if ThemedDialog.question(self,
                                   tr("dialogs.reset_title"),
@@ -1578,7 +1681,7 @@ class IntroMaker(QMainWindow):
             self._restore_settings()
             self._apply_theme(self._settings.get("theme", "light"))
 
-    # ── Color helpers ──────────────────────────────────────────────────────────
+    # -- Color helpers ----------------------------------------------------------
     def _update_color_btn(self, btn, hex_color):
         c      = QColor(hex_color)
         dark   = (self._theme == "dark")
@@ -1632,7 +1735,7 @@ class IntroMaker(QMainWindow):
             return dialog.selectedColor().name()
         return None
 
-    # ── File pickers ───────────────────────────────────────────────────────────
+    # -- File pickers -----------------------------------------------------------
     def _pick_bg_video(self):
         p, _ = QFileDialog.getOpenFileName(self, tr("simple_left.bg_title"), "", "Video (*.mp4 *.mov *.avi *.mkv)")
         if p:
@@ -1743,7 +1846,21 @@ class IntroMaker(QMainWindow):
         self._outro_slide_bg_image_path = None
         self._outro_slide_bg_image_row.set_path(None)
 
-    # ── Slider image management ────────────────────────────────────────────────
+    # -- Outro-Video folder picker ----------------------------------------------
+    def _pick_outro_video_folder(self):
+        start_dir = self._outro_video_folder if os.path.isdir(self._outro_video_folder) else ""
+        folder = QFileDialog.getExistingDirectory(self, tr("settings.outro_video_group"), start_dir)
+        if folder:
+            self._outro_video_folder = folder
+            self._outro_video_row.set_path(folder)
+            self._settings["outro_video_folder"] = folder
+            cfg_save(self._settings)
+
+    def _clear_outro_video_folder(self):
+        self._outro_video_folder = ""
+        self._outro_video_row.set_path(None)
+
+    # -- Slider image management ------------------------------------------------
     def _add_images(self):
         paths, _ = QFileDialog.getOpenFileNames(
             self,
@@ -1827,7 +1944,7 @@ class IntroMaker(QMainWindow):
             placeholder.setFlags(placeholder.flags() & ~Qt.ItemIsSelectable)
             self._img_list.addItem(placeholder)
 
-    # ── Toggle handlers ────────────────────────────────────────────────────────
+    # -- Toggle handlers --------------------------------------------------------
     def _toggle_subtitle(self, state):
         on = (state == 2)
         _set_dim(self._sub_edit, on)
@@ -1856,7 +1973,20 @@ class IntroMaker(QMainWindow):
         ]:
             _set_dim(w, on)
 
-    # ── Render ─────────────────────────────────────────────────────────────────
+    def _toggle_outro_video(self, state):
+        """Hauptseiten-Checkbox graut die Outro-Video-Einstellungen aus/ein."""
+        on = (state == 2)
+        for w in [
+            self._outro_video_row,
+            self._outro_video_fadein_step,
+            self._outro_video_fadeout_step,
+            self._outro_video_crossfade_step,
+            self._outro_video_loops_step,
+            self._outro_video_music_chk,
+        ]:
+            _set_dim(w, on)
+
+    # -- Render -----------------------------------------------------------------
     def _start_render(self):
         if not self._out_path:
             ThemedDialog.error(self,
@@ -1870,6 +2000,27 @@ class IntroMaker(QMainWindow):
                                tr("dialogs.error_ffmpeg_msg"),
                                dark=(self._theme == "dark"))
             return
+
+        # -- Outro-Video validieren (nur wenn aktiviert) --
+        outro_video_on   = self._outro_video_chk.isChecked()
+        outro_video_path = None
+        if outro_video_on:
+            if not self._image_paths:
+                ThemedDialog.error(self,
+                                   tr("dialogs.error_outro_no_imgs_title"),
+                                   tr("dialogs.error_outro_no_imgs_msg"),
+                                   dark=(self._theme == "dark"))
+                return
+            if not (self._outro_video_folder and os.path.isdir(self._outro_video_folder)):
+                ThemedDialog.error(self,
+                                   tr("dialogs.error_outro_no_folder_title"),
+                                   tr("dialogs.error_outro_no_folder_msg"),
+                                   dark=(self._theme == "dark"))
+                return
+            date_str   = datetime.now().strftime("%d.%m.%Y")
+            outro_name = tr("output_filename_outro", date_str)
+            outro_video_path = os.path.join(self._outro_video_folder, "outro.mp4")
+        self._last_outro_path = outro_video_path
 
         sub_text = self._sub_edit.toPlainText().strip() if self._sub_chk.isChecked() else ""
 
@@ -1925,6 +2076,14 @@ class IntroMaker(QMainWindow):
             "outro_slide_duration":  self._outro_slide_dur_step.value(),
             "outro_slide_fade_in":   self._outro_slide_fadein_step.value(),
             "outro_slide_fade_out":  self._outro_slide_fadeout_step.value(),
+            # -- Outro-Video (separate MP4 nur mit Slider-Bildern) --
+            "outro_video_enabled":     outro_video_on,
+            "outro_video_output_path": outro_video_path,
+            "outro_video_fade_in":     self._outro_video_fadein_step.value(),
+            "outro_video_fade_out":    self._outro_video_fadeout_step.value(),
+            "outro_video_crossfade":   self._outro_video_crossfade_step.value(),
+            "outro_video_loops":       self._outro_video_loops_step.value(),
+            "outro_video_use_music":   self._outro_video_music_chk.isChecked(),
         }
 
         import threading
@@ -1975,9 +2134,14 @@ class IntroMaker(QMainWindow):
             self._status_lbl.setText(tr("bottom.status_done"))
             if sounds_on:
                 _play_sound("success")
+            # Wurde ein Outro-Video miterstellt? Dann beide Pfade anzeigen.
+            if self._outro_video_chk.isChecked() and self._last_outro_path:
+                done_msg = tr("dialogs.done_msg_both", self._out_path, self._last_outro_path)
+            else:
+                done_msg = tr("dialogs.done_msg", self._out_path)
             ThemedDialog.info(self,
                               tr("dialogs.done_title"),
-                              tr("dialogs.done_msg", self._out_path),
+                              done_msg,
                               dark=dark)
         else:
             self._progress.setValue(0)
@@ -1988,7 +2152,7 @@ class IntroMaker(QMainWindow):
             ThemedDialog.error(self, tr("dialogs.error_render_title"), msg[:600], dark=dark)
 
 
-# ── Entry point ────────────────────────────────────────────────────────────────
+# -- Entry point ----------------------------------------------------------------
 def main():
     app = QApplication(sys.argv)
     app.setFont(QFont("Segoe UI", 10))

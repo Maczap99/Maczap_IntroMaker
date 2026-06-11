@@ -39,7 +39,7 @@ def _hex_to_rgb(hex_color: str) -> tuple:
 def _fit_image(img_pil: Image.Image, w: int, h: int,
                fill_color_hex: str = "#000000") -> Image.Image:
     """
-    Fit *img_pil* into a w×h canvas while preserving its aspect ratio.
+    Fit *img_pil* into a w x h canvas while preserving its aspect ratio.
     Any remaining area is filled with *fill_color_hex*.
     """
     r, g, b = _hex_to_rgb(fill_color_hex)
@@ -63,7 +63,7 @@ def _subtitle_layout(w: int, h: int, timer_y: int, timer_h: int,
 
 
 def _smoothstep(t: float) -> float:
-    """Smooth cubic easing — t is clamped to [0, 1]."""
+    """Smooth cubic easing - t is clamped to [0, 1]."""
     t = max(0.0, min(1.0, t))
     return t * t * (3.0 - 2.0 * t)
 
@@ -78,118 +78,36 @@ class VideoGenerator:
         self.cb            = progress_cb
         self.done          = done_cb
         self._cancel_event = cancel_event
+        # Fortschritts-Bereich (0..1) auf den self._emit seine Werte abbildet.
+        # Wird in generate() gesetzt, damit Intro und Outro sich die Leiste teilen.
+        self._prog_lo = 0.0
+        self._prog_hi = 1.0
 
     def _check_cancel(self):
         """Raise _CancelledError if the cancel event has been set."""
         if self._cancel_event and self._cancel_event.is_set():
             raise _CancelledError()
 
-    def generate(self):
-        out_path  = self.cfg.get("output_path", "")
-        tmp_video = out_path.replace(".mp4", "_noaudio.mp4") if out_path else ""
-        try:
-            self._run()
-            self.done(True, "OK")
-        except _CancelledError:
-            for path in [tmp_video, out_path]:
-                if path and os.path.isfile(path):
-                    try:
-                        os.remove(path)
-                    except Exception:
-                        pass
-            self.done(False, "CANCELLED")
-        except Exception:
-            self.done(False, traceback.format_exc())
+    def _emit(self, value, msg, frame_info=None):
+        """Fortschritt melden, abgebildet auf den aktuellen [_prog_lo, _prog_hi]-Bereich.
 
-    # ── Main render loop ──────────────────────────────────────────────────────
-    def _run(self):
-        cfg       = self.cfg
-        fps       = 30
-        total_sec = cfg["timer_minutes"] * 60
-        out_path  = cfg["output_path"]
+        So kann das Intro z. B. 0-85 % belegen und das Outro 85-100 %,
+        ohne dass die einzelnen Render-Methoden davon wissen muessen."""
+        lo, hi = self._prog_lo, self._prog_hi
+        self.cb(lo + (hi - lo) * value, msg, frame_info)
 
-        # ── Background ────────────────────────────────────────────────────────
-        bg_cap    = None
-        bg_static = None
-        w, h      = 1920, 1080
-        bg_total  = 0
+    # -- Gemeinsamer Video-Writer (FFmpeg-Pipe oder OpenCV-Fallback) ----------
+    def _open_video_writer(self, tmp_video, w, h, fps, ffmpeg_path):
+        """Open a frame sink for *tmp_video*.
 
-        if cfg["bg_video"]:
-            bg_cap   = cv2.VideoCapture(cfg["bg_video"])
-            w        = int(bg_cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-            h        = int(bg_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-            bg_total = int(bg_cap.get(cv2.CAP_PROP_FRAME_COUNT))
-        elif cfg["bg_image"]:
-            img = Image.open(cfg["bg_image"]).convert("RGB").resize((w, h))
-            bg_static = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
-        else:
-            r, g, b   = _hex_to_rgb(cfg.get("bg_color", "#000000"))
-            bg_static = np.full((h, w, 3), (b, g, r), dtype=np.uint8)
+        Prefers an FFmpeg rawvideo pipe (H.264, high quality); if FFmpeg is
+        unavailable, falls back to OpenCV's mp4v VideoWriter.
 
-        # ── Slider images ─────────────────────────────────────────────────────
-        slider_imgs = []
-        fill_color  = cfg.get("slider_fill_color", "#000000")
-
-        for p in cfg.get("image_paths", []):
-            try:
-                raw_img = Image.open(p).convert("RGB")
-                fitted  = _fit_image(raw_img, w, h, fill_color)
-                slider_imgs.append(cv2.cvtColor(np.array(fitted), cv2.COLOR_RGB2BGR))
-            except Exception:
-                pass
-
-        # ── Settings ──────────────────────────────────────────────────────────
-        slider_from   = cfg["slider_from"]  * 60
-        slider_until  = cfg["slider_until"] * 60
-        img_dur       = float(cfg["img_duration"])
-        timer_between = float(cfg.get("timer_between", 0))
-        slider_loop   = cfg.get("slider_loop", True)
-        fade_dur      = float(cfg["fade_duration"])
-
-        intro_fade         = cfg.get("intro_fade_enabled", False)
-        outro_slide_active = (cfg.get("outro_slide_enabled", False) and
-                              cfg.get("outro_slide_text", "").strip())
-        outro_fade         = cfg.get("outro_fade_enabled", False) and not outro_slide_active
-        intro_fade_dur     = float(cfg.get("intro_fade_dur", 3.0))
-        outro_fade_dur     = float(cfg.get("outro_fade_dur", 3.0))
-
-        # ── Overlay / position / appearance settings ───────────────────────────
-        overlay_mode     = cfg.get("slider_timer_overlay", False)
-        overlay_pos      = cfg.get("slider_timer_overlay_position", "right_bottom")
-        # backward compat: old "right"/"left" keys
-        if overlay_pos == "right": overlay_pos = "right_bottom"
-        if overlay_pos == "left":  overlay_pos = "left_bottom"
-        overlay_size_pct      = cfg.get("slider_timer_size", 6.5) / 100.0
-        overlay_bg_transparent = cfg.get("slider_timer_bg_transparent", True)
-        overlay_bg_color       = cfg.get("slider_timer_bg_color", "#FFFFFF")
-
-        # ── Fonts ─────────────────────────────────────────────────────────────
-        font_path     = cfg.get("font_path")
-        sub_font_path = cfg.get("subtitle_font") or font_path
-        self._pil_fonts = {}
-
-        def get_font(path, size):
-            key = (path, size)
-            if key not in self._pil_fonts:
-                try:
-                    self._pil_fonts[key] = (
-                        ImageFont.truetype(path, size) if path
-                        else ImageFont.load_default()
-                    )
-                except Exception:
-                    self._pil_fonts[key] = ImageFont.load_default()
-            return self._pil_fonts[key]
-
-        # ── Timeline ──────────────────────────────────────────────────────────
-        segments     = self._build_segments(
-            total_sec, slider_from, slider_until,
-            slider_imgs, img_dur, timer_between, slider_loop)
-        total_frames = int(total_sec * fps)
-
-        # ── Start FFmpeg pipe ─────────────────────────────────────────────────
-        tmp_video   = out_path.replace(".mp4", "_noaudio.mp4")
-        ffmpeg_path = _get_ffmpeg()
-
+        Returns a tuple ``(proc, write_frame, close)`` where *proc* is the
+        FFmpeg subprocess (or ``None`` in the fallback case), *write_frame(f)*
+        pushes a single BGR frame, and *close()* finalises the file.
+        Used by both the intro render (_run) and the outro render
+        (_render_outro_video) so the encoder setup lives in one place."""
         if ffmpeg_path:
             ff_cmd = [
                 ffmpeg_path, "-y",
@@ -219,16 +137,161 @@ class VideoGenerator:
                     err = ff_proc.stderr.read().decode(errors="replace")
                     raise RuntimeError(
                         f"FFmpeg pipe error (code {ff_proc.returncode}):\n{err}")
+
+            def close():
+                ff_proc.stdin.close()
+                ff_proc.stderr.close()
+                ff_proc.wait()
+                if ff_proc.returncode not in (0, None):
+                    raise RuntimeError(
+                        f"FFmpeg closed with code {ff_proc.returncode}")
+
+            return ff_proc, write_frame, close
+
+        # -- Fallback: OpenCV writer --
+        fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+        writer = cv2.VideoWriter(tmp_video, fourcc, fps, (w, h))
+
+        def write_frame(f):
+            writer.write(f)
+
+        def close():
+            writer.release()
+
+        return None, write_frame, close
+
+    def generate(self):
+        cfg       = self.cfg
+        out_path  = cfg.get("output_path", "")
+        tmp_video = out_path.replace(".mp4", "_noaudio.mp4") if out_path else ""
+
+        # Outro-Video: nur rendern wenn aktiviert, ein Zielpfad gesetzt ist
+        # UND es ueberhaupt Slider-Bilder gibt.
+        outro_out = cfg.get("outro_video_output_path", "") or ""
+        outro_tmp = outro_out.replace(".mp4", "_noaudio.mp4") if outro_out else ""
+        do_outro  = bool(cfg.get("outro_video_enabled", False)
+                         and outro_out
+                         and cfg.get("image_paths"))
+
+        try:
+            # Intro belegt 0-85 % der Fortschrittsanzeige wenn ein Outro folgt,
+            # sonst die vollen 0-100 %.
+            self._prog_lo, self._prog_hi = 0.0, (0.85 if do_outro else 1.0)
+            self._run()
+
+            if do_outro:
+                # Outro belegt die restlichen 85-100 %.
+                self._prog_lo, self._prog_hi = 0.85, 1.0
+                self._render_outro_video(outro_out)
+
+            self.done(True, "OK")
+        except _CancelledError:
+            # Beim Abbruch alle (Zwischen-)Dateien von Intro UND Outro aufraeumen.
+            for path in [tmp_video, out_path, outro_tmp, outro_out]:
+                if path and os.path.isfile(path):
+                    try:
+                        os.remove(path)
+                    except Exception:
+                        pass
+            self.done(False, "CANCELLED")
+        except Exception:
+            self.done(False, traceback.format_exc())
+
+    # -- Main render loop (INTRO) ----------------------------------------------
+    def _run(self):
+        cfg       = self.cfg
+        fps       = 30
+        total_sec = cfg["timer_minutes"] * 60
+        out_path  = cfg["output_path"]
+
+        # -- Background ---------------------------------------------------------
+        bg_cap    = None
+        bg_static = None
+        w, h      = 1920, 1080
+        bg_total  = 0
+
+        if cfg["bg_video"]:
+            bg_cap   = cv2.VideoCapture(cfg["bg_video"])
+            w        = int(bg_cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+            h        = int(bg_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+            bg_total = int(bg_cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        elif cfg["bg_image"]:
+            img = Image.open(cfg["bg_image"]).convert("RGB").resize((w, h))
+            bg_static = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
         else:
-            ff_proc = None
-            fourcc  = cv2.VideoWriter_fourcc(*"mp4v")
-            writer  = cv2.VideoWriter(tmp_video, fourcc, fps, (w, h))
-            write_frame = lambda f: writer.write(f)
+            r, g, b   = _hex_to_rgb(cfg.get("bg_color", "#000000"))
+            bg_static = np.full((h, w, 3), (b, g, r), dtype=np.uint8)
+
+        # -- Slider images ------------------------------------------------------
+        slider_imgs = []
+        fill_color  = cfg.get("slider_fill_color", "#000000")
+
+        for p in cfg.get("image_paths", []):
+            try:
+                raw_img = Image.open(p).convert("RGB")
+                fitted  = _fit_image(raw_img, w, h, fill_color)
+                slider_imgs.append(cv2.cvtColor(np.array(fitted), cv2.COLOR_RGB2BGR))
+            except Exception:
+                pass
+
+        # -- Settings -----------------------------------------------------------
+        slider_from   = cfg["slider_from"]  * 60
+        slider_until  = cfg["slider_until"] * 60
+        img_dur       = float(cfg["img_duration"])
+        timer_between = float(cfg.get("timer_between", 0))
+        slider_loop   = cfg.get("slider_loop", True)
+        fade_dur      = float(cfg["fade_duration"])
+
+        intro_fade         = cfg.get("intro_fade_enabled", False)
+        outro_slide_active = (cfg.get("outro_slide_enabled", False) and
+                              cfg.get("outro_slide_text", "").strip())
+        outro_fade         = cfg.get("outro_fade_enabled", False) and not outro_slide_active
+        intro_fade_dur     = float(cfg.get("intro_fade_dur", 3.0))
+        outro_fade_dur     = float(cfg.get("outro_fade_dur", 3.0))
+
+        # -- Overlay / position / appearance settings --------------------------
+        overlay_mode     = cfg.get("slider_timer_overlay", False)
+        overlay_pos      = cfg.get("slider_timer_overlay_position", "right_bottom")
+        # backward compat: old "right"/"left" keys
+        if overlay_pos == "right": overlay_pos = "right_bottom"
+        if overlay_pos == "left":  overlay_pos = "left_bottom"
+        overlay_size_pct      = cfg.get("slider_timer_size", 6.5) / 100.0
+        overlay_bg_transparent = cfg.get("slider_timer_bg_transparent", True)
+        overlay_bg_color       = cfg.get("slider_timer_bg_color", "#FFFFFF")
+
+        # -- Fonts --------------------------------------------------------------
+        font_path     = cfg.get("font_path")
+        sub_font_path = cfg.get("subtitle_font") or font_path
+        self._pil_fonts = {}
+
+        def get_font(path, size):
+            key = (path, size)
+            if key not in self._pil_fonts:
+                try:
+                    self._pil_fonts[key] = (
+                        ImageFont.truetype(path, size) if path
+                        else ImageFont.load_default()
+                    )
+                except Exception:
+                    self._pil_fonts[key] = ImageFont.load_default()
+            return self._pil_fonts[key]
+
+        # -- Timeline -----------------------------------------------------------
+        segments     = self._build_segments(
+            total_sec, slider_from, slider_until,
+            slider_imgs, img_dur, timer_between, slider_loop)
+        total_frames = int(total_sec * fps)
+
+        # -- Start frame sink (FFmpeg pipe or OpenCV fallback) -----------------
+        tmp_video   = out_path.replace(".mp4", "_noaudio.mp4")
+        ffmpeg_path = _get_ffmpeg()
+        ff_proc, write_frame, _close_writer = self._open_video_writer(
+            tmp_video, w, h, fps, ffmpeg_path)
 
         black      = np.zeros((h, w, 3), dtype=np.uint8)
         last_frame = black.copy()
 
-        # ── Render frames ─────────────────────────────────────────────────────
+        # -- Render frames ------------------------------------------------------
         bg_frame_idx = 0
         elapsed      = 0.0
         n_segs       = len(segments)
@@ -247,7 +310,7 @@ class VideoGenerator:
                     time_left  = max(0.0, total_sec - elapsed)
                     pos_in_seg = f / fps
 
-                    # ── Advance / loop background video ──────────────────────
+                    # -- Advance / loop background video ----------------------
                     if bg_cap:
                         if bg_frame_idx >= bg_total - 1:
                             bg_cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
@@ -260,19 +323,19 @@ class VideoGenerator:
                     else:
                         bg = bg_static.copy()
 
-                    # ── Compose frame ─────────────────────────────────────────
+                    # -- Compose frame -----------------------------------------
                     if seg_type == "timer":
-                        # Pure timer frame — always drawn normally
+                        # Pure timer frame - always drawn normally
                         frame = self._draw_timer_and_subtitle(
                             bg.copy(), time_left, cfg, w, h,
                             get_font, font_path, sub_font_path)
 
                     else:
-                        # ── Slide segment ─────────────────────────────────────
+                        # -- Slide segment -----------------------------------------
                         img_idx = seg_type % len(slider_imgs)
                         slide   = slider_imgs[img_idx]
 
-                        # Pre-compute next slide image (needed for S→S crossfade)
+                        # Pre-compute next slide image (needed for S->S crossfade)
                         if next_is_slide:
                             next_slide = slider_imgs[next_seg[0] % len(slider_imgs)]
                         else:
@@ -286,15 +349,15 @@ class VideoGenerator:
                                        and pos_in_seg > seg_dur - fade_dur)
 
                         if overlay_mode:
-                            # ─────────────────────────────────────────────────
+                            # -------------------------------------------------
                             # OVERLAY MODE
                             # Timer is always visible; it shrinks and moves to a
                             # corner while a slide is shown, then returns to
                             # centre when the slide ends.
                             #
-                            # anim_t = 0.0 → timer at centre, full size
-                            # anim_t = 1.0 → timer in corner, small
-                            # ─────────────────────────────────────────────────
+                            # anim_t = 0.0 -> timer at centre, full size
+                            # anim_t = 1.0 -> timer in corner, small
+                            # -------------------------------------------------
                             if in_fade_in:
                                 # Entering slide from a timer segment:
                                 # slide fades in over raw background while
@@ -333,9 +396,9 @@ class VideoGenerator:
                                 bg_color_hex=overlay_bg_color)
 
                         else:
-                            # ─────────────────────────────────────────────────
+                            # -------------------------------------------------
                             # STANDARD MODE  (slides fully cover the timer)
-                            # ─────────────────────────────────────────────────
+                            # -------------------------------------------------
                             if in_fade_in:
                                 # Blend: slide fades in over a timer frame
                                 a        = pos_in_seg / fade_dur
@@ -345,7 +408,7 @@ class VideoGenerator:
                                 frame = cv2.addWeighted(slide, a, timer_bg, 1.0 - a, 0)
 
                             elif in_fade_out and next_is_slide:
-                                # Direct slide→slide crossfade (timer_between=0)
+                                # Direct slide->slide crossfade (timer_between=0)
                                 a     = (seg_dur - pos_in_seg) / fade_dur
                                 frame = cv2.addWeighted(slide, a, next_slide, 1.0 - a, 0)
 
@@ -363,7 +426,7 @@ class VideoGenerator:
                                 # segment's fade-out)
                                 frame = slide.copy()
 
-                    # ── Global intro / outro fades ────────────────────────────
+                    # -- Global intro / outro fades ----------------------------
                     if intro_fade and elapsed < intro_fade_dur:
                         a = elapsed / intro_fade_dur
                         frame = cv2.addWeighted(frame, a, black, 1.0 - a, 0)
@@ -383,11 +446,11 @@ class VideoGenerator:
                         pct = elapsed / total_sec
                         m   = int(time_left // 60)
                         s   = int(time_left % 60)
-                        self.cb(min(pct, 0.95),
-                                f"⏳ Rendering … {m:02d}:{s:02d}  ({int(pct*100)}%)",
-                                frame_info=(frame_idx, total_frames))
+                        self._emit(min(pct, 0.95),
+                                   f"\u23f3 Rendering ... {m:02d}:{s:02d}  ({int(pct*100)}%)",
+                                   frame_info=(frame_idx, total_frames))
 
-            # ── Outro slide ───────────────────────────────────────────────────
+            # -- Outro slide (= Abschluss-Bild, EIN Standbild im Intro) --------
             outro_enabled    = cfg.get("outro_slide_enabled", False)
             outro_text       = cfg.get("outro_slide_text", "").strip()
             outro_color      = cfg.get("outro_slide_color", "#FFFFFF")
@@ -423,25 +486,17 @@ class VideoGenerator:
                     self._check_cancel()
 
                     if f % 15 == 0:
-                        self.cb(0.95 + 0.04 * (f / outro_frames),
-                                "🖼 Outro slide …",
-                                frame_info=(total_frames + f,
-                                            total_frames + outro_frames))
+                        self._emit(0.95 + 0.04 * (f / outro_frames),
+                                   "\U0001f5bc Outro slide ...",
+                                   frame_info=(total_frames + f,
+                                               total_frames + outro_frames))
 
         finally:
-            if ff_proc:
-                ff_proc.stdin.close()
-                ff_proc.stderr.close()
-                ff_proc.wait()
-                if ff_proc.returncode not in (0, None):
-                    raise RuntimeError(
-                        f"FFmpeg closed with code {ff_proc.returncode}")
-            else:
-                writer.release()
+            _close_writer()
             if bg_cap:
                 bg_cap.release()
 
-        # ── Audio mix ─────────────────────────────────────────────────────────
+        # -- Audio mix ----------------------------------------------------------
         outro_enabled_  = cfg.get("outro_slide_enabled", False)
         outro_text_set  = cfg.get("outro_slide_text", "").strip()
         music_in_outro  = cfg.get("music_in_outro", False)
@@ -452,7 +507,7 @@ class VideoGenerator:
         audio_total    = full_video_dur if music_in_outro else total_sec
 
         if cfg.get("music_path") and ffmpeg_path:
-            self.cb(0.98, "🎵 Mixing audio …", frame_info=(total_frames, total_frames))
+            self._emit(0.98, "\U0001f3b5 Mixing audio ...", frame_info=(total_frames, total_frames))
             self._mix_audio(tmp_video, out_path, audio_total, full_video_dur, cfg, ffmpeg_path)
             try:
                 os.remove(tmp_video)
@@ -461,9 +516,112 @@ class VideoGenerator:
         else:
             os.replace(tmp_video, out_path)
 
-        self.cb(1.0, "✅ Done!", frame_info=(total_frames, total_frames))
+        self._emit(1.0, "\u2705 Done!", frame_info=(total_frames, total_frames))
 
-    # ── Timeline builder ──────────────────────────────────────────────────────
+    # -- Outro-VIDEO render (eigenstaendige zweite MP4) ------------------------
+    def _render_outro_video(self, out_path):
+        """Render the standalone outro video.
+
+        Plays the chosen slider images back to back, optionally looped, with a
+        crossfade between images and a fade-in/out from/to black. It contains
+        NO countdown timer - only the slider images. This is saved as an
+        independent MP4 next to the intro file.
+
+        Per-image display time is reused from the slider 'img_duration'
+        setting. Music (the same MP3 used by the intro) is mixed in only when
+        'outro_video_use_music' is enabled."""
+        cfg        = self.cfg
+        fps        = 30
+        w, h       = 1920, 1080
+        fill_color = cfg.get("slider_fill_color", "#000000")
+
+        # -- Slider-Bilder laden & einpassen --
+        base_imgs = []
+        for p in cfg.get("image_paths", []):
+            try:
+                raw    = Image.open(p).convert("RGB")
+                fitted = _fit_image(raw, w, h, fill_color)
+                base_imgs.append(cv2.cvtColor(np.array(fitted), cv2.COLOR_RGB2BGR))
+            except Exception:
+                pass
+        if not base_imgs:
+            return  # keine Bilder -> nichts zu rendern
+
+        # -- Loop-Anzahl: loops=2 bedeutet jede Bildfolge zweimal --
+        # (5 Bilder, loops=2 -> 10 Bilder werden nacheinander gezeigt)
+        loops = max(1, int(cfg.get("outro_video_loops", 2)))
+        imgs  = base_imgs * loops
+        n     = len(imgs)
+
+        img_dur   = float(cfg.get("img_duration", 10))       # Dauer pro Bild (vom Slider uebernommen)
+        crossfade = float(cfg.get("outro_video_crossfade", 1.0))
+        fade_in   = float(cfg.get("outro_video_fade_in", 2.0))
+        fade_out  = float(cfg.get("outro_video_fade_out", 2.0))
+        crossfade = max(0.0, min(crossfade, img_dur))        # Ueberblendung kann Bilddauer nicht ueberschreiten
+
+        total_dur    = n * img_dur
+        total_frames = int(total_dur * fps)
+        black        = np.zeros((h, w, 3), dtype=np.uint8)
+
+        tmp_video   = out_path.replace(".mp4", "_noaudio.mp4")
+        ffmpeg_path = _get_ffmpeg()
+        ff_proc, write_frame, _close_writer = self._open_video_writer(
+            tmp_video, w, h, fps, ffmpeg_path)
+
+        frame_no = 0
+        try:
+            for i in range(n):
+                seg_frames = int(img_dur * fps)
+                cur        = imgs[i]
+                prev       = imgs[i - 1] if i > 0 else None
+
+                for f in range(seg_frames):
+                    t_in_seg = f / fps
+
+                    # Ueberblendung vom vorherigen Bild jeweils am Slot-Anfang
+                    if prev is not None and crossfade > 0 and t_in_seg < crossfade:
+                        a     = t_in_seg / crossfade
+                        frame = cv2.addWeighted(cur, a, prev, 1.0 - a, 0)
+                    else:
+                        frame = cur.copy()
+
+                    # Globales Fade-In / Fade-Out (von / zu Schwarz)
+                    gt = frame_no / fps
+                    if fade_in > 0 and gt < fade_in:
+                        a     = gt / fade_in
+                        frame = cv2.addWeighted(frame, a, black, 1.0 - a, 0)
+                    if fade_out > 0 and gt > total_dur - fade_out:
+                        a     = max(0.0, min(1.0, (total_dur - gt) / fade_out))
+                        frame = cv2.addWeighted(frame, a, black, 1.0 - a, 0)
+
+                    write_frame(frame)
+                    frame_no += 1
+                    self._check_cancel()
+
+                    if frame_no % 15 == 0:
+                        pct = frame_no / max(1, total_frames)
+                        self._emit(min(pct, 0.97),
+                                   f"\U0001f3ac Outro-Video ... ({int(pct*100)}%)",
+                                   frame_info=(frame_no, total_frames))
+        finally:
+            _close_writer()
+
+        # -- Optional: die Intro-Musik auch im Outro verwenden --
+        use_music = cfg.get("outro_video_use_music", False)
+        if use_music and cfg.get("music_path") and ffmpeg_path:
+            self._emit(0.98, "\U0001f3b5 Outro-Audio ...",
+                       frame_info=(total_frames, total_frames))
+            self._mix_audio(tmp_video, out_path, total_dur, total_dur, cfg, ffmpeg_path)
+            try:
+                os.remove(tmp_video)
+            except Exception:
+                pass
+        else:
+            os.replace(tmp_video, out_path)
+
+        self._emit(1.0, "\u2705 Outro fertig!", frame_info=(total_frames, total_frames))
+
+    # -- Timeline builder ------------------------------------------------------
     def _build_segments(self, total_sec, slider_from, slider_until,
                          slider_imgs, img_dur, timer_between, slider_loop):
         """Return a list of (segment_type, duration_seconds) pairs."""
@@ -523,7 +681,7 @@ class VideoGenerator:
                 img_idx += 1
         return segs
 
-    # ── Draw timer + subtitle (standard, centred) ─────────────────────────────
+    # -- Draw timer + subtitle (standard, centred) -----------------------------
     def _draw_timer_and_subtitle(self, frame_bgr, time_left, cfg,
                                   w, h, get_font, font_path, sub_font_path):
         """Overlay the full-size centred countdown timer (and optional subtitle)."""
@@ -604,7 +762,7 @@ class VideoGenerator:
 
         return cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
 
-    # ── Draw animated timer (overlay mode) ────────────────────────────────────
+    # -- Draw animated timer (overlay mode) ------------------------------------
     def _draw_timer_animated(self, frame_bgr, time_left, cfg,
                               w, h, get_font, font_path,
                               anim_t: float, position: str,
@@ -617,8 +775,8 @@ class VideoGenerator:
         Parameters
         ----------
         anim_t        : float in [0, 1]
-                        0 → timer centred at full size
-                        1 → timer shrunk into the chosen corner
+                        0 -> timer centred at full size
+                        1 -> timer shrunk into the chosen corner
         position      : "right_bottom" | "left_bottom" | "right_top" | "left_top"
         size_pct      : corner timer size as fraction of min(w, h)  (e.g. 0.065)
         bg_transparent: if False, draw a coloured pill behind the corner timer
@@ -657,7 +815,7 @@ class VideoGenerator:
         cx = (w - total_w) // 2
         cy = (h - th)      // 2
 
-        # Corner position (anim_t=1) — 4 corners supported
+        # Corner position (anim_t=1) - 4 corners supported
         margin = int(min(w, h) * 0.035)
         if position == "left_bottom":
             corner_x = margin
@@ -681,7 +839,7 @@ class VideoGenerator:
         ss_x  = start_x + mm_w + col_w
         ty    = start_y - bbox_mm[1]
 
-        # ── Background pill (only when ease > 0 and not transparent) ─────────
+        # -- Background pill (only when ease > 0 and not transparent) --------
         if not bg_transparent and ease > 0:
             pad_x  = max(6, timer_size // 5)
             pad_y  = max(4, timer_size // 7)
@@ -703,7 +861,7 @@ class VideoGenerator:
             pil_img = Image.alpha_composite(rgba, overlay).convert("RGB")
             draw    = ImageDraw.Draw(pil_img)
 
-        # ── Timer text ────────────────────────────────────────────────────────
+        # -- Timer text --------------------------------------------------------
         timer_color = _hex_to_rgb(cfg["font_color"])
         shadow      = max(2, timer_size // 30)
 
@@ -716,11 +874,11 @@ class VideoGenerator:
 
         return cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
 
-    # ── Draw outro slide ──────────────────────────────────────────────────────
+    # -- Draw outro slide ------------------------------------------------------
     def _draw_outro_slide(self, text, hex_color,
                           bg_image_path, bg_hex_color,
                           font_size, font_path, w, h, get_font):
-        """Render the static outro slide frame."""
+        """Render the static outro slide frame (Abschluss-Bild)."""
         if bg_image_path and os.path.isfile(bg_image_path):
             try:
                 bg_pil = Image.open(bg_image_path).convert("RGB").resize(
@@ -763,9 +921,12 @@ class VideoGenerator:
 
         return cv2.cvtColor(np.array(bg_pil), cv2.COLOR_RGB2BGR)
 
-    # ── Audio mix ─────────────────────────────────────────────────────────────
+    # -- Audio mix -------------------------------------------------------------
     def _mix_audio(self, tmp_video, out_path, audio_sec, video_sec, cfg, ffmpeg_path):
-        """Mix background music into the video."""
+        """Mix background music into the video.
+
+        Used for both the intro and the outro video; the outro reuses the same
+        music settings (loop / fade-out / fade duration) as the intro."""
         music      = cfg["music_path"]
         loop       = cfg["music_loop"]
         fadeout    = cfg["music_fadeout"]

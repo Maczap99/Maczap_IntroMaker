@@ -29,6 +29,10 @@
     "output_pick": "📁  Speicherort wählen",
     "output_title_dialog": "💾  Speicherort wählen",
 
+    "outro_video_title": "🎞  Outro-Video",
+    "outro_video_enable": "Outro-Video erstellen",
+    "outro_video_hint": "Erstellt zusätzlich eine MP4 nur mit den Slider-Bildern. Einstellungen unter ⚙️ → Outro-Video.",
+
     "preview_title": "🔍  Vorschau",
     "preview_hint": "Zeigt Hintergrund + Schriftart + Farbe bei 04:32",
     "preview_btn": "↺  Aktualisieren",
@@ -86,7 +90,7 @@
     "slider_until_label": "Slider bis max.",
     "slider_until_hint": "Keine Bilder mehr ab X verbleibenden Minuten",
     "img_dur_label": "Dauer pro Bild",
-    "img_dur_hint": "Wie lange jedes Bild angezeigt wird",
+    "img_dur_hint": "Wie lange jedes Bild angezeigt wird (gilt auch fürs Outro-Video)",
     "timer_between_enable": "Timer zwischen Bildern anzeigen",
     "timer_between_enable_hint": "An: Countdown-Pause zwischen den Folien  |  Aus: Bilder überblenden direkt",
     "timer_between_label": "Timer-Dauer",
@@ -142,6 +146,21 @@
     "outro_fadeout_label": "Fade-Out Dauer",
     "outro_fadeout_hint": "Ausblenden des Abschluss-Bilds zu Schwarz",
 
+    "outro_video_group": "Outro-Video",
+    "outro_video_folder_label": "Speicherort",
+    "outro_video_folder_hint": "Ordner für das Outro-Video (Dateiname: Outro - TT.MM.JJJJ). Spielt nur die Slider-Bilder hintereinander ab.",
+    "outro_video_pick_folder": "📁  Speicherort wählen",
+    "outro_video_fadein_label": "Fade-In Dauer",
+    "outro_video_fadein_hint": "Outro blendet am Start von Schwarz ein",
+    "outro_video_fadeout_label": "Fade-Out Dauer",
+    "outro_video_fadeout_hint": "Outro blendet am Ende zu Schwarz aus",
+    "outro_video_crossfade_label": "Überblendung",
+    "outro_video_crossfade_hint": "Dauer der Überblendung zwischen zwei Bildern",
+    "outro_video_loops_label": "Anzahl Loops",
+    "outro_video_loops_hint": "Wie oft die Bildfolge wiederholt wird (z. B. 5 Bilder × 2 = 10 Bilder)",
+    "outro_video_music": "Intro-Musik auch im Outro verwenden",
+    "outro_video_music_hint": "Optional — nutzt dieselbe MP3 wie das Intro",
+
     "language_group": "Sprache / Language",
     "language_label": "Sprache",
     "language_hint": "Sprachauswahl gilt nach einem Neustart sofort",
@@ -177,8 +196,13 @@
     "error_render_title": "Fehler beim Rendern",
     "error_pdf_title": "PDF-Fehler",
     "error_pdf_msg": "PyMuPDF (fitz) ist nicht installiert.\n\nBitte installieren mit:\n  pip install PyMuPDF",
+    "error_outro_no_imgs_title": "Keine Bilder",
+    "error_outro_no_imgs_msg": "Für das Outro-Video werden Slider-Bilder benötigt.\n\nBitte zuerst Bilder hinzufügen.",
+    "error_outro_no_folder_title": "Kein Speicherort",
+    "error_outro_no_folder_msg": "Bitte unter Einstellungen → Outro-Video einen Speicherort für das Outro wählen!",
     "done_title": "🎉 Fertig!",
     "done_msg": "Video wurde erfolgreich gespeichert:\n\n{0}",
+    "done_msg_both": "Videos wurden erfolgreich gespeichert:\n\nIntro:\n{0}\n\nOutro:\n{1}",
     "reset_title": "Einstellungen zurücksetzen",
     "reset_msg": "Alle Einstellungen auf Standard zurücksetzen?\n\nDies kann nicht rückgängig gemacht werden.",
     "reset_confirm": "Ja, zurücksetzen",
@@ -207,8 +231,10 @@
     "seconds": "{} s",
     "points": "{} pt",
     "lines": "{} Zeilen",
-    "percent": "{} %"
+    "percent": "{} %",
+    "times": "{}×"
   },
 
-  "output_filename": "Intro - {0}"
+  "output_filename": "Intro - {0}",
+  "output_filename_outro": "Outro - {0}"
 }
