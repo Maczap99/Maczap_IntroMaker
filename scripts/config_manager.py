@@ -25,6 +25,7 @@ DEFAULTS = {
     "music_loop":         True,
     "music_fadeout":      True,
     "music_fade_dur":     4,
+    "music_crossfade":    3.0,
     # Video fade
     "intro_fade_enabled": True,
     "intro_fade_dur":     3,

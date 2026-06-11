@@ -1,38 +1,31 @@
 {
   "app_title": "Intro Maker",
-
   "header": {
     "settings": "⚙️  Настройки",
     "back": "🏠  Назад",
     "theme_dark": "🌙",
     "theme_light": "☀️"
   },
-
   "simple_left": {
     "timer_title": "⏱  Длительность таймера",
     "timer_hint": "Общая длина countdown-видео",
     "timer_unit": "{} мин",
-
     "bg_title": "🎨  Фон",
     "bg_hint": "Видео имеет приоритет над изображением — оба необязательны (по умолчанию: белый)",
     "bg_pick_video": "🎬  Выбрать видео",
     "bg_pick_image": "🖼  Выбрать изображение",
     "bg_color_title": "🎨  Цвет фона",
-
     "music_title": "🎵  Фоновая музыка",
     "music_hint": "Необязательно — MP3, WAV, OGG",
     "music_pick": "🎵  Выбрать музыкальный файл",
     "music_title_dialog": "🎵  Музыкальный файл",
-
     "output_title": "💾  Выходной файл",
     "output_hint": "Имя файла: Intro - ДД.ММ.ГГГГ",
     "output_pick": "📁  Выбрать папку",
     "output_title_dialog": "💾  Выбрать папку",
-
     "outro_video_title": "🎞  Видео-аутро",
     "outro_video_enable": "Создать видео-аутро",
     "outro_video_hint": "Дополнительно создаёт MP4 только с изображениями слайдера. Настройки в ⚙️ → Видео-аутро.",
-
     "preview_title": "🔍  Предпросмотр",
     "preview_hint": "Показывает фон + шрифт + цвет при 04:32",
     "preview_btn": "↺  Обновить",
@@ -40,7 +33,6 @@
     "preview_loading": "⏳  Создание предпросмотра …",
     "preview_error": "❌  Не удалось создать предпросмотр"
   },
-
   "simple_right": {
     "slider_title": "🖼  Изображения слайдера",
     "slider_hint": "Отображаются между секциями обратного отсчёта",
@@ -48,32 +40,28 @@
     "slider_remove": "− Удалить выбранные",
     "slider_clear": "Очистить список",
     "slider_empty": "  Изображения не выбраны",
-
     "font_color_title": "🎨  Цвет шрифта таймера",
     "font_color_label": "Цвет:",
-
     "fill_color_title": "🎨  Цвет заливки (полосы)",
-
     "subtitle_title": "💬  Субтитры",
     "subtitle_hint": "Отображается под таймером",
     "subtitle_enable": "Включить субтитры",
     "subtitle_placeholder": "напр. Добро пожаловать на мероприятие",
     "subtitle_color_label": "Цвет:"
   },
-
   "settings": {
     "bg_group": "Фон",
     "bg_color_label": "Резервный цвет",
     "bg_color_hint": "Цвет, используемый когда не выбрано видео или изображение",
-
     "music_group": "Музыка",
     "music_loop": "Зацикливание (повтор)",
     "music_fadeout": "Затухание в конце",
     "music_fade_dur_label": "Длительность затухания",
     "music_fade_dur_hint": "Как долго музыка затухает в конце",
+    "music_crossfade_label": "Кроссфейд цикла",
+    "music_crossfade_hint": "Перекрытие при повторе музыки, чтобы не было тишины (0 = выкл)",
     "music_in_outro": "Музыка в заключительном слайде",
     "music_in_outro_hint": "Вкл: музыка играет до конца видео  |  Выкл: музыка останавливается при 0:00",
-
     "fade_group": "Плавное появление / исчезновение",
     "intro_fade": "Включить появление в начале",
     "intro_fade_hint": "Видео плавно появляется из чёрного экрана",
@@ -81,7 +69,6 @@
     "outro_fade": "Включить исчезновение в конце",
     "outro_fade_hint": "Видео плавно исчезает в чёрный экран",
     "outro_fade_dur_label": "Длительность исчезновения",
-
     "slider_dur_group": "Длительность слайдера",
     "slider_timer_group": "Таймер слайдера",
     "slider_group": "Настройки слайдера",
@@ -113,17 +100,14 @@
     "slider_timer_bg_transparent_hint": "Выкл: цветная область за таймером для лучшей читаемости",
     "slider_timer_bg_color_label": "Цвет фона",
     "slider_timer_bg_color_hint": "Цвет области за таймером на изображениях слайдера",
-
     "transitions_group": "Переходы",
     "fade_label": "Длительность перехода",
     "fade_hint": "Плавное появление/исчезновение при смене изображений",
-
     "subtitle_group": "Субтитры",
     "sub_size_label": "Размер шрифта",
     "sub_size_hint": "Размер текста субтитров в видео",
     "sub_offset_label": "Отступ от таймера",
     "sub_offset_hint": "Количество строк между таймером и субтитрами",
-
     "outro_group": "Заключительный слайд",
     "outro_enable": "Включить заключительный слайд",
     "outro_enable_hint": "Изображение с текстом после таймера",
@@ -145,7 +129,6 @@
     "outro_fadein_hint": "Плавный переход от таймера к заключительному слайду",
     "outro_fadeout_label": "Длительность исчезновения",
     "outro_fadeout_hint": "Плавное исчезновение заключительного слайда в чёрный",
-
     "outro_video_group": "Видео-аутро",
     "outro_video_folder_label": "Место сохранения",
     "outro_video_folder_hint": "Папка для видео-аутро (имя файла: outro.mp4). Воспроизводит только изображения слайдера друг за другом.",
@@ -160,20 +143,16 @@
     "outro_video_loops_hint": "Сколько раз повторяется последовательность изображений (напр. 5 изображений × 2 = 10 изображений)",
     "outro_video_music": "Также использовать музыку интро в аутро",
     "outro_video_music_hint": "Необязательно — использует тот же MP3, что и интро",
-
     "language_group": "Sprache / Language / Язык",
     "language_label": "Язык",
     "language_hint": "Выбранный язык применяется немедленно",
-
     "sounds_group": "Звуки",
     "sounds_label": "Звуки включены",
     "sounds_hint": "Воспроизводит звук при завершении видео или ошибке",
-
     "save_btn": "💾  Сохранить",
     "save_btn_ok": "✓  Сохранено",
     "reset_btn": "↺  Сбросить"
   },
-
   "bottom": {
     "status_ready": "Готово",
     "create_btn": "🎬  Создать видео",
@@ -187,7 +166,6 @@
     "outro_rendering": "🖼 Заключительный слайд …",
     "done_final": "✅ Готово!"
   },
-
   "dialogs": {
     "error_no_output_title": "Ошибка",
     "error_no_output_msg": "Пожалуйста, выберите папку для сохранения!",
@@ -212,20 +190,16 @@
     "icon_error": "❌",
     "icon_question": "↺"
   },
-
   "file_row": {
     "nothing_selected": "Ничего не выбрано",
     "remove_tooltip": "Удалить выбранное"
   },
-
   "font_picker": {
     "title": "🔤  Шрифт"
   },
-
   "splash": {
     "loading": "Загрузка …"
   },
-
   "stepper": {
     "minutes": "{} мин",
     "seconds": "{} с",
@@ -234,7 +208,6 @@
     "percent": "{} %",
     "times": "{}×"
   },
-
   "output_filename": "Intro - {0}",
   "output_filename_outro": "Outro - {0}"
 }

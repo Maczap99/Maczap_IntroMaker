@@ -657,6 +657,14 @@ class IntroMaker(QMainWindow):
         self._music_loop_chk.setChecked(True); self._music_fadeout_chk.setChecked(True)
         self._music_in_outro_chk.setChecked(False)
         self._music_fade_step    = Stepper(1, 30, 4, step=1, fmt=tr("stepper.seconds"))
+        # Crossfade beim Loopen der Musik: ueberlappt Ende und Anfang des
+        # Tracks, damit beim Wiederholen keine kurze Stille/kein Knacks
+        # entsteht. 0 = klassisches Hart-Loopen (alte Logik).
+        self._music_crossfade_step = Stepper(0, 10, 3.0, step=0.5, fmt=tr("stepper.seconds"))
+        _set_dim(self._music_crossfade_step, self._music_loop_chk.isChecked())
+        self._music_loop_chk.stateChanged.connect(
+            lambda s: _set_dim(self._music_crossfade_step, s == 2)
+        )
 
         self._intro_fade_chk  = StyledCheckBox(tr("settings.intro_fade"))
         self._intro_fade_chk.stateChanged.connect(self._toggle_intro_fade)
@@ -921,6 +929,15 @@ class IntroMaker(QMainWindow):
         cl7.addWidget(self._out_row)
         layout.addWidget(c7)
 
+        # Outro-Video: nur die Checkbox auf der Hauptseite. Alle weiteren
+        # Optionen liegen unter Einstellungen -> Outro-Video.
+        c_outro = make_card(); cl_outro = QVBoxLayout(c_outro)
+        cl_outro.setContentsMargins(16,10,16,14); cl_outro.setSpacing(6)
+        cl_outro.addWidget(sec_lbl(tr("simple_left.outro_video_title")))
+        cl_outro.addWidget(hint_lbl(tr("simple_left.outro_video_hint")))
+        cl_outro.addWidget(self._outro_video_chk)
+        layout.addWidget(c_outro)
+
         c_prev = make_card()
         cl_prev = QVBoxLayout(c_prev)
         cl_prev.setContentsMargins(16, 10, 16, 14); cl_prev.setSpacing(8)
@@ -991,15 +1008,6 @@ class IntroMaker(QMainWindow):
         sol.addWidget(self._sub_color_btn); sol.addStretch()
         cl8.addWidget(so)
         layout.addWidget(c8)
-
-        # Outro-Video: nur die Checkbox auf der Hauptseite. Alle weiteren
-        # Optionen liegen unter Einstellungen -> Outro-Video.
-        c_outro = make_card(); cl_outro = QVBoxLayout(c_outro)
-        cl_outro.setContentsMargins(16,10,16,14); cl_outro.setSpacing(6)
-        cl_outro.addWidget(sec_lbl(tr("simple_left.outro_video_title")))
-        cl_outro.addWidget(hint_lbl(tr("simple_left.outro_video_hint")))
-        cl_outro.addWidget(self._outro_video_chk)
-        layout.addWidget(c_outro)
 
     # -- Advanced settings page -------------------------------------------------
     def _make_advanced_page(self):
@@ -1102,6 +1110,9 @@ class IntroMaker(QMainWindow):
             self._settings_row(tr("settings.music_fade_dur_label"),
                                self._music_fade_step,
                                tr("settings.music_fade_dur_hint")),
+            self._settings_row(tr("settings.music_crossfade_label"),
+                               self._music_crossfade_step,
+                               tr("settings.music_crossfade_hint")),
         ]))
 
         layout.addWidget(self._settings_block("🌑", tr("settings.fade_group"), [
@@ -1360,6 +1371,7 @@ class IntroMaker(QMainWindow):
             "music_loop":         self._music_loop_chk.isChecked(),
             "music_fadeout":      self._music_fadeout_chk.isChecked(),
             "music_fade_dur":     self._music_fade_step.value(),
+            "music_crossfade":    self._music_crossfade_step.value(),
             "music_in_outro":     self._music_in_outro_chk.isChecked(),
             "intro_fade_enabled": self._intro_fade_chk.isChecked(),
             "intro_fade_dur":     self._intro_fade_step.value(),
@@ -1417,6 +1429,8 @@ class IntroMaker(QMainWindow):
         self._music_loop_chk.setChecked(s.get("music_loop", True))
         self._music_fadeout_chk.setChecked(s.get("music_fadeout", True))
         self._music_fade_step.set_value(s.get("music_fade_dur", 4))
+        self._music_crossfade_step.set_value(s.get("music_crossfade", 3.0))
+        _set_dim(self._music_crossfade_step, s.get("music_loop", True))
         self._music_in_outro_chk.setChecked(s.get("music_in_outro", False))
         self._intro_fade_chk.setChecked(s.get("intro_fade_enabled", False))
         self._intro_fade_step.set_value(s.get("intro_fade_dur", 3))
@@ -2019,7 +2033,7 @@ class IntroMaker(QMainWindow):
                 return
             date_str   = datetime.now().strftime("%d.%m.%Y")
             outro_name = tr("output_filename_outro", date_str)
-            outro_video_path = os.path.join(self._outro_video_folder, "outro.mp4")
+            outro_video_path = os.path.join(self._outro_video_folder, f"{outro_name}.mp4")
         self._last_outro_path = outro_video_path
 
         sub_text = self._sub_edit.toPlainText().strip() if self._sub_chk.isChecked() else ""
@@ -2037,6 +2051,7 @@ class IntroMaker(QMainWindow):
             "music_loop":         self._music_loop_chk.isChecked(),
             "music_fadeout":      self._music_fadeout_chk.isChecked(),
             "music_fade_dur":     self._music_fade_step.value(),
+            "music_crossfade":    self._music_crossfade_step.value(),
             "music_in_outro":     self._music_in_outro_chk.isChecked(),
             "intro_fade_enabled": self._intro_fade_chk.isChecked(),
             "intro_fade_dur":     self._intro_fade_step.value(),

@@ -1,5 +1,5 @@
 # video_generator.py
-import cv2, numpy as np, os, traceback, subprocess, shutil, sys
+import cv2, numpy as np, os, traceback, subprocess, shutil, sys, tempfile, re
 from PIL import Image, ImageDraw, ImageFont
 
 _STARTUPINFO = None
@@ -19,6 +19,26 @@ def _get_ffmpeg() -> str | None:
     if os.path.isfile(bundled):
         return os.path.normpath(bundled)
     return shutil.which("ffmpeg")
+
+
+def _get_audio_duration(ffmpeg_path: str, path: str) -> float:
+    """Return the duration of *path* in seconds, parsed from FFmpeg's stderr.
+
+    Returns 0.0 if the duration cannot be determined (e.g. unknown format)."""
+    try:
+        proc = subprocess.run(
+            [ffmpeg_path, "-i", path, "-f", "null", "-"],
+            stdout=subprocess.DEVNULL, stderr=subprocess.PIPE,
+            startupinfo=_STARTUPINFO
+        )
+        err = proc.stderr.decode(errors="replace")
+        m = re.search(r"Duration:\s*(\d+):(\d+):(\d+(?:\.\d+)?)", err)
+        if not m:
+            return 0.0
+        h, mnt, s = m.groups()
+        return int(h) * 3600 + int(mnt) * 60 + float(s)
+    except Exception:
+        return 0.0
 
 
 def _run_ffmpeg(cmd: list):
@@ -118,33 +138,49 @@ class VideoGenerator:
                 "-crf", "18", "-pix_fmt", "yuv420p",
                 tmp_video
             ]
+            # stderr geht in eine Log-Datei statt in eine Pipe. Eine nie
+            # ausgelesene stderr-Pipe kann bei langen Renders volllaufen und
+            # FFmpeg blockieren (Haenger). Die Datei laesst sich ausserdem nach
+            # einem fehlerhaften Render zur Fehlersuche oeffnen.
+            log_path = os.path.join(tempfile.gettempdir(),
+                                    "IntroMaker_ffmpeg_video.log")
+            ff_log = open(log_path, "w+b")
             ff_proc = subprocess.Popen(
                 ff_cmd,
                 stdin=subprocess.PIPE,
                 stdout=subprocess.DEVNULL,
-                stderr=subprocess.PIPE,
+                stderr=ff_log,
                 startupinfo=_STARTUPINFO
             )
 
+            def _read_log():
+                try:
+                    ff_log.flush(); ff_log.seek(0)
+                    return ff_log.read().decode(errors="replace")
+                except Exception:
+                    return ""
+
             def write_frame(f):
                 if ff_proc.poll() is not None:
-                    err = ff_proc.stderr.read().decode(errors="replace")
                     raise RuntimeError(
-                        f"FFmpeg exited (code {ff_proc.returncode}):\n{err}")
+                        f"FFmpeg exited (code {ff_proc.returncode}):\n{_read_log()}")
                 try:
                     ff_proc.stdin.write(f.tobytes())
                 except (BrokenPipeError, OSError):
-                    err = ff_proc.stderr.read().decode(errors="replace")
                     raise RuntimeError(
-                        f"FFmpeg pipe error (code {ff_proc.returncode}):\n{err}")
+                        f"FFmpeg pipe error (code {ff_proc.returncode}):\n{_read_log()}")
 
             def close():
                 ff_proc.stdin.close()
-                ff_proc.stderr.close()
                 ff_proc.wait()
+                err = _read_log()
+                try:
+                    ff_log.close()
+                except Exception:
+                    pass
                 if ff_proc.returncode not in (0, None):
                     raise RuntimeError(
-                        f"FFmpeg closed with code {ff_proc.returncode}")
+                        f"FFmpeg closed with code {ff_proc.returncode}:\n{err}")
 
             return ff_proc, write_frame, close
 
@@ -926,20 +962,74 @@ class VideoGenerator:
         """Mix background music into the video.
 
         Used for both the intro and the outro video; the outro reuses the same
-        music settings (loop / fade-out / fade duration) as the intro."""
+        music settings (loop / fade-out / fade duration / crossfade) as the
+        intro."""
         music      = cfg["music_path"]
         loop       = cfg["music_loop"]
         fadeout    = cfg["music_fadeout"]
         fade_dur   = cfg["music_fade_dur"]
+        crossfade  = float(cfg.get("music_crossfade", 0) or 0)
         fade_start = max(0, audio_sec - fade_dur)
 
-        af_parts = []
+        loop_unit_path = None
+        music_input    = music
+        # Beim harten Loopen ("-stream_loop -1") wird die Datei roh
+        # aneinandergehaengt. Bei MP3s mit Encoder-/Decoder-Padding entsteht
+        # an dieser Naht oft eine kurze Stille bzw. ein Knacks. Mit Crossfade
+        # > 0 wird daher VORAB eine einzelne, in sich nahtlos schleifbare
+        # "Loop-Einheit" als unkomprimiertes WAV erzeugt: Anfang und Ende des
+        # Tracks werden ueberblendet, das Ergebnis wird anschliessend ganz
+        # normal per -stream_loop wiederholt -- ohne hoerbare Naht und ohne
+        # zusaetzliche MP3-Re-Encodes (kein Qualitaetsverlust).
+        if loop and crossfade > 0:
+            duration = _get_audio_duration(ffmpeg_path, music)
+            if duration > crossfade * 2:
+                unit_dur = duration - crossfade
+                loop_unit_path = os.path.join(
+                    tempfile.gettempdir(), "IntroMaker_loop_unit.wav")
+                build_filter = (
+                    f"[0:a]aresample=44100,asplit=2[a][b];"
+                    f"[a]atrim=0:{unit_dur:.3f},asetpts=PTS-STARTPTS[main];"
+                    f"[b]atrim={unit_dur:.3f}:{duration:.3f},asetpts=PTS-STARTPTS[tail];"
+                    f"[tail][main]acrossfade=d={crossfade}:c1=tri:c2=tri[out]"
+                )
+                build_cmd = [
+                    ffmpeg_path, "-y",
+                    "-i", music,
+                    "-filter_complex", build_filter,
+                    "-map", "[out]",
+                    "-ac", "2", "-ar", "44100",
+                    "-c:a", "pcm_s16le",
+                    loop_unit_path,
+                ]
+                build_log = os.path.join(tempfile.gettempdir(),
+                                         "IntroMaker_ffmpeg_loopunit.log")
+                with open(build_log, "w", encoding="utf-8", errors="replace") as logf:
+                    result = subprocess.run(
+                        build_cmd,
+                        stdout=subprocess.DEVNULL, stderr=logf,
+                        startupinfo=_STARTUPINFO
+                    )
+                if result.returncode == 0 and os.path.isfile(loop_unit_path):
+                    music_input = loop_unit_path
+                else:
+                    # Bei Fehlern (z. B. ungewoehnliches Audio-Format) auf das
+                    # bisherige harte Looping zurueckfallen statt den
+                    # gesamten Render abzubrechen.
+                    loop_unit_path = None
+            # Falls der Track kuerzer als 2x Crossfade ist, ist eine
+            # Crossfade-Schleife nicht sinnvoll -> normales Hart-Loopen.
+
+        # Quelle zuerst sauber auf eine feste Samplerate bringen. Quelldateien
+        # mit z. B. 48000 oder 22050 Hz wuerden sonst implizit (und teils
+        # fehlerhaft) umgerechnet -> typische Ursache fuer Rauschen/Knistern.
+        af_parts = ["aresample=44100"]
         if fadeout:
             af_parts.append(f"afade=t=out:st={fade_start:.2f}:d={fade_dur}")
         af_parts.append(f"atrim=0:{audio_sec}")
         if video_sec > audio_sec:
             af_parts.append(f"apad=whole_dur={video_sec}")
-        af_str = ",".join(af_parts) if af_parts else "anull"
+        af_str = ",".join(af_parts)
 
         loop_flag = ["-stream_loop", "-1"] if loop else []
         cmd = [
@@ -947,20 +1037,33 @@ class VideoGenerator:
             "-i", tmp_video,
             *loop_flag,
             "-vn",
-            "-i", music,
+            "-i", music_input,
             "-filter_complex",
                 f"[1:a]asetpts=PTS-STARTPTS,{af_str}[aout]",
             "-map", "0:v", "-map", "[aout]",
             "-c:v", "copy",
             "-c:a", "aac",
+            "-b:a", "192k",
             "-ac", "2",
             "-ar", "44100",
             "-shortest", out_path
         ]
 
-        with open(os.devnull, "w") as devnull:
-            subprocess.run(
-                cmd, check=True,
-                stdout=subprocess.DEVNULL, stderr=devnull,
-                startupinfo=_STARTUPINFO
-            )
+        # stderr des Mux-Schritts in eine Log-Datei schreiben (statt verwerfen).
+        # Bei intermittierendem Rauschen stehen hier FFmpegs Warnungen drin,
+        # z. B. "Non-monotonous DTS" an Loop-Grenzen -> direkt nachpruefbar.
+        log_path = os.path.join(tempfile.gettempdir(),
+                                "IntroMaker_ffmpeg_audio.log")
+        try:
+            with open(log_path, "w", encoding="utf-8", errors="replace") as logf:
+                subprocess.run(
+                    cmd, check=True,
+                    stdout=subprocess.DEVNULL, stderr=logf,
+                    startupinfo=_STARTUPINFO
+                )
+        finally:
+            if loop_unit_path and os.path.isfile(loop_unit_path):
+                try:
+                    os.remove(loop_unit_path)
+                except OSError:
+                    pass
