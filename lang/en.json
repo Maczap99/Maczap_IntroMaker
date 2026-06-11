@@ -14,7 +14,7 @@
     "timer_unit": "{} min",
 
     "bg_title": "🎨  Background",
-    "bg_hint": "Video takes priority over image — both optional (default: black)",
+    "bg_hint": "Video takes priority over image — both optional (default: white)",
     "bg_pick_video": "🎬  Choose video",
     "bg_pick_image": "🖼  Choose image",
     "bg_color_title": "🎨  Background color",
@@ -28,6 +28,10 @@
     "output_hint": "Filename: Intro - DD.MM.YYYY",
     "output_pick": "📁  Choose location",
     "output_title_dialog": "💾  Choose location",
+
+    "outro_video_title": "🎞  Outro Video",
+    "outro_video_enable": "Create outro video",
+    "outro_video_hint": "Additionally creates an MP4 with only the slider images. Settings under ⚙️ → Outro Video.",
 
     "preview_title": "🔍  Preview",
     "preview_hint": "Shows background + font + color at 04:32",
@@ -45,11 +49,10 @@
     "slider_clear": "Clear list",
     "slider_empty": "  No images selected",
 
-    "fill_color_label": "Fill color (bars):",
-    "fill_color_title": "🎨  Slider image fill color",
-
     "font_color_title": "🎨  Timer Font Color",
     "font_color_label": "Color:",
+
+    "fill_color_title": "🎨  Fill color (bars)",
 
     "subtitle_title": "💬  Subtitle",
     "subtitle_hint": "Displayed below the timer",
@@ -87,16 +90,15 @@
     "slider_until_label": "Slider ends at",
     "slider_until_hint": "No more images from X remaining minutes",
     "img_dur_label": "Duration per image",
-    "img_dur_hint": "How long each image is displayed",
-    "slider_loop": "Repeat images until slider end",
-    "slider_loop_hint": "Loop on: image → timer → image → ...  |  Loop off: all images once",
-    "slider_fill_color_label": "Fill color (bars)",
-    "slider_fill_color_hint": "Color of the bars for non-16:9 images (e.g. portrait)",
-
+    "img_dur_hint": "How long each image is displayed (also applies to the outro video)",
     "timer_between_enable": "Show timer between images",
     "timer_between_enable_hint": "On: countdown pause between slides  |  Off: images crossfade directly",
     "timer_between_label": "Timer duration",
     "timer_between_hint": "Duration of the countdown pause between two images",
+    "slider_loop": "Repeat images until slider end",
+    "slider_loop_hint": "Loop on: image → timer → image → ...  |  Loop off: all images once",
+    "slider_fill_color_label": "Fill color (bars)",
+    "slider_fill_color_hint": "Color of the bars for non-16:9 images (e.g. portrait)",
     "slider_timer_overlay": "Show timer on slider images",
     "slider_timer_overlay_hint": "Timer stays visible during images — animates to a corner and back",
     "slider_timer_pos_label": "Timer corner",
@@ -144,6 +146,21 @@
     "outro_fadeout_label": "Fade-out duration",
     "outro_fadeout_hint": "Fade out outro slide to black",
 
+    "outro_video_group": "Outro Video",
+    "outro_video_folder_label": "Save location",
+    "outro_video_folder_hint": "Folder for the outro video (filename: outro.mp4). Plays only the slider images one after another.",
+    "outro_video_pick_folder": "📁  Choose location",
+    "outro_video_fadein_label": "Fade-in duration",
+    "outro_video_fadein_hint": "Outro fades in from black at the start",
+    "outro_video_fadeout_label": "Fade-out duration",
+    "outro_video_fadeout_hint": "Outro fades out to black at the end",
+    "outro_video_crossfade_label": "Crossfade",
+    "outro_video_crossfade_hint": "Crossfade duration between two images",
+    "outro_video_loops_label": "Number of loops",
+    "outro_video_loops_hint": "How many times the image sequence repeats (e.g. 5 images × 2 = 10 images)",
+    "outro_video_music": "Also use intro music in outro",
+    "outro_video_music_hint": "Optional — uses the same MP3 as the intro",
+
     "language_group": "Sprache / Language",
     "language_label": "Language",
     "language_hint": "The selected language is applied immediately",
@@ -179,8 +196,13 @@
     "error_render_title": "Render error",
     "error_pdf_title": "PDF Error",
     "error_pdf_msg": "PyMuPDF (fitz) is not installed.\n\nPlease install it with:\n  pip install PyMuPDF",
+    "error_outro_no_imgs_title": "No images",
+    "error_outro_no_imgs_msg": "The outro video requires slider images.\n\nPlease add images first.",
+    "error_outro_no_folder_title": "No save location",
+    "error_outro_no_folder_msg": "Please choose a save location for the outro under Settings → Outro Video!",
     "done_title": "🎉 Done!",
     "done_msg": "Video saved successfully:\n\n{0}",
+    "done_msg_both": "Videos saved successfully:\n\nIntro:\n{0}\n\nOutro:\n{1}",
     "reset_title": "Reset settings",
     "reset_msg": "Reset all settings to defaults?\n\nThis cannot be undone.",
     "reset_confirm": "Yes, reset",
@@ -209,8 +231,10 @@
     "seconds": "{} s",
     "points": "{} pt",
     "lines": "{} lines",
-    "percent": "{} %"
+    "percent": "{} %",
+    "times": "{}×"
   },
 
-  "output_filename": "Intro - {0}"
+  "output_filename": "Intro - {0}",
+  "output_filename_outro": "Outro - {0}"
 }
