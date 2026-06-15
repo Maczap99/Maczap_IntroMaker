@@ -102,7 +102,7 @@ def make_style(dark: bool) -> str:
         QScrollArea { background: transparent; border: none; }
         QScrollArea > QWidget > QWidget { background: transparent; }
         QWidget { color: #0F172A; }
-        QFrame#card { background: #FFFFFF; border-radius: 12px; border: 1px solid #E2E8F0; }
+        QFrame#card { background: #FFFFFF; border-radius: 12px; border: 2px solid #B4BECC; }
         QLabel#sectionLabel { color: #2563EB; font-size: 13px; font-weight: bold; }
         QLabel#settingsLabel { color: #0F172A; }
         QLabel#hint  { color: #64748B; font-size: 11px; }
@@ -173,7 +173,7 @@ def make_style(dark: bool) -> str:
         QLabel#pathLabel {
             background: #F1F5F9; color: #64748B; border-radius: 6px;
             border: 1px solid #E2E8F0; padding: 0 8px; }
-        FontPickerWidget { background: #FFFFFF; border-radius: 12px; border: 1px solid #E2E8F0; }
+        FontPickerWidget { background: #FFFFFF; border-radius: 12px; border: 2px solid #B4BECC; }
         QComboBox {
             background: #F8FAFC; color: #0F172A; border-radius: 8px;
             border: 1px solid #CBD5E1; padding: 5px 10px; font-size: 11px; }

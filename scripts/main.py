@@ -1,5 +1,5 @@
 # main.py
-import sys, os, time, tempfile
+import sys, os, time, tempfile, re
 from datetime import datetime
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
@@ -8,9 +8,15 @@ from PyQt5.QtWidgets import (
     QColorDialog, QListWidget, QListWidgetItem, QAbstractItemView,
     QComboBox
 )
-from PyQt5.QtCore import Qt, QThread, pyqtSignal, QObject, QTimer, QEvent
-from PyQt5.QtGui  import QPixmap, QFont, QColor, QIcon, QPalette, QPainter
+from PyQt5.QtCore import Qt, QThread, pyqtSignal, QObject, QTimer, QEvent, QSize
+from PyQt5.QtGui  import QPixmap, QFont, QColor, QIcon, QPalette, QPainter, QImage
 from PyQt5.QtWidgets import QGraphicsOpacityEffect
+
+try:
+    from PyQt5.QtSvg import QSvgRenderer
+    _SVG_OK = True
+except Exception:
+    _SVG_OK = False
 
 from splash          import SplashScreen
 from font_picker     import FontPickerWidget
@@ -469,9 +475,133 @@ def _set_dim(widget, enabled: bool):
 def make_card():
     f = QFrame(); f.setObjectName("card"); return f
 
+
+# -- Header-Icons (SVG) ---------------------------------------------------------
+# Die Block-Ueberschriften verwendeten bisher Emojis (🎨, 🎵 …). Als farbige
+# Bitmap-Glyphen wirkten die auf hellem Hintergrund leicht pixelig. Stattdessen
+# rendern wir scharfe SVG-Vektor-Icons (einfarbig im Ueberschriften-Blau, sieht
+# in Light- und Dark-Mode gut aus). Faellt zurueck auf das Emoji, falls QtSvg
+# oder eine Datei fehlt.
+_HEADER_EMOJI_ICON = {
+    "⏱": "timer",  "🎨": "palette", "🎵": "music",    "💾": "save",
+    "🎞": "film",   "🔍": "search",  "🖼": "image",    "💬": "subtitle",
+    "🌑": "fade",   "🔔": "bell",    "🌐": "globe",
+}
+_ICON_CACHE = {}
+
+def _render_header_icon(name, size=18):
+    """Render an SVG header icon to a crisp, HiDPI-aware QPixmap (cached)."""
+    if not name:
+        return None
+    key = (name, size)
+    if key in _ICON_CACHE:
+        return _ICON_CACHE[key]
+    path = resource_path(f"assets/icons/{name}.svg")
+    if not (_SVG_OK and os.path.isfile(path)):
+        return None
+    try:
+        renderer = QSvgRenderer(path)
+        dpr = 2  # bei 2x rendern -> auch auf HiDPI-Displays gestochen scharf
+        img = QImage(size * dpr, size * dpr, QImage.Format_ARGB32)
+        img.fill(Qt.transparent)
+        p = QPainter(img)
+        renderer.render(p)
+        p.end()
+        pix = QPixmap.fromImage(img)
+        pix.setDevicePixelRatio(dpr)
+        _ICON_CACHE[key] = pix
+        return pix
+    except Exception:
+        return None
+
+def _split_header(text):
+    """Split a leading emoji from a header string.
+    Returns (icon_name_or_None, clean_text)."""
+    t = text.lstrip()
+    for emoji, name in _HEADER_EMOJI_ICON.items():
+        if t.startswith(emoji):
+            return name, t[len(emoji):].strip()
+    return None, text.strip()
+
+
+# -- Button-Icons (einfarbig eingefaerbt + Hover-Umschaltung) -------------------
+def _render_svg_icon(name, color, size=16):
+    """Render a monochrome SVG icon tinted to *color* as a HiDPI QPixmap.
+
+    Buttons change their text colour on hover (to white), so each button icon
+    is rendered in two colours and swapped on hover via _ButtonIconHover."""
+    if not name:
+        return None
+    path = resource_path(f"assets/icons/{name}.svg")
+    if not (_SVG_OK and os.path.isfile(path)):
+        return None
+    try:
+        renderer = QSvgRenderer(path)
+        dpr  = 2
+        base = QImage(size * dpr, size * dpr, QImage.Format_ARGB32)
+        base.fill(Qt.transparent)
+        p = QPainter(base); renderer.render(p); p.end()
+        # Einfaerben: Alpha des Icons beibehalten, Farbe auf *color* setzen.
+        tinted = QImage(base.size(), QImage.Format_ARGB32)
+        tinted.fill(Qt.transparent)
+        tp = QPainter(tinted)
+        tp.drawImage(0, 0, base)
+        tp.setCompositionMode(QPainter.CompositionMode_SourceIn)
+        tp.fillRect(tinted.rect(), QColor(color))
+        tp.end()
+        pix = QPixmap.fromImage(tinted)
+        pix.setDevicePixelRatio(dpr)
+        return pix
+    except Exception:
+        return None
+
+
+class _ButtonIconHover(QObject):
+    """Swaps a button's icon between a normal and a hover pixmap."""
+
+    def __init__(self, btn, normal_pix, hover_pix):
+        super().__init__(btn)
+        self._btn = btn
+        self._normal = normal_pix
+        self._hover = hover_pix
+        self._forced = False
+        btn.setIcon(QIcon(normal_pix))
+        btn.installEventFilter(self)
+
+    def set_pixmaps(self, normal_pix, hover_pix):
+        self._normal = normal_pix
+        self._hover = hover_pix
+        self._btn.setIcon(QIcon(self._hover if self._forced else self._normal))
+
+    def force_hover(self, on):
+        """Pin the hover (white) icon, e.g. while the button has a solid bg."""
+        self._forced = on
+        self._btn.setIcon(QIcon(self._hover if on else self._normal))
+
+    def eventFilter(self, obj, ev):
+        if not self._forced:
+            if ev.type() == QEvent.Enter:
+                self._btn.setIcon(QIcon(self._hover))
+            elif ev.type() == QEvent.Leave:
+                self._btn.setIcon(QIcon(self._normal))
+        return False
+
+
 def sec_lbl(t):
-    l = QLabel(t); l.setObjectName("sectionLabel")
-    l.setFont(QFont("Segoe UI", 11, QFont.Bold)); return l
+    name, label_text = _split_header(t)
+    pix = _render_header_icon(name, 18)
+    if pix is None:
+        # Fallback: wie bisher als reiner Text inkl. Emoji
+        l = QLabel(t); l.setObjectName("sectionLabel")
+        l.setFont(QFont("Segoe UI", 11, QFont.Bold)); return l
+    w = QWidget()
+    lay = QHBoxLayout(w); lay.setContentsMargins(0, 0, 0, 0); lay.setSpacing(8)
+    icon = QLabel(); icon.setPixmap(pix)
+    icon.setFixedSize(18, 18)
+    text = QLabel(label_text); text.setObjectName("sectionLabel")
+    text.setFont(QFont("Segoe UI", 11, QFont.Bold))
+    lay.addWidget(icon); lay.addWidget(text); lay.addStretch()
+    return w
 
 def hint_lbl(t):
     l = QLabel(t); l.setObjectName("hint")
@@ -880,11 +1010,39 @@ class IntroMaker(QMainWindow):
             pix = QPixmap(path).scaledToHeight(52, Qt.SmoothTransformation)
             self._header_logo_lbl.setPixmap(pix)
 
+    def _apply_btn_icon(self, btn, hover_attr, icon_name, icon_text,
+                        fallback_text, normal_color=None, size=16):
+        """Put a tinted SVG icon on *btn* with hover (white) swap.
+
+        Falls back to *fallback_text* (the emoji label) if the SVG is missing."""
+        dark = (self._theme == "dark")
+        if normal_color is None:
+            normal_color = "#F1F5F9" if dark else "#0F172A"
+        normal = _render_svg_icon(icon_name, normal_color, size)
+        if normal is None:
+            btn.setIcon(QIcon())
+            btn.setText(fallback_text)
+            return
+        hover = _render_svg_icon(icon_name, "#FFFFFF", size)
+        btn.setText(icon_text)
+        btn.setIconSize(QSize(size, size))
+        existing = getattr(self, hover_attr, None)
+        if existing is None:
+            setattr(self, hover_attr, _ButtonIconHover(btn, normal, hover))
+        else:
+            existing.set_pixmaps(normal, hover)
+
     def _update_mode_btn(self):
         if self._current_page == self.PAGE_SIMPLE:
-            self._mode_btn.setText(tr("header.settings"))
+            self._apply_btn_icon(
+                self._mode_btn, "_mode_icon_hover", "settings",
+                re.sub(r"^\W+", "", tr("header.settings")),
+                tr("header.settings"))
         else:
-            self._mode_btn.setText(tr("header.back"))
+            self._apply_btn_icon(
+                self._mode_btn, "_mode_icon_hover", "home",
+                re.sub(r"^\W+", "", tr("header.back")),
+                tr("header.back"))
 
     def _toggle_mode(self):
         self._current_page = (
@@ -928,15 +1086,6 @@ class IntroMaker(QMainWindow):
         cl7.addWidget(hint_lbl(tr("simple_left.output_hint")))
         cl7.addWidget(self._out_row)
         layout.addWidget(c7)
-
-        # Outro-Video: nur die Checkbox auf der Hauptseite. Alle weiteren
-        # Optionen liegen unter Einstellungen -> Outro-Video.
-        c_outro = make_card(); cl_outro = QVBoxLayout(c_outro)
-        cl_outro.setContentsMargins(16,10,16,14); cl_outro.setSpacing(6)
-        cl_outro.addWidget(sec_lbl(tr("simple_left.outro_video_title")))
-        cl_outro.addWidget(hint_lbl(tr("simple_left.outro_video_hint")))
-        cl_outro.addWidget(self._outro_video_chk)
-        layout.addWidget(c_outro)
 
         c_prev = make_card()
         cl_prev = QVBoxLayout(c_prev)
@@ -1009,6 +1158,14 @@ class IntroMaker(QMainWindow):
         cl8.addWidget(so)
         layout.addWidget(c8)
 
+        # Outro-Video: nur die Checkbox. Optionen unter Einstellungen -> Outro-Video.
+        c_outro = make_card(); cl_outro = QVBoxLayout(c_outro)
+        cl_outro.setContentsMargins(16,10,16,14); cl_outro.setSpacing(6)
+        cl_outro.addWidget(sec_lbl(tr("simple_left.outro_video_title")))
+        cl_outro.addWidget(hint_lbl(tr("simple_left.outro_video_hint")))
+        cl_outro.addWidget(self._outro_video_chk)
+        layout.addWidget(c_outro)
+
     # -- Advanced settings page -------------------------------------------------
     def _make_advanced_page(self):
         page = QWidget(); page.setObjectName("root")
@@ -1038,11 +1195,20 @@ class IntroMaker(QMainWindow):
         return page
 
     def _settings_group_header(self, icon, title):
-        lbl = QLabel(f"  {icon}  {title}")
-        lbl.setFont(QFont("Segoe UI", 10, QFont.Bold))
-        lbl.setObjectName("sectionLabel")
-        lbl.setContentsMargins(4, 18, 0, 4)
-        return lbl
+        pix = _render_header_icon(_HEADER_EMOJI_ICON.get(icon.strip()), 18)
+        if pix is None:
+            lbl = QLabel(f"  {icon}  {title}")
+            lbl.setFont(QFont("Segoe UI", 10, QFont.Bold))
+            lbl.setObjectName("sectionLabel")
+            lbl.setContentsMargins(4, 18, 0, 4)
+            return lbl
+        w = QWidget()
+        lay = QHBoxLayout(w); lay.setContentsMargins(4, 18, 0, 4); lay.setSpacing(8)
+        ic = QLabel(); ic.setPixmap(pix); ic.setFixedSize(18, 18)
+        txt = QLabel(title); txt.setObjectName("sectionLabel")
+        txt.setFont(QFont("Segoe UI", 10, QFont.Bold))
+        lay.addWidget(ic); lay.addWidget(txt); lay.addStretch()
+        return w
 
     def _settings_row(self, label, widget, hint=""):
         row = QWidget(); row.setObjectName("card")
@@ -1590,9 +1756,23 @@ class IntroMaker(QMainWindow):
         data = self._collect_settings()
         cfg_save(data); self._settings = data
 
+    def _refresh_save_btn_icon(self):
+        if not hasattr(self, "_save_btn"):
+            return
+        green = "#22C55E" if self._theme == "dark" else "#16A34A"
+        self._apply_btn_icon(
+            self._save_btn, "_save_icon_hover", "save",
+            re.sub(r"^\W+", "", tr("settings.save_btn")),
+            tr("settings.save_btn"), normal_color=green)
+
     def _manual_save(self):
         self._save_settings()
-        self._save_btn.setText(tr("settings.save_btn_ok"))
+        hov = getattr(self, "_save_icon_hover", None)
+        if hov is not None:
+            self._save_btn.setText(re.sub(r"^\W+", "", tr("settings.save_btn_ok")))
+            hov.force_hover(True)   # weisses Icon auf gruenem Hintergrund
+        else:
+            self._save_btn.setText(tr("settings.save_btn_ok"))
         self._save_btn.setStyleSheet(
             "background:#16A34A; color:white; border-radius:10px;"
             "font-size:11px; font-weight:bold; padding:8px 14px; border:none;")
@@ -1600,7 +1780,12 @@ class IntroMaker(QMainWindow):
         QTimer.singleShot(1800, self._reset_save_btn)
 
     def _reset_save_btn(self):
-        self._save_btn.setText(tr("settings.save_btn"))
+        hov = getattr(self, "_save_icon_hover", None)
+        if hov is not None:
+            self._save_btn.setText(re.sub(r"^\W+", "", tr("settings.save_btn")))
+            hov.force_hover(False)
+        else:
+            self._save_btn.setText(tr("settings.save_btn"))
         self._save_btn.setStyleSheet("")
 
     # -- Preview ----------------------------------------------------------------
@@ -1653,8 +1838,16 @@ class IntroMaker(QMainWindow):
     def _apply_theme(self, theme):
         self._theme = theme
         QApplication.instance().setStyleSheet(make_style(theme == "dark"))
-        self._theme_btn.setText(tr("header.theme_dark") if theme == "light"
-                                else tr("header.theme_light"))
+        # Theme-Umschalter: Mond (im Light-Mode -> wechselt zu Dark) bzw.
+        # Sonne (im Dark-Mode -> wechselt zu Light) als scharfes SVG.
+        if theme == "light":
+            self._apply_btn_icon(self._theme_btn, "_theme_icon_hover",
+                                 "moon", "", tr("header.theme_dark"))
+        else:
+            self._apply_btn_icon(self._theme_btn, "_theme_icon_hover",
+                                 "sun", "", tr("header.theme_light"))
+        self._update_mode_btn()  # Mode-Button-Icon an neue Textfarbe anpassen
+        self._refresh_save_btn_icon()
         self._update_header_logo()
         accent = "#3B82F6" if theme == "dark" else "#2563EB"
         self._pct_lbl.setStyleSheet(f"color: {accent};")
@@ -2031,9 +2224,7 @@ class IntroMaker(QMainWindow):
                                    tr("dialogs.error_outro_no_folder_msg"),
                                    dark=(self._theme == "dark"))
                 return
-            date_str   = datetime.now().strftime("%d.%m.%Y")
-            outro_name = tr("output_filename_outro", date_str)
-            outro_video_path = os.path.join(self._outro_video_folder, f"{outro_name}.mp4")
+            outro_video_path = os.path.join(self._outro_video_folder, "outro.mp4")
         self._last_outro_path = outro_video_path
 
         sub_text = self._sub_edit.toPlainText().strip() if self._sub_chk.isChecked() else ""
@@ -2169,6 +2360,8 @@ class IntroMaker(QMainWindow):
 
 # -- Entry point ----------------------------------------------------------------
 def main():
+    QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
+    QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
     app = QApplication(sys.argv)
     app.setFont(QFont("Segoe UI", 10))
     icon_path = resource_path("assets/pictures/icon.png")

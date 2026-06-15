@@ -1,10 +1,16 @@
 # font_picker.py
 import sys, os, glob
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QComboBox, QFrame
-from PyQt5.QtGui     import QPixmap, QImage, QFont
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QComboBox, QFrame
+from PyQt5.QtGui     import QPixmap, QImage, QFont, QPainter
 from PyQt5.QtCore    import Qt, pyqtSignal
 from PIL             import Image, ImageDraw, ImageFont
 from lang_manager    import tr
+
+try:
+    from PyQt5.QtSvg import QSvgRenderer
+    _SVG_OK = True
+except Exception:
+    _SVG_OK = False
 
 
 def resource_path(relative_path):
@@ -14,6 +20,31 @@ def resource_path(relative_path):
 
 
 FONTS_DIR = resource_path("assets/fonts")
+
+
+def _render_icon(name, size=18):
+    """Render a header SVG icon (e.g. 'font') to a crisp, HiDPI-aware QPixmap.
+
+    Returns None if QtSvg or the file is missing, so callers can fall back to
+    the emoji label."""
+    if not name:
+        return None
+    path = resource_path(f"assets/icons/{name}.svg")
+    if not (_SVG_OK and os.path.isfile(path)):
+        return None
+    try:
+        renderer = QSvgRenderer(path)
+        dpr = 2  # bei 2x rendern -> auch auf HiDPI-Displays gestochen scharf
+        img = QImage(size * dpr, size * dpr, QImage.Format_ARGB32)
+        img.fill(Qt.transparent)
+        p = QPainter(img)
+        renderer.render(p)
+        p.end()
+        pix = QPixmap.fromImage(img)
+        pix.setDevicePixelRatio(dpr)
+        return pix
+    except Exception:
+        return None
 
 
 def _load_font_list():
@@ -77,11 +108,26 @@ class FontPickerWidget(QFrame):
         layout.setContentsMargins(14, 12, 14, 12)
         layout.setSpacing(8)
 
-        # Section title label (translated)
-        self._title_lbl = QLabel(tr("font_picker.title"))
-        self._title_lbl.setFont(QFont("Segoe UI", 11, QFont.Bold))
-        self._title_lbl.setObjectName("sectionLabel")
-        layout.addWidget(self._title_lbl)
+        # Section title (translated). Mit scharfem SVG-Icon statt Emoji, fällt
+        # auf den Emoji-Text zurück, wenn QtSvg oder die SVG-Datei fehlt.
+        self._has_icon = False
+        pix = _render_icon("font", 18)
+        if pix is not None:
+            self._has_icon = True
+            title_row = QWidget()
+            trl = QHBoxLayout(title_row)
+            trl.setContentsMargins(0, 0, 0, 0); trl.setSpacing(8)
+            icon_lbl = QLabel(); icon_lbl.setPixmap(pix); icon_lbl.setFixedSize(18, 18)
+            self._title_lbl = QLabel(self._clean_title())
+            self._title_lbl.setObjectName("sectionLabel")
+            self._title_lbl.setFont(QFont("Segoe UI", 11, QFont.Bold))
+            trl.addWidget(icon_lbl); trl.addWidget(self._title_lbl); trl.addStretch()
+            layout.addWidget(title_row)
+        else:
+            self._title_lbl = QLabel(tr("font_picker.title"))
+            self._title_lbl.setFont(QFont("Segoe UI", 11, QFont.Bold))
+            self._title_lbl.setObjectName("sectionLabel")
+            layout.addWidget(self._title_lbl)
 
         # Font selection combo box
         self._combo = QComboBox()
@@ -103,6 +149,10 @@ class FontPickerWidget(QFrame):
 
     # ── Internal helpers ───────────────────────────────────────────────────────
 
+    def _clean_title(self):
+        """Title text with the leading emoji stripped (used when the SVG icon is shown)."""
+        return tr("font_picker.title").lstrip("🔤 ").strip()
+
     def _on_change(self, _):
         self._refresh_preview()
         self.font_changed.emit(self.get_font_path())
@@ -121,7 +171,8 @@ class FontPickerWidget(QFrame):
 
     def retranslate(self):
         """Refresh the title label text after a language change."""
-        self._title_lbl.setText(tr("font_picker.title"))
+        self._title_lbl.setText(self._clean_title() if self._has_icon
+                                else tr("font_picker.title"))
 
     def get_font_path(self):
         """Return the file path of the currently selected font, or None for default."""

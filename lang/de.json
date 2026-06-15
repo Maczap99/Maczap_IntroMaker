@@ -131,7 +131,7 @@
     "outro_fadeout_hint": "Ausblenden des Abschluss-Bilds zu Schwarz",
     "outro_video_group": "Outro-Video",
     "outro_video_folder_label": "Speicherort",
-    "outro_video_folder_hint": "Ordner für das Outro-Video (Dateiname: Outro - TT.MM.JJJJ). Spielt nur die Slider-Bilder hintereinander ab.",
+    "outro_video_folder_hint": "Ordner für das Outro-Video (Dateiname: outro.mp4). Spielt nur die Slider-Bilder hintereinander ab.",
     "outro_video_pick_folder": "📁  Speicherort wählen",
     "outro_video_fadein_label": "Fade-In Dauer",
     "outro_video_fadein_hint": "Outro blendet am Start von Schwarz ein",
