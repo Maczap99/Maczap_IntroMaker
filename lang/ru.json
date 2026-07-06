@@ -145,7 +145,7 @@
     "outro_video_music_hint": "Необязательно — использует тот же MP3, что и интро",
     "language_group": "Sprache / Language / Язык",
     "language_label": "Язык",
-    "language_hint": "Выбранный язык применяется немедленно",
+    "language_hint": "Выбранный язык применяется после перезапуска приложения",
     "sounds_group": "Звуки",
     "sounds_label": "Звуки включены",
     "sounds_hint": "Воспроизводит звук при завершении видео или ошибке",
@@ -210,4 +210,4 @@
   },
   "output_filename": "Intro - {0}",
   "output_filename_outro": "Outro - {0}"
-}
+}

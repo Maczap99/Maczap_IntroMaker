@@ -15,10 +15,74 @@ def _get_ffmpeg() -> str | None:
         base = sys._MEIPASS
     else:
         base = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
-    bundled = os.path.join(base, "assets", "bin", "ffmpeg.exe")
-    if os.path.isfile(bundled):
-        return os.path.normpath(bundled)
+    for exe in ("ffmpeg.exe", "ffmpeg"):
+        bundled = os.path.join(base, "assets", "bin", exe)
+        if os.path.isfile(bundled):
+            return os.path.normpath(bundled)
     return shutil.which("ffmpeg")
+
+
+def _tmp_noaudio_path(out_path: str) -> str:
+    """Return the temporary '<name>_noaudio.mp4' path next to *out_path*.
+
+    Uses os.path.splitext instead of str.replace, so a '.mp4' anywhere in a
+    folder name (e.g. 'D:/render.mp4.backup/intro.mp4') cannot corrupt the
+    path."""
+    root, _ = os.path.splitext(out_path)
+    return root + "_noaudio.mp4"
+
+
+# -- Hardware-Encoder-Erkennung (einmal pro Sitzung, danach gecacht) -----------
+# Bevorzugt NVIDIA (h264_nvenc) und AMD (h264_amf); faellt auf libx264
+# zurueck. Ein Encoder gilt erst als verfuegbar, wenn ein kurzer Test-Encode
+# mit GENAU den spaeter verwendeten Argumenten gelingt -- viele FFmpeg-Builds
+# listen nvenc/amf zwar auf, schlagen aber ohne passende GPU/Treiber fehl.
+_CODEC_ARGS = {
+    "h264_nvenc": ["-c:v", "h264_nvenc", "-preset", "fast", "-cq", "19"],
+    "h264_amf":   ["-c:v", "h264_amf", "-quality", "balanced",
+                   "-rc", "cqp", "-qp_i", "18", "-qp_p", "20"],
+    "libx264":    ["-c:v", "libx264", "-preset", "fast", "-crf", "18"],
+}
+_ENCODER_CACHE: str | None = None
+
+
+def _test_encoder(ffmpeg_path: str, encoder: str) -> bool:
+    """Try a tiny test encode with *encoder*; True if it succeeds."""
+    try:
+        proc = subprocess.run(
+            [ffmpeg_path, "-hide_banner", "-v", "error",
+             "-f", "lavfi", "-i", "color=black:s=256x256:r=30:d=0.2",
+             "-frames:v", "3", *_CODEC_ARGS[encoder],
+             "-f", "null", "-"],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            timeout=20, startupinfo=_STARTUPINFO
+        )
+        return proc.returncode == 0
+    except Exception:
+        return False
+
+
+def _detect_encoder(ffmpeg_path: str) -> str:
+    """Return the best working H.264 encoder name (cached for the session)."""
+    global _ENCODER_CACHE
+    if _ENCODER_CACHE is not None:
+        return _ENCODER_CACHE
+    encoder = "libx264"
+    try:
+        proc = subprocess.run(
+            [ffmpeg_path, "-hide_banner", "-encoders"],
+            stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+            timeout=15, startupinfo=_STARTUPINFO
+        )
+        listed = proc.stdout.decode(errors="replace")
+        for cand in ("h264_nvenc", "h264_amf"):
+            if cand in listed and _test_encoder(ffmpeg_path, cand):
+                encoder = cand
+                break
+    except Exception:
+        pass
+    _ENCODER_CACHE = encoder
+    return encoder
 
 
 def _get_audio_duration(ffmpeg_path: str, path: str) -> float:
@@ -129,13 +193,16 @@ class VideoGenerator:
         Used by both the intro render (_run) and the outro render
         (_render_outro_video) so the encoder setup lives in one place."""
         if ffmpeg_path:
+            # Hardware-Encoder (NVENC/AMF) verwenden, wenn verfuegbar --
+            # deutlich schnelleres Rendern; sonst libx264 (CPU-Fallback).
+            encoder = _detect_encoder(ffmpeg_path)
             ff_cmd = [
                 ffmpeg_path, "-y",
                 "-f", "rawvideo", "-vcodec", "rawvideo",
                 "-pix_fmt", "bgr24", "-s", f"{w}x{h}",
                 "-r", str(fps), "-i", "pipe:0",
-                "-c:v", "libx264", "-preset", "fast",
-                "-crf", "18", "-pix_fmt", "yuv420p",
+                *_CODEC_ARGS[encoder],
+                "-pix_fmt", "yuv420p",
                 tmp_video
             ]
             # stderr geht in eine Log-Datei statt in eine Pipe. Eine nie
@@ -199,12 +266,12 @@ class VideoGenerator:
     def generate(self):
         cfg       = self.cfg
         out_path  = cfg.get("output_path", "")
-        tmp_video = out_path.replace(".mp4", "_noaudio.mp4") if out_path else ""
+        tmp_video = _tmp_noaudio_path(out_path) if out_path else ""
 
         # Outro-Video: nur rendern wenn aktiviert, ein Zielpfad gesetzt ist
         # UND es ueberhaupt Slider-Bilder gibt.
         outro_out = cfg.get("outro_video_output_path", "") or ""
-        outro_tmp = outro_out.replace(".mp4", "_noaudio.mp4") if outro_out else ""
+        outro_tmp = _tmp_noaudio_path(outro_out) if outro_out else ""
         do_outro  = bool(cfg.get("outro_video_enabled", False)
                          and outro_out
                          and cfg.get("image_paths"))
@@ -231,6 +298,14 @@ class VideoGenerator:
                         pass
             self.done(False, "CANCELLED")
         except Exception:
+            # Zwischendateien auch bei Fehlern entfernen -- halbfertige
+            # *_noaudio.mp4-Dateien sollen nicht liegen bleiben.
+            for path in [tmp_video, outro_tmp]:
+                if path and os.path.isfile(path):
+                    try:
+                        os.remove(path)
+                    except Exception:
+                        pass
             self.done(False, traceback.format_exc())
 
     # -- Main render loop (INTRO) ----------------------------------------------
@@ -247,10 +322,20 @@ class VideoGenerator:
         bg_total  = 0
 
         if cfg["bg_video"]:
-            bg_cap   = cv2.VideoCapture(cfg["bg_video"])
-            w        = int(bg_cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-            h        = int(bg_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-            bg_total = int(bg_cap.get(cv2.CAP_PROP_FRAME_COUNT))
+            bg_cap = cv2.VideoCapture(cfg["bg_video"])
+            if bg_cap.isOpened():
+                w        = int(bg_cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+                h        = int(bg_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+                bg_total = int(bg_cap.get(cv2.CAP_PROP_FRAME_COUNT))
+            # Defekte/nicht lesbare Videos (oder 0x0-Metadaten) nicht
+            # weiterreichen -> stattdessen auf die Fallback-Farbe wechseln,
+            # statt spaeter mit w=0/h=0 abzustuerzen.
+            if not bg_cap.isOpened() or w <= 0 or h <= 0:
+                bg_cap.release()
+                bg_cap = None
+                w, h   = 1920, 1080
+                r, g, b   = _hex_to_rgb(cfg.get("bg_color", "#000000"))
+                bg_static = np.full((h, w, 3), (b, g, r), dtype=np.uint8)
         elif cfg["bg_image"]:
             img = Image.open(cfg["bg_image"]).convert("RGB").resize((w, h))
             bg_static = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
@@ -319,13 +404,14 @@ class VideoGenerator:
         total_frames = int(total_sec * fps)
 
         # -- Start frame sink (FFmpeg pipe or OpenCV fallback) -----------------
-        tmp_video   = out_path.replace(".mp4", "_noaudio.mp4")
+        tmp_video   = _tmp_noaudio_path(out_path)
         ffmpeg_path = _get_ffmpeg()
         ff_proc, write_frame, _close_writer = self._open_video_writer(
             tmp_video, w, h, fps, ffmpeg_path)
 
         black      = np.zeros((h, w, 3), dtype=np.uint8)
         last_frame = black.copy()
+        last_bg    = black  # letzter erfolgreich gelesener BG-Frame (Fallback)
 
         # -- Render frames ------------------------------------------------------
         bg_frame_idx = 0
@@ -348,13 +434,23 @@ class VideoGenerator:
 
                     # -- Advance / loop background video ----------------------
                     if bg_cap:
-                        if bg_frame_idx >= bg_total - 1:
+                        # Nur per Frame-Zaehler loopen, wenn die Metadaten
+                        # einen gueltigen Frame-Count liefern (bei manchen
+                        # Containern ist CAP_PROP_FRAME_COUNT 0 oder falsch).
+                        if bg_total > 0 and bg_frame_idx >= bg_total - 1:
                             bg_cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
                             bg_frame_idx = 0
                         ret, bg = bg_cap.read()
                         if not ret:
                             bg_cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+                            bg_frame_idx = 0
                             ret, bg = bg_cap.read()
+                        if not ret or bg is None:
+                            # Auch der zweite Versuch schlug fehl -> letzten
+                            # gueltigen Frame weiterverwenden statt crashen.
+                            bg = last_bg.copy()
+                        else:
+                            last_bg = bg
                         bg_frame_idx += 1
                     else:
                         bg = bg_static.copy()
@@ -599,7 +695,7 @@ class VideoGenerator:
         total_frames = int(total_dur * fps)
         black        = np.zeros((h, w, 3), dtype=np.uint8)
 
-        tmp_video   = out_path.replace(".mp4", "_noaudio.mp4")
+        tmp_video   = _tmp_noaudio_path(out_path)
         ffmpeg_path = _get_ffmpeg()
         ff_proc, write_frame, _close_writer = self._open_video_writer(
             tmp_video, w, h, fps, ffmpeg_path)
@@ -661,6 +757,11 @@ class VideoGenerator:
     def _build_segments(self, total_sec, slider_from, slider_until,
                          slider_imgs, img_dur, timer_between, slider_loop):
         """Return a list of (segment_type, duration_seconds) pairs."""
+        # Werte auf die Gesamtdauer klemmen: Ist "Slider ab" groesser als die
+        # Timer-Dauer eingestellt (z. B. Slider ab 4:00 bei nur 2 min Timer),
+        # wuerde das Video sonst LAENGER als die Timer-Dauer werden.
+        slider_from  = max(0.0, min(slider_from,  total_sec))
+        slider_until = max(0.0, min(slider_until, slider_from))
         segs = []
         pre_timer = total_sec - slider_from
         if pre_timer > 0:
@@ -1066,4 +1167,4 @@ class VideoGenerator:
                 try:
                     os.remove(loop_unit_path)
                 except OSError:
-                    pass
+                    pass

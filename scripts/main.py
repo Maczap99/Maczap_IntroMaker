@@ -61,7 +61,7 @@ def _play_sound(name: str):
     except Exception:
         pass
 
-_play_sound._players: list = []
+_play_sound._players = []
 
 
 # -- ElidedLabel ----------------------------------------------------------------
@@ -250,9 +250,12 @@ class StyledCheckBox(QWidget):
     def changeEvent(self, e):
         if e.type() == QEvent.EnabledChange:
             enabled = self.isEnabled()
-            eff = QGraphicsOpacityEffect(self)
-            eff.setOpacity(1.0 if enabled else 0.35)
-            self.setGraphicsEffect(eff)
+            if enabled:
+                self.setGraphicsEffect(None)
+            else:
+                eff = QGraphicsOpacityEffect(self)
+                eff.setOpacity(0.35)
+                self.setGraphicsEffect(eff)
             cursor = Qt.PointingHandCursor if enabled else Qt.ForbiddenCursor
             self._box.setCursor(cursor)
             self._label.setCursor(cursor)
@@ -436,9 +439,12 @@ class Stepper(QWidget):
 
     def changeEvent(self, e):
         if e.type() == QEvent.EnabledChange:
-            eff = QGraphicsOpacityEffect(self)
-            eff.setOpacity(0.35 if not self.isEnabled() else 1.0)
-            self.setGraphicsEffect(eff)
+            if self.isEnabled():
+                self.setGraphicsEffect(None)
+            else:
+                eff = QGraphicsOpacityEffect(self)
+                eff.setOpacity(0.35)
+                self.setGraphicsEffect(eff)
         super().changeEvent(e)
 
     def _render(self, v) -> str:
@@ -465,11 +471,19 @@ class Stepper(QWidget):
 
 # -- Helpers --------------------------------------------------------------------
 def _set_dim(widget, enabled: bool):
-    """Enable/disable a widget and apply matching opacity so disabled state is clearly visible."""
+    """Enable/disable a widget and apply matching opacity so disabled state is clearly visible.
+
+    Bei aktivem Widget wird der Effekt komplett ENTFERNT statt einen
+    1.0-Opacity-Effekt zu setzen: ein aktiver QGraphicsOpacityEffect laesst
+    Qt das Widget in einen Offscreen-Buffer rendern -- Text wirkt dadurch
+    minimal unschaerfer und das Repainting wird unnoetig teurer."""
     widget.setEnabled(enabled)
-    eff = QGraphicsOpacityEffect(widget)
-    eff.setOpacity(1.0 if enabled else 0.35)
-    widget.setGraphicsEffect(eff)
+    if enabled:
+        widget.setGraphicsEffect(None)
+    else:
+        eff = QGraphicsOpacityEffect(widget)
+        eff.setOpacity(0.35)
+        widget.setGraphicsEffect(eff)
 
 
 def make_card():
@@ -690,6 +704,7 @@ class IntroMaker(QMainWindow):
         self._render_start  = 0.0
         self._thread        = None
         self._worker        = None
+        self._cancel_event  = None
         self._bg_video_path = None
         self._bg_image_path = None
         self._music_path    = None
@@ -1354,7 +1369,7 @@ class IntroMaker(QMainWindow):
 
         te_lbl = QLabel(tr("settings.outro_text_label"))
         te_lbl.setFont(QFont("Segoe UI", 11))
-        te_lbl.setObjectName("dim"); tel.addWidget(te_lbl)
+        te_lbl.setObjectName("settingsLabel"); tel.addWidget(te_lbl)
         te_hint = QLabel(tr("settings.outro_text_hint"))
         te_hint.setFont(QFont("Segoe UI", 9)); te_hint.setObjectName("hint")
         te_hint.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
@@ -1379,14 +1394,18 @@ class IntroMaker(QMainWindow):
 
         fg_row = QWidget(); fgl = QHBoxLayout(fg_row)
         fgl.setContentsMargins(0, 4, 0, 0); fgl.setSpacing(10)
-        fgl.addWidget(dim_lbl(tr("settings.outro_font_color_label")))
+        fg_lbl = QLabel(tr("settings.outro_font_color_label"))
+        fg_lbl.setFont(QFont("Segoe UI", 11)); fg_lbl.setObjectName("settingsLabel")
+        fgl.addWidget(fg_lbl)
         fgl.addWidget(self._outro_slide_color_btn)
         fgl.addStretch()
         tel.addWidget(fg_row)
 
         bg_col_row = QWidget(); bcl = QHBoxLayout(bg_col_row)
         bcl.setContentsMargins(0, 2, 0, 0); bcl.setSpacing(10)
-        bcl.addWidget(dim_lbl(tr("settings.outro_bg_color_label")))
+        bg_col_lbl = QLabel(tr("settings.outro_bg_color_label"))
+        bg_col_lbl.setFont(QFont("Segoe UI", 11)); bg_col_lbl.setObjectName("settingsLabel")
+        bcl.addWidget(bg_col_lbl)
         bcl.addWidget(self._outro_slide_bg_color_btn)
         bcl.addStretch()
         tel.addWidget(bg_col_row)
@@ -1396,7 +1415,7 @@ class IntroMaker(QMainWindow):
         ofl.setContentsMargins(16, 10, 16, 10); ofl.setSpacing(4)
         of_lbl = QLabel(tr("settings.outro_font_label"))
         of_lbl.setFont(QFont("Segoe UI", 11))
-        of_lbl.setObjectName("dim"); ofl.addWidget(of_lbl)
+        of_lbl.setObjectName("settingsLabel"); ofl.addWidget(of_lbl)
         of_hint = QLabel(tr("settings.outro_font_hint"))
         of_hint.setFont(QFont("Segoe UI", 9)); of_hint.setObjectName("hint")
         of_hint.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
@@ -1428,7 +1447,7 @@ class IntroMaker(QMainWindow):
         ovfl = QVBoxLayout(ov_folder_row)
         ovfl.setContentsMargins(16, 10, 16, 10); ovfl.setSpacing(6)
         ovf_lbl = QLabel(tr("settings.outro_video_folder_label"))
-        ovf_lbl.setFont(QFont("Segoe UI", 11)); ovf_lbl.setObjectName("dim")
+        ovf_lbl.setFont(QFont("Segoe UI", 11)); ovf_lbl.setObjectName("settingsLabel")
         ovfl.addWidget(ovf_lbl)
         ovf_hint = QLabel(tr("settings.outro_video_folder_hint"))
         ovf_hint.setFont(QFont("Segoe UI", 9)); ovf_hint.setObjectName("hint")
@@ -1794,6 +1813,10 @@ class IntroMaker(QMainWindow):
 
     def _update_preview(self):
         if self._preview_thread and self._preview_thread.isRunning():
+            # Es laeuft bereits ein Preview-Render: die Aktualisierung nicht
+            # verwerfen, sondern nach Ablauf des Debounce erneut versuchen --
+            # sonst zeigt die Vorschau u. U. einen veralteten Stand.
+            self._preview_timer.start()
             return
 
         self._preview_lbl.setText(tr("simple_left.preview_loading"))
@@ -1833,6 +1856,25 @@ class IntroMaker(QMainWindow):
             Qt.SmoothTransformation,
         )
         self._preview_lbl.setPixmap(scaled)
+
+    # -- Clean shutdown -----------------------------------------------------------
+    def closeEvent(self, event):
+        """Beim Schliessen laufende Render-/Preview-Threads sauber beenden.
+
+        Ohne diesen Handler laufen die QThreads beim Beenden weiter und Qt
+        meldet 'QThread: Destroyed while thread is still running' -- im
+        schlimmsten Fall stuerzt die App beim Schliessen ab und laesst eine
+        halbfertige *_noaudio.mp4 zurueck."""
+        if self._cancel_event is not None:
+            self._cancel_event.set()
+        for th in (self._thread, self._preview_thread):
+            try:
+                if th is not None and th.isRunning():
+                    th.quit()
+                    th.wait(10000)
+            except RuntimeError:
+                pass  # Thread-Objekt wurde bereits von Qt aufgeraeumt
+        super().closeEvent(event)
 
     # -- Theme ------------------------------------------------------------------
     def _apply_theme(self, theme):
@@ -2134,9 +2176,12 @@ class IntroMaker(QMainWindow):
         self._refresh_imgs()
 
     def _sync_image_paths_from_list(self):
+        # ToolTip enthaelt den vollen Pfad; der Platzhalter-Eintrag ("Keine
+        # Bilder ausgewaehlt") hat keinen ToolTip und wird herausgefiltert.
         self._image_paths = [
             self._img_list.item(i).toolTip()
             for i in range(self._img_list.count())
+            if self._img_list.item(i).toolTip()
         ]
 
     def _refresh_imgs(self):
@@ -2381,4 +2426,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main()

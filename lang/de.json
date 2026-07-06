@@ -145,7 +145,7 @@
     "outro_video_music_hint": "Optional — nutzt dieselbe MP3 wie das Intro",
     "language_group": "Sprache / Language",
     "language_label": "Sprache",
-    "language_hint": "Sprachauswahl gilt nach einem Neustart sofort",
+    "language_hint": "Sprachauswahl gilt nach einem Neustart der App",
     "sounds_group": "Töne",
     "sounds_label": "Töne aktivieren",
     "sounds_hint": "Spielt einen Ton wenn das Video fertig oder ein Fehler aufgetreten ist",
@@ -210,4 +210,4 @@
   },
   "output_filename": "Intro - {0}",
   "output_filename_outro": "Outro - {0}"
-}
+}
