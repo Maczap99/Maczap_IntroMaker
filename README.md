@@ -1,6 +1,6 @@
 # 🎬 Maczap IntroMaker
 
-> **Desktop-App zur Erstellung professioneller Countdown-Intro-Videos — mit eigenen Schriftarten, Hintergrundmusik, Bild-Slider, Abschluss-Bild und flüssigen Überblendungseffekten.**
+> **Desktop-App zur Erstellung professioneller Countdown-Intro-Videos — mit eigenen Schriftarten, Hintergrundmusik, Bild-Slider, Timer-Overlay, Abschluss-Bild, optionalem Outro-Video und flüssigen Überblendungseffekten.**
 
 Gebaut mit Python + PyQt5. Rendering direkt über OpenCV und PIL, mit optionalem FFmpeg-Support für Audio-Mixing.
 
@@ -12,8 +12,11 @@ Gebaut mit Python + PyQt5. Rendering direkt über OpenCV und PIL, mit optionalem
 - **Untertitel** — optionaler Text unterhalb des Timers mit unabhängiger Schriftgröße, Farbe und Abstand
 - **Hintergrund** — Video-Loop, statisches Bild oder konfigurierbare Fallback-Farbe (Standard: Schwarz)
 - **Bild-Slider** — Bilder und PDFs zwischen Countdown-Abschnitten einblenden, mit konfigurierbarem Timing, Loop-Verhalten und Füllfarbe für nicht-16:9-Formate
+- **Timer zwischen Bildern** — optionale Countdown-Pause zwischen zwei Folien (abschaltbar — dann überblenden die Bilder direkt)
+- **Timer-Overlay auf Slider-Bildern** — der Timer bleibt während der Bilder sichtbar, animiert sich in eine Ecke und wieder zurück; Ecke, Größe und Hintergrund frei wählbar
 - **Hintergrundmusik** — MP3 / WAV / OGG mit Loop und Fade-out (erfordert FFmpeg)
 - **Abschluss-Bild** — optionaler Slide nach dem Timer mit eigenem Text, Schriftart, Farbe und Hintergrundbild
+- **Outro-Video** — optionale zweite, eigenständige MP4 nur mit den Slider-Bildern (eigene Fades, Überblendung, Loops und optional dieselbe Musik wie das Intro)
 - **Fade-Effekte** — Fade-in aus Schwarz am Start, Fade-out zu Schwarz am Ende, Crossfade zwischen Timer und Bildern
 - **Eigene Schriftarten** — beliebige `.ttf` / `.otf` Fonts aus `assets/fonts/`, mit Live-Vorschau
 - **Echtzeit-Vorschau** — generiert einen Vorschau-Frame mit Hintergrund, Schriftart und Farbe vor dem Rendern
@@ -22,7 +25,7 @@ Gebaut mit Python + PyQt5. Rendering direkt über OpenCV und PIL, mit optionalem
 - **Töne** — optionale Audio-Benachrichtigung bei erfolgreichem Abschluss oder Fehler
 - **Hell- & Dunkel-Modus** — vollständiges UI-Theming mit persistenten Einstellungen
 - **Mehrsprachig** — Deutsch, Englisch und Russisch, umschaltbar in den Einstellungen
-- **Einstellungsseite** — alle Timing-, Fade- und Slider-Parameter übersichtlich konfigurierbar
+- **Einstellungsseite** — alle Timing-, Fade-, Slider-, Timer-Overlay- und Outro-Parameter übersichtlich konfigurierbar
 
 ---
 
@@ -113,14 +116,17 @@ Alle Einstellungen werden automatisch zwischen Sitzungen gespeichert und können
 | Hintergrund | Videodatei, Bilddatei oder Fallback-Farbe (Standard: Schwarz) |
 | Musik | Audiodatei mit optionalem Loop und Fade-out (erfordert FFmpeg) |
 | Slider-Bilder | Bilder und PDFs zwischen Countdown-Abschnitten |
+| Slider-Timing | Wann Bilder erscheinen (ab/bis verbleibender Zeit), wie lange jedes Bild zu sehen ist |
+| Timer zwischen Bildern | Optionale Countdown-Pause zwischen zwei Folien; abschaltbar für direkte Überblendung |
+| Slider-Loop | Bilder bis Zonen-Ende wiederholen oder jeden einmal zeigen |
 | Füllfarbe (Slider) | Farbe der Balken bei nicht-16:9-Bildern (z. B. Hochformat) |
+| Timer-Overlay | Timer während der Slider-Bilder sichtbar lassen — Ecke, Größe und Hintergrund einstellbar |
 | Schrift & Farben | Eigene Schriftart, Timer-Farbe, Untertitel-Farbe |
 | Untertitel | Optionaler Text unter dem Timer mit Größen- und Farbsteuerung |
 | Untertitel-Abstand | Extra-Abstand zwischen Timer und Untertitel in Zeilenhöhen |
 | Abschluss-Bild | Slide nach dem Timer mit Text, Schriftart, Farbe und Hintergrundbild |
+| Outro-Video | Optionale zweite MP4 nur mit den Slider-Bildern (eigene Fades, Überblendung, Loops, Musik) |
 | Fade In / Out | Schwarzblende am Start und Ende mit konfigurierbarer Dauer |
-| Slider-Timing | Wann Bilder erscheinen, wie lange, Pause dazwischen |
-| Slider-Loop | Bilder bis Zonen-Ende wiederholen oder jeden einmal zeigen |
 | Übergänge | Crossfade-Dauer zwischen Timer und Slider-Bildern |
 | Musik im Abschluss-Bild | Musik läuft bis Videoende oder endet mit Timer 0:00 |
 | Musik-Fade-out | Dauer des Musik-Fade am Videoende |
@@ -131,6 +137,45 @@ Einstellungen werden gespeichert unter:
 ```
 %APPDATA%\MaczapIntroMaker\settings.json
 ```
+
+---
+
+## ⏱ Timer-Overlay auf Slider-Bildern
+
+Optional bleibt der Countdown-Timer auch während der Slider-Bilder sichtbar. Beim Wechsel zu einem Bild animiert sich der große, zentrierte Timer in eine kleine Ecke und beim nächsten Countdown-Abschnitt wieder zurück in die Mitte.
+
+Konfigurierbar in den Einstellungen:
+
+| Option | Beschreibung |
+|---|---|
+| Timer auf Slider-Bildern anzeigen | Schaltet das Overlay ein/aus |
+| Timer-Ecke | Position des kleinen Timers: rechts/links unten oder rechts/links oben |
+| Timer-Größe | Größe des Eck-Timers in Prozent der Bildhöhe |
+| Transparenter Hintergrund | Aus: farbige Fläche hinter dem Timer für bessere Lesbarkeit |
+| Hintergrundfarbe | Farbe der Fläche hinter dem Timer (nur bei nicht-transparentem Hintergrund) |
+
+---
+
+## 🎞 Outro-Video
+
+Zusätzlich zum Intro kann optional ein **zweites, eigenständiges Video** erzeugt werden, das **nur die Slider-Bilder** nacheinander abspielt — ganz ohne Countdown. Beide Dateien entstehen in einem einzigen Render-Durchlauf, sobald auf der Hauptseite **„Outro erstellen"** aktiviert ist.
+
+Konfigurierbar in den Einstellungen unter **Outro-Video**:
+
+| Option | Beschreibung | Standard |
+|---|---|---|
+| Speicherort | Zielordner für die Outro-Datei | — |
+| Fade-In Dauer | Einblenden aus Schwarz am Start | 2 s |
+| Fade-Out Dauer | Ausblenden zu Schwarz am Ende | 2 s |
+| Überblendung | Crossfade-Dauer zwischen zwei Bildern | 1 s |
+| Anzahl Loops | Wie oft die Bildfolge wiederholt wird (z. B. 5 Bilder × 2 = 10 Bilder) | 2 |
+| Intro-Musik verwenden | Nutzt optional dieselbe MP3 wie das Intro | aus |
+
+Hinweise:
+- Die **Anzeigedauer pro Bild** entspricht der Slider-Einstellung **„Dauer pro Bild"**.
+- Das Outro wird mit fester Auflösung **1920×1080** gerendert; Bilder ohne 16:9-Format werden mit der Slider-Füllfarbe ergänzt.
+- Die Ausgabedatei heißt standardmäßig **`outro.mp4`** im gewählten Ordner.
+- Ohne ausgewählte Slider-Bilder oder ohne Zielordner weist die App vor dem Rendern darauf hin.
 
 ---
 
@@ -161,6 +206,8 @@ Die App unterstützt aktuell drei Sprachen:
 | `ru` | Русский |
 
 Die Sprache wird in den **Einstellungen** gewählt und gilt sofort. Weitere Sprachen können einfach durch Ablegen einer neuen `xx.json` im `lang/`-Ordner hinzugefügt werden — sie werden automatisch erkannt.
+
+> **Hinweis:** Neue Funktionen wie Outro-Video, Timer-Overlay und die Timer-Pause benötigen entsprechende Übersetzungsschlüssel. Beim Hinzufügen oder Aktualisieren einer Sprachdatei sollten diese Schlüssel aus `de.json` übernommen werden, damit alle Texte vollständig angezeigt werden.
 
 ---
 

@@ -1,3 +1,4 @@
+# splash.py
 import os, sys, math
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QFrame, QApplication
 from PyQt5.QtCore    import Qt, QTimer, pyqtSignal, QPointF

@@ -1,7 +1,5 @@
 import json, os, sys
-
 APP_NAME = "MaczapIntroMaker"
-
 
 def _config_path() -> str:
     """Return the full path to the settings JSON file, creating its folder if needed."""
@@ -17,54 +15,54 @@ def _config_path() -> str:
     os.makedirs(folder, exist_ok=True)
     return os.path.join(folder, "settings.json")
 
-
 DEFAULTS = {
     # UI state
     "theme":              "light",
     "language":           "de",
-
     # Timer
     "timer_minutes":      5,
-
     # Music
     "music_loop":         True,
     "music_fadeout":      True,
     "music_fade_dur":     4,
-
+    "music_crossfade":    3.0,
     # Video fade
     "intro_fade_enabled": True,
     "intro_fade_dur":     3,
     "outro_fade_enabled": True,
     "outro_fade_dur":     3,
-
     # Slider timing
     "slider_from":        240,
     "slider_until":       60,
     "img_duration":       10,
     "timer_between":      15,
     "slider_loop":        True,
-
     # Transitions
     "fade_duration":      2.0,
-
     # Font & timer color
     "font_color":         "#FFFFFF",
     "font_name":          None,
-
     # Background fallback color (used when no video/image is selected)
     "bg_color":           "#000000",
-
     # Subtitle
     "subtitle_enabled":   False,
     "subtitle_text":      "",
     "subtitle_size":      60,
     "subtitle_offset":    2,
     "subtitle_color":     "#FFFFFF",
-
     # Slider image fill color (used when image does not fill the 16:9 frame)
     "slider_fill_color":  "#000000",
-
-    # Outro slide (shown after timer reaches 0)
+    # Timer between slider images (checkbox + duration)
+    "slider_timer_between_enabled":  False,      # False -> slides crossfade directly (timer_between=0)
+    # Timer overlay on slider images
+    # When True: countdown stays visible during slides, animates to a corner.
+    # When False (default): slides fully cover the timer as before.
+    "slider_timer_overlay":          False,
+    "slider_timer_overlay_position": "right_bottom",  # "right_bottom"|"left_bottom"|"right_top"|"left_top"
+    "slider_timer_size":             15.0,       # corner timer size as % of min(w,h), range 3-15
+    "slider_timer_bg_transparent":   False,      # False -> draw coloured pill behind corner timer
+    "slider_timer_bg_color":         "#36393E",  # background colour of the corner timer pill
+    # Outro slide (= "Abschluss-Bild": EIN Standbild mit Text, am Ende des Intros)
     "outro_slide_enabled":    False,
     "outro_slide_text":       "Herzlich Willkommen",
     "outro_slide_color":      "#FFFFFF",
@@ -74,16 +72,26 @@ DEFAULTS = {
     "outro_slide_duration":   5,
     "outro_slide_fade_in":    1,
     "outro_slide_fade_out":   2,
-
     # Music behaviour during outro slide
     "music_in_outro":         False,
+
+    # -- Outro-VIDEO (eigenstaendige zweite MP4) ----------------------------
+    # Spielt NUR die Slider-Bilder hintereinander ab (kein Countdown-Timer).
+    # Wird zusaetzlich zum Intro erstellt, wenn die Checkbox auf der Hauptseite
+    # aktiviert ist. Das Intro wird immer erstellt, das Outro ist optional.
+    "outro_video_enabled":    False,        # Hauptseiten-Checkbox "Outro erstellen"
+    "outro_video_folder":     "",           # Ordner fuer die Outro-*.mp4
+    "outro_video_fade_in":    2.0,          # Einblenden aus Schwarz (s)
+    "outro_video_fade_out":   2.0,          # Ausblenden zu Schwarz (s)
+    "outro_video_crossfade":  1.0,          # Ueberblendung zwischen zwei Bildern (s)
+    "outro_video_loops":      2,            # Wie oft die Bildfolge wiederholt wird
+    "outro_video_use_music":  False,        # Intro-MP3 auch im Outro verwenden (optional)
 
     # Remember last used output folder so the dialog opens there next time
     "last_output_folder":     "",
     # UI sounds (success.mp3 / error.mp3)
     "sounds_enabled":         True,
 }
-
 
 def load() -> dict:
     """Load settings from disk, filling missing keys with DEFAULTS."""
@@ -100,7 +108,6 @@ def load() -> dict:
             pass
     return dict(DEFAULTS)
 
-
 def save(data: dict):
     """Persist settings dict to disk as JSON."""
     path = _config_path()
@@ -109,7 +116,6 @@ def save(data: dict):
             json.dump(data, f, indent=2, ensure_ascii=False)
     except Exception as e:
         print(f"[config_manager] Save failed: {e}")
-
 
 def reset() -> dict:
     """Delete the settings file and return a fresh copy of DEFAULTS."""
@@ -120,7 +126,6 @@ def reset() -> dict:
     except Exception:
         pass
     return dict(DEFAULTS)
-
 
 def get_config_path() -> str:
     """Return the resolved settings file path (useful for debugging)."""

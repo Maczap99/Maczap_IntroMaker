@@ -1,34 +1,31 @@
 {
   "app_title": "Intro Maker",
-
   "header": {
     "settings": "⚙️  Settings",
     "back": "🏠  Back",
     "theme_dark": "🌙",
     "theme_light": "☀️"
   },
-
   "simple_left": {
     "timer_title": "⏱  Timer Duration",
     "timer_hint": "Total length of the countdown video",
     "timer_unit": "{} min",
-
     "bg_title": "🎨  Background",
-    "bg_hint": "Video takes priority over image — both optional (default: black)",
+    "bg_hint": "Video takes priority over image — both optional (default: white)",
     "bg_pick_video": "🎬  Choose video",
     "bg_pick_image": "🖼  Choose image",
     "bg_color_title": "🎨  Background color",
-
     "music_title": "🎵  Background Music",
     "music_hint": "Optional — MP3, WAV, OGG",
     "music_pick": "🎵  Choose music file",
     "music_title_dialog": "🎵  Music file",
-
     "output_title": "💾  Output File",
     "output_hint": "Filename: Intro - DD.MM.YYYY",
     "output_pick": "📁  Choose location",
     "output_title_dialog": "💾  Choose location",
-
+    "outro_video_title": "🎞  Outro Video",
+    "outro_video_enable": "Create outro video",
+    "outro_video_hint": "Additionally creates an MP4 with only the slider images. Settings under ⚙️ → Outro Video.",
     "preview_title": "🔍  Preview",
     "preview_hint": "Shows background + font + color at 04:32",
     "preview_btn": "↺  Refresh",
@@ -36,7 +33,6 @@
     "preview_loading": "⏳  Generating preview …",
     "preview_error": "❌  Preview could not be generated"
   },
-
   "simple_right": {
     "slider_title": "🖼  Slider Images",
     "slider_hint": "Displayed between countdown sections",
@@ -44,33 +40,28 @@
     "slider_remove": "− Remove selected",
     "slider_clear": "Clear list",
     "slider_empty": "  No images selected",
-
-    "fill_color_label": "Fill color (bars):",
-    "fill_color_title": "🎨  Slider image fill color",
-
     "font_color_title": "🎨  Timer Font Color",
     "font_color_label": "Color:",
-
+    "fill_color_title": "🎨  Fill color (bars)",
     "subtitle_title": "💬  Subtitle",
     "subtitle_hint": "Displayed below the timer",
     "subtitle_enable": "Enable subtitle",
     "subtitle_placeholder": "e.g. Welcome to the event",
     "subtitle_color_label": "Color:"
   },
-
   "settings": {
     "bg_group": "Background",
     "bg_color_label": "Fallback color",
     "bg_color_hint": "Color used when no video or image is selected",
-
     "music_group": "Music",
     "music_loop": "Loop (repeat)",
     "music_fadeout": "Fade out at end",
     "music_fade_dur_label": "Fade-out duration",
     "music_fade_dur_hint": "How long the music fades out at the end",
+    "music_crossfade_label": "Loop crossfade",
+    "music_crossfade_hint": "Overlap when the music repeats, so there is no silent gap (0 = off)",
     "music_in_outro": "Music in outro slide",
     "music_in_outro_hint": "On: music plays until video end  |  Off: music stops at timer 0:00",
-
     "fade_group": "Video Fade In / Out",
     "intro_fade": "Enable fade in at start",
     "intro_fade_hint": "Video fades in from black at the start",
@@ -78,31 +69,45 @@
     "outro_fade": "Enable fade out at end",
     "outro_fade_hint": "Video fades out to black at the end",
     "outro_fade_dur_label": "Fade-out duration",
-
+    "slider_dur_group": "Slider Duration",
+    "slider_timer_group": "Slider Timer",
     "slider_group": "Slider Timing",
     "slider_from_label": "Slider starts at",
     "slider_from_hint": "Show images when X minutes remain",
     "slider_until_label": "Slider ends at",
     "slider_until_hint": "No more images from X remaining minutes",
     "img_dur_label": "Duration per image",
-    "img_dur_hint": "How long each image is displayed",
-    "timer_between_label": "Timer between images",
-    "timer_between_hint": "Countdown pause between two images",
+    "img_dur_hint": "How long each image is displayed (also applies to the outro video)",
+    "timer_between_enable": "Show timer between images",
+    "timer_between_enable_hint": "On: countdown pause between slides  |  Off: images crossfade directly",
+    "timer_between_label": "Timer duration",
+    "timer_between_hint": "Duration of the countdown pause between two images",
     "slider_loop": "Repeat images until slider end",
     "slider_loop_hint": "Loop on: image → timer → image → ...  |  Loop off: all images once",
     "slider_fill_color_label": "Fill color (bars)",
     "slider_fill_color_hint": "Color of the bars for non-16:9 images (e.g. portrait)",
-
+    "slider_timer_overlay": "Show timer on slider images",
+    "slider_timer_overlay_hint": "Timer stays visible during images — animates to a corner and back",
+    "slider_timer_pos_label": "Timer corner",
+    "slider_timer_pos_hint": "Position of the small timer on slider images",
+    "slider_timer_pos_right_bottom": "Bottom right",
+    "slider_timer_pos_left_bottom": "Bottom left",
+    "slider_timer_pos_right_top": "Top right",
+    "slider_timer_pos_left_top": "Top left",
+    "slider_timer_size_label": "Timer size",
+    "slider_timer_size_hint": "Size of the corner timer (% of image height)",
+    "slider_timer_bg_transparent": "Transparent background",
+    "slider_timer_bg_transparent_hint": "Off: coloured area behind timer for better readability",
+    "slider_timer_bg_color_label": "Background color",
+    "slider_timer_bg_color_hint": "Color of the area behind the timer on slider images",
     "transitions_group": "Transitions",
     "fade_label": "Image fade duration",
     "fade_hint": "Smooth fade in/out when switching to images",
-
     "subtitle_group": "Subtitle",
     "sub_size_label": "Font size",
     "sub_size_hint": "Size of the subtitle text in the video",
     "sub_offset_label": "Distance to timer",
     "sub_offset_hint": "How many lines between timer and subtitle",
-
     "outro_group": "Outro Slide",
     "outro_enable": "Enable outro slide",
     "outro_enable_hint": "Image with text after the timer",
@@ -124,20 +129,30 @@
     "outro_fadein_hint": "Crossfade from timer to outro slide",
     "outro_fadeout_label": "Fade-out duration",
     "outro_fadeout_hint": "Fade out outro slide to black",
-
+    "outro_video_group": "Outro Video",
+    "outro_video_folder_label": "Save location",
+    "outro_video_folder_hint": "Folder for the outro video (filename: outro.mp4). Plays only the slider images one after another.",
+    "outro_video_pick_folder": "📁  Choose location",
+    "outro_video_fadein_label": "Fade-in duration",
+    "outro_video_fadein_hint": "Outro fades in from black at the start",
+    "outro_video_fadeout_label": "Fade-out duration",
+    "outro_video_fadeout_hint": "Outro fades out to black at the end",
+    "outro_video_crossfade_label": "Crossfade",
+    "outro_video_crossfade_hint": "Crossfade duration between two images",
+    "outro_video_loops_label": "Number of loops",
+    "outro_video_loops_hint": "How many times the image sequence repeats (e.g. 5 images × 2 = 10 images)",
+    "outro_video_music": "Also use intro music in outro",
+    "outro_video_music_hint": "Optional — uses the same MP3 as the intro",
     "language_group": "Sprache / Language",
     "language_label": "Language",
     "language_hint": "The selected language is applied immediately",
-
     "sounds_group": "Sounds",
     "sounds_label": "Enable sounds",
     "sounds_hint": "Plays a sound when the video is done or an error occurs",
-
     "save_btn": "💾  Save",
     "save_btn_ok": "✓  Saved",
     "reset_btn": "↺  Reset"
   },
-
   "bottom": {
     "status_ready": "Ready",
     "create_btn": "🎬  Create video",
@@ -151,7 +166,6 @@
     "outro_rendering": "🖼 Outro slide …",
     "done_final": "✅ Done!"
   },
-
   "dialogs": {
     "error_no_output_title": "Error",
     "error_no_output_msg": "Please choose an output location!",
@@ -160,8 +174,13 @@
     "error_render_title": "Render error",
     "error_pdf_title": "PDF Error",
     "error_pdf_msg": "PyMuPDF (fitz) is not installed.\n\nPlease install it with:\n  pip install PyMuPDF",
+    "error_outro_no_imgs_title": "No images",
+    "error_outro_no_imgs_msg": "The outro video requires slider images.\n\nPlease add images first.",
+    "error_outro_no_folder_title": "No save location",
+    "error_outro_no_folder_msg": "Please choose a save location for the outro under Settings → Outro Video!",
     "done_title": "🎉 Done!",
     "done_msg": "Video saved successfully:\n\n{0}",
+    "done_msg_both": "Videos saved successfully:\n\nIntro:\n{0}\n\nOutro:\n{1}",
     "reset_title": "Reset settings",
     "reset_msg": "Reset all settings to defaults?\n\nThis cannot be undone.",
     "reset_confirm": "Yes, reset",
@@ -171,26 +190,24 @@
     "icon_error": "❌",
     "icon_question": "↺"
   },
-
   "file_row": {
     "nothing_selected": "Nothing selected",
     "remove_tooltip": "Remove selection"
   },
-
   "font_picker": {
     "title": "🔤  Font"
   },
-
   "splash": {
     "loading": "Loading …"
   },
-
   "stepper": {
     "minutes": "{} min",
     "seconds": "{} s",
     "points": "{} pt",
-    "lines": "{} lines"
+    "lines": "{} lines",
+    "percent": "{} %",
+    "times": "{}×"
   },
-
-  "output_filename": "Intro - {0}"
+  "output_filename": "Intro - {0}",
+  "output_filename_outro": "Outro - {0}"
 }
