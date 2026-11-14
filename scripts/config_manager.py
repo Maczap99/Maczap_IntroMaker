@@ -18,7 +18,7 @@ def _config_path() -> str:
 DEFAULTS = {
     # UI state
     "theme":              "light",
-    "language":           "de",
+    "language":           None,    # None -> beim Start Systemsprache erkennen
     # Timer
     "timer_minutes":      5,
     # Music
@@ -32,8 +32,8 @@ DEFAULTS = {
     "outro_fade_enabled": True,
     "outro_fade_dur":     3,
     # Slider timing
-    "slider_from":        240,
-    "slider_until":       60,
+    "slider_from":        4,      # Minuten (verbleibende Zeit)
+    "slider_until":       1,      # Minuten (verbleibende Zeit)
     "img_duration":       10,
     "timer_between":      15,
     "slider_loop":        True,
@@ -91,7 +91,16 @@ DEFAULTS = {
     "last_output_folder":     "",
     # UI sounds (success.mp3 / error.mp3)
     "sounds_enabled":         True,
+
+    # -- Freiwilliger Kaffee-Hinweis nach erfolgreichem Rendern --------------
+    # Zaehlt die angezeigten Hinweise. Bei den ersten beiden gibt es keine
+    # Checkbox, ab dem dritten kann "Nicht mehr anzeigen" angehakt werden.
+    "support_notice_count":   0,
+    "support_notice_hidden":  False,
 }
+
+# Ab dieser Anzahl angezeigter Hinweise erscheint "Nicht mehr anzeigen".
+SUPPORT_NOTICE_HIDE_FROM = 3
 
 def load() -> dict:
     """Load settings from disk, filling missing keys with DEFAULTS."""

@@ -8,8 +8,8 @@ from PyQt5.QtWidgets import (
     QColorDialog, QListWidget, QListWidgetItem, QAbstractItemView,
     QComboBox
 )
-from PyQt5.QtCore import Qt, QThread, pyqtSignal, QObject, QTimer, QEvent, QSize
-from PyQt5.QtGui  import QPixmap, QFont, QColor, QIcon, QPalette, QPainter, QImage
+from PyQt5.QtCore import Qt, QThread, pyqtSignal, QObject, QTimer, QEvent, QSize, QUrl
+from PyQt5.QtGui  import QPixmap, QFont, QColor, QIcon, QPalette, QPainter, QImage, QDesktopServices
 from PyQt5.QtWidgets import QGraphicsOpacityEffect
 
 try:
@@ -22,8 +22,10 @@ from splash          import SplashScreen
 from font_picker     import FontPickerWidget
 from video_generator import VideoGenerator, _get_ffmpeg
 from config_manager  import load as cfg_load, save as cfg_save, reset as cfg_reset, DEFAULTS
+from config_manager  import SUPPORT_NOTICE_HIDE_FROM
 from styles          import make_style
 from lang_manager    import tr, set_language, available_languages, current_language
+from lang_manager    import detect_system_language
 
 try:
     import fitz
@@ -37,7 +39,18 @@ def resource_path(relative_path):
     Handles both normal execution and PyInstaller bundles via sys._MEIPASS."""
     if hasattr(sys, "_MEIPASS"):
         return os.path.join(sys._MEIPASS, relative_path)
-    return os.path.join(os.path.abspath("."), relative_path)
+    # Relativ zum Projektordner (eine Ebene ueber scripts/), nicht zum
+    # aktuellen Arbeitsordner -- sonst fehlen Assets beim Start aus scripts/.
+    return os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), relative_path)
+
+
+# Freiwillige Unterstuetzung -- gleiche Adresse wie im Diashow Maker.
+SUPPORT_URL = "https://buymeacoffee.com/maczap"
+
+
+def _open_support():
+    """Open the Buy Me a Coffee page in the default browser (only on click)."""
+    QDesktopServices.openUrl(QUrl(SUPPORT_URL))
 
 
 def _play_sound(name: str):
@@ -109,12 +122,29 @@ class ThemedDialog(QDialog):
         ThemedDialog(parent, title, message, dark, mode="error").exec_()
 
     @staticmethod
-    def question(parent, title, message, dark) -> bool:
-        return ThemedDialog(parent, title, message, dark, mode="question").exec_() == QDialog.Accepted
+    def question(parent, title, message, dark, confirm_text=None) -> bool:
+        return ThemedDialog(parent, title, message, dark, mode="question",
+                            confirm_text=confirm_text).exec_() == QDialog.Accepted
+
+    @staticmethod
+    def support(parent, dark, allow_hide=False, on_hide_changed=None):
+        """Freiwilliger Kaffee-Hinweis (wie im Diashow Maker).
+
+        Der Kaffee-Button schliesst den Dialog und oeffnet danach die Seite im
+        Browser; "Nein, danke", Escape oder Schliessen beenden nur diesen
+        Hinweis. *on_hide_changed(bool)* wird bei jedem Umschalten der
+        Checkbox sofort aufgerufen, damit auch ein Ab-Haken vor dem Schliessen
+        wirkt."""
+        dlg = ThemedDialog(parent, tr("dialogs.support_title"),
+                           tr("dialogs.support_msg"), dark, mode="support",
+                           allow_hide=allow_hide, on_hide_changed=on_hide_changed)
+        if dlg.exec_() == QDialog.Accepted:
+            _open_support()
 
     _RADIUS = 16
 
-    def __init__(self, parent, title, message, dark, mode="info"):
+    def __init__(self, parent, title, message, dark, mode="info", confirm_text=None,
+                 allow_hide=False, on_hide_changed=None):
         super().__init__(parent)
         self.setWindowTitle(title)
         self.setMinimumWidth(420)
@@ -157,7 +187,8 @@ class ThemedDialog(QDialog):
         hdr = QWidget(); hl = QHBoxLayout(hdr)
         hl.setContentsMargins(0,0,0,0); hl.setSpacing(12)
         icon_key = {"info": "dialogs.icon_info", "error": "dialogs.icon_error",
-                    "question": "dialogs.icon_question"}.get(mode, "dialogs.icon_info")
+                    "question": "dialogs.icon_question",
+                    "support": "dialogs.icon_support"}.get(mode, "dialogs.icon_info")
         icon_lbl = QLabel(tr(icon_key))
         icon_lbl.setFont(QFont("Segoe UI", 22))
         title_lbl = QLabel(title)
@@ -175,15 +206,33 @@ class ThemedDialog(QDialog):
         msg_lbl.setWordWrap(True); msg_lbl.setStyleSheet(f"color: {fg};")
         layout.addWidget(msg_lbl)
 
+        self.hide_chk = None
+        if mode == "support" and allow_hide:
+            self.hide_chk = StyledCheckBox(tr("dialogs.support_hide"))
+            self.hide_chk.update_theme(dark)
+            if on_hide_changed is not None:
+                self.hide_chk.stateChanged.connect(
+                    lambda st: on_hide_changed(st == 2))
+            layout.addWidget(self.hide_chk)
+
         btn_row = QWidget(); bl = QHBoxLayout(btn_row)
         bl.setContentsMargins(0,0,0,0); bl.setSpacing(10); bl.addStretch()
         if mode == "question":
             cb = QPushButton(tr("dialogs.cancel"))
             cb.setStyleSheet(f"background:{btn_cancel_bg}; color:{btn_cancel_fg};")
             cb.clicked.connect(self.reject); bl.addWidget(cb)
-            ok = QPushButton(tr("dialogs.reset_confirm"))
+            ok = QPushButton(confirm_text or tr("dialogs.reset_confirm"))
             ok.setStyleSheet("background:#EF4444; color:white;")
             ok.clicked.connect(self.accept); bl.addWidget(ok)
+        elif mode == "support":
+            cb = QPushButton(tr("dialogs.support_dismiss"))
+            cb.setStyleSheet(f"background:{btn_cancel_bg}; color:{btn_cancel_fg};")
+            cb.clicked.connect(self.reject); bl.addWidget(cb)
+            ok = QPushButton(tr("settings.support_btn"))
+            ok.setToolTip(SUPPORT_URL)
+            ok.setStyleSheet(f"background:{btn_bg}; color:{btn_fg};")
+            ok.clicked.connect(self.accept); bl.addWidget(ok)
+            cb.setDefault(True); cb.setFocus()   # freiwillig: Enter = "Nein, danke"
         else:
             ok = QPushButton(tr("dialogs.ok"))
             ok.setStyleSheet(f"background:{btn_bg}; color:{btn_fg};")
@@ -302,7 +351,7 @@ class PreviewWorker(QObject):
         import cv2, numpy as np
         from PIL import Image, ImageDraw, ImageFont
         from video_generator import _hex_to_rgb, _fit_image
-        from PyQt5.QtGui import QImage, QPixmap as _QPixmap
+        from PyQt5.QtGui import QImage
 
         cfg = self._cfg
         W, H = self.PW, self.PH
@@ -393,7 +442,7 @@ class PreviewWorker(QObject):
                 sub_color  = _hex_to_rgb(cfg.get("subtitle_color", "#FFFFFF"))
                 sub_shadow = max(1, sub_size // 20)
                 base_gap   = int(min(W, H) * 0.04)
-                extra_gap  = int(cfg.get("subtitle_offset", 2)) * sub_size
+                extra_gap  = int(float(cfg.get("subtitle_offset", 2)) * sub_size)
                 cur_y      = timer_y + th + base_gap + extra_gap
 
                 for line in cfg["subtitle_text"].strip().splitlines():
@@ -410,8 +459,10 @@ class PreviewWorker(QObject):
                     cur_y += lh + int(min(W, H) * 0.012)
 
             data = pil_img.tobytes("raw", "RGB")
-            qi   = QImage(data, W, H, W * 3, QImage.Format_RGB888)
-            self.finished.emit(_QPixmap.fromImage(qi))
+            # QImage statt QPixmap senden: QPixmap darf nur im GUI-Thread
+            # entstehen. copy() loest das Bild vom lokalen Puffer `data`.
+            qi   = QImage(data, W, H, W * 3, QImage.Format_RGB888).copy()
+            self.finished.emit(qi)
 
         except Exception:
             self.finished.emit(None)
@@ -499,7 +550,7 @@ def make_card():
 _HEADER_EMOJI_ICON = {
     "⏱": "timer",  "🎨": "palette", "🎵": "music",    "💾": "save",
     "🎞": "film",   "🔍": "search",  "🖼": "image",    "💬": "subtitle",
-    "🌑": "fade",   "🔔": "bell",    "🌐": "globe",
+    "🌑": "fade",   "🔔": "bell",    "🌐": "globe",   "☕": "coffee",
 }
 _ICON_CACHE = {}
 
@@ -1016,6 +1067,17 @@ class IntroMaker(QMainWindow):
         self._theme_btn.setFixedHeight(38)
         self._theme_btn.clicked.connect(self._toggle_theme)
         layout.addWidget(self._theme_btn)
+        # Kaffee-Button (wie im Diashow Maker): nur Icon, Tooltip erklaert,
+        # dass Buy Me a Coffee im Browser geoeffnet wird.
+        self._support_btn = QPushButton()
+        self._support_btn.setObjectName("themeBtn")
+        self._support_btn.setFont(QFont("Segoe UI", 11, QFont.Bold))
+        self._support_btn.setFixedHeight(38)
+        self._support_btn.setCursor(Qt.PointingHandCursor)
+        self._support_btn.setToolTip(tr("header.support_tooltip"))
+        self._support_btn.setAccessibleName(tr("settings.support_btn"))
+        self._support_btn.clicked.connect(_open_support)
+        layout.addWidget(self._support_btn)
         return hdr
 
     def _update_header_logo(self):
@@ -1484,6 +1546,23 @@ class IntroMaker(QMainWindow):
                                tr("settings.language_hint")),
         ]))
 
+        # -- Entwicklung unterstuetzen (wie "Ueber das Programm" im Diashow Maker)
+        self._support_about_btn = QPushButton(tr("settings.support_btn"))
+        self._support_about_btn.setObjectName("themeBtn")
+        self._support_about_btn.setFont(QFont("Segoe UI", 11, QFont.Bold))
+        self._support_about_btn.setFixedHeight(38)
+        self._support_about_btn.setCursor(Qt.PointingHandCursor)
+        self._support_about_btn.setToolTip(SUPPORT_URL)
+        self._support_about_btn.clicked.connect(_open_support)
+        support_row = self._settings_row(tr("settings.support_label"),
+                                         self._support_about_btn,
+                                         tr("settings.support_desc"))
+        for h in support_row.findChildren(QLabel, "hint"):
+            h.setWordWrap(True)
+            h.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Minimum)
+        layout.addWidget(self._settings_block("☕", tr("settings.support_group"),
+                                              [support_row]))
+
         btn_row = QWidget()
         brl = QHBoxLayout(btn_row)
         brl.setContentsMargins(0, 16, 0, 0); brl.setSpacing(10)
@@ -1602,6 +1681,9 @@ class IntroMaker(QMainWindow):
             "outro_video_use_music":   self._outro_video_music_chk.isChecked(),
             "last_output_folder":      self._last_output_folder,
             "sounds_enabled":          self._sounds_chk.isChecked(),
+            # Kein UI-Element: Stand des Kaffee-Hinweises unveraendert uebernehmen.
+            "support_notice_count":    self._settings.get("support_notice_count", 0),
+            "support_notice_hidden":   self._settings.get("support_notice_hidden", False),
         }
 
     def _restore_settings(self):
@@ -1642,10 +1724,19 @@ class IntroMaker(QMainWindow):
         self._slider_loop_chk.setChecked(s.get("slider_loop", True))
         self._fade_step.set_value(s.get("fade_duration", 2.0))
 
+        # Gespeicherte Schriften, die es nicht mehr gibt (z. B. nach dem
+        # Verschieben nach assets/fonts/old), werden gesammelt und nach dem
+        # Start gemeldet -- statt still auf eine andere Schrift zu wechseln.
+        self._missing_fonts = []
         font_name = s.get("font_name")
         if font_name:
             idx = self._font_picker._combo.findText(font_name)
-            if idx >= 0: self._font_picker._combo.setCurrentIndex(idx)
+            if idx >= 0:
+                self._font_picker._combo.setCurrentIndex(idx)
+            else:
+                self._missing_fonts.append(
+                    (tr("dialogs.missing_font_timer"), font_name,
+                     self._font_picker._combo.currentText()))
 
         fc = s.get("font_color", "#FFFFFF")
         self._font_color = fc
@@ -1715,7 +1806,12 @@ class IntroMaker(QMainWindow):
         outro_font_name = s.get("outro_slide_font_name")
         if outro_font_name:
             idx = self._outro_font_picker._combo.findText(outro_font_name)
-            if idx >= 0: self._outro_font_picker._combo.setCurrentIndex(idx)
+            if idx >= 0:
+                self._outro_font_picker._combo.setCurrentIndex(idx)
+            else:
+                self._missing_fonts.append(
+                    (tr("dialogs.missing_font_outro"), outro_font_name,
+                     self._outro_font_picker._combo.currentText()))
 
         outro_widgets = [
             self._outro_slide_edit,
@@ -1763,7 +1859,7 @@ class IntroMaker(QMainWindow):
 
         self._sounds_chk.setChecked(s.get("sounds_enabled", True))
 
-        lang = s.get("language", "de")
+        lang = s.get("language") or detect_system_language()
         for i in range(self._lang_combo.count()):
             if self._lang_combo.itemData(i) == lang:
                 self._lang_combo.blockSignals(True)
@@ -1844,11 +1940,12 @@ class IntroMaker(QMainWindow):
         self._preview_worker.finished.connect(self._preview_thread.quit)
         self._preview_thread.start()
 
-    def _on_preview_done(self, pixmap):
+    def _on_preview_done(self, image):
         self._preview_refresh_btn.setEnabled(True)
-        if pixmap is None:
+        if image is None:
             self._preview_lbl.setText(tr("simple_left.preview_error"))
             return
+        pixmap = QPixmap.fromImage(image)
         scaled = pixmap.scaled(
             self._preview_lbl.width(),
             self._preview_lbl.height(),
@@ -1889,6 +1986,11 @@ class IntroMaker(QMainWindow):
             self._apply_btn_icon(self._theme_btn, "_theme_icon_hover",
                                  "sun", "", tr("header.theme_light"))
         self._update_mode_btn()  # Mode-Button-Icon an neue Textfarbe anpassen
+        self._apply_btn_icon(self._support_btn, "_support_icon_hover",
+                             "coffee", "", "☕", size=18)
+        self._apply_btn_icon(self._support_about_btn, "_support_about_icon_hover",
+                             "coffee", tr("settings.support_btn"),
+                             "☕  " + tr("settings.support_btn"))
         self._refresh_save_btn_icon()
         self._update_header_logo()
         accent = "#3B82F6" if theme == "dark" else "#2563EB"
@@ -1926,7 +2028,15 @@ class IntroMaker(QMainWindow):
                                   tr("dialogs.reset_title"),
                                   tr("dialogs.reset_msg"),
                                   dark=(self._theme == "dark")):
+            # Der Kaffee-Hinweis ist keine Einstellung: Zaehler und
+            # "Nicht mehr anzeigen" ueberleben das Zuruecksetzen.
+            keep = {k: self._settings.get(k, DEFAULTS[k])
+                    for k in ("support_notice_count", "support_notice_hidden")}
             self._settings = cfg_reset()
+            self._settings.update(keep)
+            # Sprache nach dem Zuruecksetzen wieder aus dem System ableiten.
+            self._settings["language"] = detect_system_language()
+            cfg_save(self._settings)
             self._restore_settings()
             self._apply_theme(self._settings.get("theme", "light"))
 
@@ -2238,6 +2348,38 @@ class IntroMaker(QMainWindow):
         ]:
             _set_dim(w, on)
 
+    def _set_support_notice_hidden(self, hidden):
+        """Checkbox "Nicht mehr anzeigen" sofort speichern."""
+        self._settings["support_notice_hidden"] = bool(hidden)
+        cfg_save(self._settings)
+
+    def _maybe_show_support_notice(self):
+        """Kaffee-Hinweis nach erfolgreichem Rendern (wie im Diashow Maker).
+
+        Die ersten beiden Hinweise kommen immer, ohne Checkbox. Ab dem dritten
+        kann "Nicht mehr anzeigen" angehakt werden; das gilt dauerhaft."""
+        if self._settings.get("support_notice_hidden", False):
+            return
+        count = int(self._settings.get("support_notice_count", 0) or 0) + 1
+        self._settings["support_notice_count"] = count
+        cfg_save(self._settings)
+        ThemedDialog.support(self, dark=(self._theme == "dark"),
+                             allow_hide=(count >= SUPPORT_NOTICE_HIDE_FROM),
+                             on_hide_changed=self._set_support_notice_hidden)
+
+    def warn_missing_fonts(self):
+        """Nach dem Start melden, welche gespeicherten Schriften fehlen."""
+        missing = getattr(self, "_missing_fonts", [])
+        if not missing:
+            return
+        lines = "\n".join(tr("dialogs.missing_font_line", role, old, new)
+                          for role, old, new in missing)
+        ThemedDialog.info(self,
+                          tr("dialogs.missing_font_title"),
+                          tr("dialogs.missing_font_msg", lines),
+                          dark=(self._theme == "dark"))
+        self._missing_fonts = []
+
     # -- Render -----------------------------------------------------------------
     def _start_render(self):
         if not self._out_path:
@@ -2246,6 +2388,16 @@ class IntroMaker(QMainWindow):
                                tr("dialogs.error_no_output_msg"),
                                dark=(self._theme == "dark"))
             return
+
+        # Dateinamen erst beim Rendern mit dem aktuellen Datum bilden -- der
+        # Name aus der Ordnerwahl bzw. vom Programmstart kann veraltet sein
+        # (App ueber Mitternacht offen).
+        date_str       = datetime.now().strftime("%d.%m.%Y")
+        self._out_path = os.path.join(os.path.dirname(self._out_path),
+                                      f"{tr('output_filename', date_str)}.mp4")
+        self._out_row.set_path(self._out_path)
+        self._out_row_a.set_path(self._out_path)
+
         if self._music_path and not _get_ffmpeg():
             ThemedDialog.error(self,
                                tr("dialogs.error_ffmpeg_title"),
@@ -2271,6 +2423,18 @@ class IntroMaker(QMainWindow):
                 return
             outro_video_path = os.path.join(self._outro_video_folder, "outro.mp4")
         self._last_outro_path = outro_video_path
+
+        # Vorhandene Dateien nicht ungefragt ueberschreiben.
+        existing = [p for p in (self._out_path, outro_video_path)
+                    if p and os.path.isfile(p)]
+        if existing:
+            if not ThemedDialog.question(
+                    self,
+                    tr("dialogs.overwrite_title"),
+                    tr("dialogs.overwrite_msg", "\n".join(existing)),
+                    dark=(self._theme == "dark"),
+                    confirm_text=tr("dialogs.overwrite_confirm")):
+                return
 
         sub_text = self._sub_edit.toPlainText().strip() if self._sub_chk.isChecked() else ""
 
@@ -2394,6 +2558,12 @@ class IntroMaker(QMainWindow):
                               tr("dialogs.done_title"),
                               done_msg,
                               dark=dark)
+            # Nur nach erfolgreichem Rendern, nie nach Abbruch oder Fehler.
+            # Ein Fehler beim Hinweis darf das fertige Video nicht stoeren.
+            try:
+                self._maybe_show_support_notice()
+            except Exception:
+                pass
         else:
             self._progress.setValue(0)
             self._pct_lbl.setText("")
@@ -2414,14 +2584,21 @@ def main():
         app.setWindowIcon(QIcon(icon_path))
 
     settings = cfg_load()
-    lang     = settings.get("language", "de")
+    lang     = settings.get("language")
+    if not lang or lang not in [c for c, _ in available_languages()]:
+        # Erster Start (oder Sprachdatei fehlt): Systemsprache uebernehmen und
+        # als Standard speichern -- z. B. Franzoesisch auf einem franzoesischen PC.
+        lang = detect_system_language()
+        settings["language"] = lang
+        cfg_save(settings)
     set_language(lang)
 
     theme  = settings.get("theme", "light")
     splash = SplashScreen(theme=theme)
     splash.show()
     window = IntroMaker()
-    splash.finished.connect(lambda: (window.show(), window.raise_(), window.activateWindow()))
+    splash.finished.connect(lambda: (window.show(), window.raise_(), window.activateWindow(),
+                                     QTimer.singleShot(0, window.warn_missing_fonts)))
     sys.exit(app.exec_())
 
 

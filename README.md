@@ -24,8 +24,9 @@ Gebaut mit Python + PyQt5. Rendering direkt über OpenCV und PIL, mit optionalem
 - **Hardware-Encoding** — automatische Erkennung von NVIDIA (`h264_nvenc`) und AMD (`h264_amf`); fällt auf `libx264` zurück wenn keine GPU verfügbar ist
 - **Töne** — optionale Audio-Benachrichtigung bei erfolgreichem Abschluss oder Fehler
 - **Hell- & Dunkel-Modus** — vollständiges UI-Theming mit persistenten Einstellungen
-- **Mehrsprachig** — Deutsch, Englisch und Russisch, umschaltbar in den Einstellungen
+- **Mehrsprachig** — 13 Sprachen, beim ersten Start automatisch passend zur Systemsprache gewählt, umschaltbar in den Einstellungen
 - **Einstellungsseite** — alle Timing-, Fade-, Slider-, Timer-Overlay- und Outro-Parameter übersichtlich konfigurierbar
+- **Entwicklung unterstützen** — Kaffee-Button im Header und Block in den Einstellungen; ein bewusster Klick öffnet [Buy Me a Coffee](https://buymeacoffee.com/maczap) im Browser. Nach jedem erfolgreich gerenderten Intro erscheint ein freiwilliger Kaffee-Hinweis; die ersten beiden Male ohne Checkbox, ab dem dritten Mal mit **„Nicht mehr anzeigen“** (dauerhaft gespeichert, bleibt auch beim Zurücksetzen der Einstellungen erhalten). Abbruch und Fehler lösen keinen Hinweis aus. Freiwillig, alle Funktionen bleiben kostenlos
 
 ---
 
@@ -91,8 +92,8 @@ IntroMaker/
 │   └── requirements.txt
 ├── lang/
 │   ├── de.json             # Deutsch
-│   ├── en.json             # Englisch
-│   └── ru.json             # Russisch
+│   ├── en.json             # Englisch (Rückfall für fehlende Texte)
+│   └── …                   # cs, da, es, fr, it, nl, pl, pt-BR, ru, sv, tr
 ├── scripts/
 │   ├── main.py             # Hauptfenster & UI
 │   ├── video_generator.py  # Frame-Rendering & FFmpeg-Pipeline
@@ -131,7 +132,7 @@ Alle Einstellungen werden automatisch zwischen Sitzungen gespeichert und können
 | Musik im Abschluss-Bild | Musik läuft bis Videoende oder endet mit Timer 0:00 |
 | Musik-Fade-out | Dauer des Musik-Fade am Videoende |
 | Töne | Audio-Benachrichtigung bei Abschluss oder Fehler |
-| Sprache | Deutsch / Englisch / Russisch — wirkt sofort |
+| Sprache | 13 Sprachen, beim ersten Start aus der Systemsprache übernommen — wirkt nach Neustart |
 
 Einstellungen werden gespeichert unter:
 ```
@@ -197,15 +198,27 @@ pip install PyMuPDF
 
 ## 🌐 Sprachen
 
-Die App unterstützt aktuell drei Sprachen:
+Die App unterstützt 13 Sprachen:
 
 | Code | Sprache |
 |---|---|
-| `de` | Deutsch (Standard) |
+| `cs` | Čeština |
+| `da` | Dansk |
+| `de` | Deutsch |
 | `en` | English |
+| `es` | Español |
+| `fr` | Français |
+| `it` | Italiano |
+| `nl` | Nederlands |
+| `pl` | Polski |
+| `pt-BR` | Português (Brasil) |
 | `ru` | Русский |
+| `sv` | Svenska |
+| `tr` | Türkçe |
 
-Die Sprache wird in den **Einstellungen** gewählt und gilt sofort. Weitere Sprachen können einfach durch Ablegen einer neuen `xx.json` im `lang/`-Ordner hinzugefügt werden — sie werden automatisch erkannt.
+**Automatische Auswahl:** Beim ersten Start übernimmt die App die Anzeigesprache von Windows und speichert sie als Standard — auf einem französischen PC startet sie also auf Französisch. Regionale Varianten werden zugeordnet (z. B. `fr_CA` → Französisch, `pt_PT` → Portugiesisch). Gibt es keine Übersetzung für die Systemsprache, wird Englisch verwendet. Eine später in den **Einstellungen** gewählte Sprache bleibt erhalten; sie gilt nach einem Neustart. „Zurücksetzen“ wählt wieder die Systemsprache.
+
+Weitere Sprachen können durch Ablegen einer neuen `xx.json` im `lang/`-Ordner hinzugefügt werden — sie werden automatisch erkannt. Den Anzeigenamen trägt man in `_NATIVE` in `scripts/lang_manager.py` ein.
 
 > **Hinweis:** Neue Funktionen wie Outro-Video, Timer-Overlay und die Timer-Pause benötigen entsprechende Übersetzungsschlüssel. Beim Hinzufügen oder Aktualisieren einer Sprachdatei sollten diese Schlüssel aus `de.json` übernommen werden, damit alle Texte vollständig angezeigt werden.
 

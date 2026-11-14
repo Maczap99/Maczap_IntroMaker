@@ -1,4 +1,4 @@
-"""
+r"""
 lang_manager.py
 ───────────────
 Lightweight i18n helper.
@@ -22,6 +22,7 @@ Usage
 """
 
 import json
+import locale
 import os
 import sys
 
@@ -100,16 +101,84 @@ def _flatten(d: dict, prefix: str = "") -> dict:
 
 # ── Public API ────────────────────────────────────────────────────────────────
 
+# Anzeigenamen in der jeweiligen Sprache selbst.
+_NATIVE = {
+    "cs": "Čeština",    "da": "Dansk",      "de": "Deutsch",
+    "en": "English",    "es": "Español",    "fr": "Français",
+    "it": "Italiano",   "nl": "Nederlands", "pl": "Polski",
+    "pt-BR": "Português (Brasil)",          "ru": "Русский",
+    "sv": "Svenska",    "tr": "Türkçe",
+}
+
+
 def available_languages() -> list:
-    """Return [(code, native_name), …] for every .json found in lang/."""
-    _NATIVE = {"de": "Deutsch", "en": "English", "ru": "Русский"}
+    """Return [(code, native_name), …] for every .json found in lang/,
+    sorted by the native name."""
     langs = []
     if os.path.isdir(_LANG_DIR):
-        for fn in sorted(os.listdir(_LANG_DIR)):
+        for fn in os.listdir(_LANG_DIR):
             if fn.endswith(".json"):
                 code = fn[:-5]
                 langs.append((code, _NATIVE.get(code, code.upper())))
+    langs.sort(key=lambda x: x[1].casefold())
     return langs if langs else [(_DEFAULT_LANG, "Deutsch")]
+
+
+def _system_locale_names() -> list:
+    """Return candidate locale names of the user's system, best first,
+    e.g. ['fr_FR', 'fr_FR']. Windows: the display (UI) language first."""
+    names = []
+    if sys.platform == "win32":
+        try:
+            import ctypes
+            k32 = ctypes.windll.kernel32
+            for fn in (k32.GetUserDefaultUILanguage, k32.GetUserDefaultLCID):
+                name = locale.windows_locale.get(int(fn()) & 0xFFFF)
+                if name:
+                    names.append(name)
+        except Exception:
+            pass
+    for var in ("LC_ALL", "LC_MESSAGES", "LANG", "LANGUAGE"):
+        val = os.environ.get(var)
+        if val:
+            names.append(val.split(":")[0].split(".")[0])
+    try:
+        loc = locale.getlocale()[0]
+        if loc:
+            names.append(loc)
+    except Exception:
+        pass
+    return names
+
+
+def match_language(locale_name: str, codes) -> str | None:
+    """Map a locale name like 'fr_FR', 'pt-PT' or 'de' to one of *codes*.
+    Exact region match first ('pt_BR' -> 'pt-BR'), then the language alone
+    ('fr_CA' -> 'fr', 'pt_PT' -> 'pt-BR')."""
+    if not locale_name:
+        return None
+    norm  = locale_name.replace("_", "-").lower()
+    lower = {c.lower(): c for c in codes}
+    if norm in lower:
+        return lower[norm]
+    primary = norm.split("-")[0]
+    if primary in lower:
+        return lower[primary]
+    for c in codes:
+        if c.lower().split("-")[0] == primary:
+            return c
+    return None
+
+
+def detect_system_language() -> str:
+    """Best available app language for the system language; English if the
+    system language is not translated."""
+    codes = [c for c, _ in available_languages()]
+    for name in _system_locale_names():
+        hit = match_language(name, codes)
+        if hit:
+            return hit
+    return _FALLBACK_LANG if _FALLBACK_LANG in codes else _DEFAULT_LANG
 
 
 def set_language(lang_code: str):

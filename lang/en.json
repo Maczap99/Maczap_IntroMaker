@@ -4,7 +4,8 @@
     "settings": "⚙️  Settings",
     "back": "🏠  Back",
     "theme_dark": "🌙",
-    "theme_light": "☀️"
+    "theme_light": "☀️",
+    "support_tooltip": "Support development – opens Buy Me a Coffee in your browser"
   },
   "simple_left": {
     "timer_title": "⏱  Timer Duration",
@@ -151,7 +152,11 @@
     "sounds_hint": "Plays a sound when the video is done or an error occurs",
     "save_btn": "💾  Save",
     "save_btn_ok": "✓  Saved",
-    "reset_btn": "↺  Reset"
+    "reset_btn": "↺  Reset",
+    "support_group": "Support development",
+    "support_label": "Enjoying Intro Maker?",
+    "support_desc": "Buying me a coffee helps support my work as a computer science student. This is optional – all features remain free. Thank you!",
+    "support_btn": "Support me on Buy Me a Coffee"
   },
   "bottom": {
     "status_ready": "Ready",
@@ -188,7 +193,20 @@
     "ok": "OK",
     "icon_info": "✅",
     "icon_error": "❌",
-    "icon_question": "↺"
+    "icon_question": "↺",
+    "missing_font_title": "Font not found",
+    "missing_font_msg": "These saved fonts no longer exist in assets/fonts:\n\n{0}\n\nPlease choose the font again and save the settings.",
+    "missing_font_line": "• {0}: \"{1}\" is missing, using \"{2}\"",
+    "missing_font_timer": "Timer font",
+    "missing_font_outro": "Closing slide font",
+    "overwrite_title": "Overwrite file?",
+    "overwrite_msg": "These file(s) already exist:\n\n{0}\n\nThey will be replaced when rendering finishes. If rendering is cancelled, they stay unchanged.",
+    "overwrite_confirm": "Overwrite",
+    "support_title": "Support development",
+    "support_msg": "If you like the result, you can buy me a coffee to support further development. This is optional – all features remain free. The link opens Buy Me a Coffee in your browser.",
+    "support_hide": "Don't show again",
+    "support_dismiss": "No, thanks",
+    "icon_support": "☕"
   },
   "file_row": {
     "nothing_selected": "Nothing selected",

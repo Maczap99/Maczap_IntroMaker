@@ -4,7 +4,8 @@
     "settings": "⚙️  Einstellungen",
     "back": "🏠  Zurück",
     "theme_dark": "🌙",
-    "theme_light": "☀️"
+    "theme_light": "☀️",
+    "support_tooltip": "Entwicklung unterstützen – öffnet Buy Me a Coffee im Browser"
   },
   "simple_left": {
     "timer_title": "⏱  Timer-Dauer",
@@ -151,7 +152,11 @@
     "sounds_hint": "Spielt einen Ton wenn das Video fertig oder ein Fehler aufgetreten ist",
     "save_btn": "💾  Speichern",
     "save_btn_ok": "✓  Gespeichert",
-    "reset_btn": "↺  Zurücksetzen"
+    "reset_btn": "↺  Zurücksetzen",
+    "support_group": "Entwicklung unterstützen",
+    "support_label": "Dir gefällt der Intro Maker?",
+    "support_desc": "Mit einem Kaffee kannst du meine Arbeit als Informatikstudent unterstützen. Das ist freiwillig – alle Funktionen bleiben kostenlos. Vielen Dank!",
+    "support_btn": "Auf Buy Me a Coffee unterstützen"
   },
   "bottom": {
     "status_ready": "Bereit",
@@ -188,7 +193,20 @@
     "ok": "OK",
     "icon_info": "✅",
     "icon_error": "❌",
-    "icon_question": "↺"
+    "icon_question": "↺",
+    "missing_font_title": "Schrift nicht gefunden",
+    "missing_font_msg": "Diese gespeicherten Schriften gibt es nicht mehr in assets/fonts:\n\n{0}\n\nBitte die Schrift neu wählen und die Einstellungen speichern.",
+    "missing_font_line": "• {0}: „{1}“ fehlt, verwendet wird „{2}“",
+    "missing_font_timer": "Timer-Schrift",
+    "missing_font_outro": "Abschluss-Bild-Schrift",
+    "overwrite_title": "Datei überschreiben?",
+    "overwrite_msg": "Diese Datei(en) gibt es bereits:\n\n{0}\n\nBeim Fertigstellen werden sie ersetzt. Wird das Rendern abgebrochen, bleiben sie unverändert.",
+    "overwrite_confirm": "Überschreiben",
+    "support_title": "Entwicklung unterstützen",
+    "support_msg": "Wenn dir das Ergebnis gefällt, kannst du mir einen Kaffee ausgeben und damit die Weiterentwicklung unterstützen. Das ist freiwillig – alle Funktionen bleiben kostenlos. Der Link öffnet Buy Me a Coffee im Browser.",
+    "support_hide": "Nicht mehr anzeigen",
+    "support_dismiss": "Nein, danke",
+    "icon_support": "☕"
   },
   "file_row": {
     "nothing_selected": "Nichts ausgewählt",

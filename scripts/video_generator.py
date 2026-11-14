@@ -32,6 +32,14 @@ def _tmp_noaudio_path(out_path: str) -> str:
     return root + "_noaudio.mp4"
 
 
+def _tmp_mux_path(out_path: str) -> str:
+    """Temporary target of the audio mux step. The finished file is moved
+    onto *out_path* only after the mux succeeded, so an existing video is
+    never destroyed by a cancelled or failed render."""
+    root, _ = os.path.splitext(out_path)
+    return root + "_mux.mp4"
+
+
 # -- Hardware-Encoder-Erkennung (einmal pro Sitzung, danach gecacht) -----------
 # Bevorzugt NVIDIA (h264_nvenc) und AMD (h264_amf); faellt auf libx264
 # zurueck. Ein Encoder gilt erst als verfuegbar, wenn ein kurzer Test-Encode
@@ -139,10 +147,10 @@ def _fit_image(img_pil: Image.Image, w: int, h: int,
 
 
 def _subtitle_layout(w: int, h: int, timer_y: int, timer_h: int,
-                     sub_offset: int, sub_size: int) -> int:
+                     sub_offset: float, sub_size: int) -> int:
     """Return the y-coordinate at which subtitle text begins."""
     base_gap  = int(min(w, h) * 0.04)
-    extra_gap = sub_offset * sub_size
+    extra_gap = int(sub_offset * sub_size)
     return timer_y + timer_h + base_gap + extra_gap
 
 
@@ -289,8 +297,12 @@ class VideoGenerator:
 
             self.done(True, "OK")
         except _CancelledError:
-            # Beim Abbruch alle (Zwischen-)Dateien von Intro UND Outro aufraeumen.
-            for path in [tmp_video, out_path, outro_tmp, outro_out]:
+            # Beim Abbruch nur die Zwischendateien aufraeumen. Die Zieldateien
+            # selbst werden erst nach erfolgreichem Abschluss ersetzt; eine dort
+            # schon vorhandene Datei (z. B. Video vom selben Tag) bleibt erhalten.
+            for path in [tmp_video, outro_tmp,
+                         out_path and _tmp_mux_path(out_path),
+                         outro_out and _tmp_mux_path(outro_out)]:
                 if path and os.path.isfile(path):
                     try:
                         os.remove(path)
@@ -300,7 +312,9 @@ class VideoGenerator:
         except Exception:
             # Zwischendateien auch bei Fehlern entfernen -- halbfertige
             # *_noaudio.mp4-Dateien sollen nicht liegen bleiben.
-            for path in [tmp_video, outro_tmp]:
+            for path in [tmp_video, outro_tmp,
+                         out_path and _tmp_mux_path(out_path),
+                         outro_out and _tmp_mux_path(outro_out)]:
                 if path and os.path.isfile(path):
                     try:
                         os.remove(path)
@@ -319,14 +333,17 @@ class VideoGenerator:
         bg_cap    = None
         bg_static = None
         w, h      = 1920, 1080
-        bg_total  = 0
+        bg_fps    = 30.0
 
         if cfg["bg_video"]:
             bg_cap = cv2.VideoCapture(cfg["bg_video"])
             if bg_cap.isOpened():
-                w        = int(bg_cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-                h        = int(bg_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-                bg_total = int(bg_cap.get(cv2.CAP_PROP_FRAME_COUNT))
+                # yuv420p verlangt gerade Masse -> auf gerade Zahl abrunden.
+                w = int(bg_cap.get(cv2.CAP_PROP_FRAME_WIDTH))  // 2 * 2
+                h = int(bg_cap.get(cv2.CAP_PROP_FRAME_HEIGHT)) // 2 * 2
+                src_fps = bg_cap.get(cv2.CAP_PROP_FPS)
+                if src_fps and 1.0 <= src_fps <= 240.0:
+                    bg_fps = float(src_fps)
             # Defekte/nicht lesbare Videos (oder 0x0-Metadaten) nicht
             # weiterreichen -> stattdessen auf die Fallback-Farbe wechseln,
             # statt spaeter mit w=0/h=0 abzustuerzen.
@@ -414,7 +431,9 @@ class VideoGenerator:
         last_bg    = black  # letzter erfolgreich gelesener BG-Frame (Fallback)
 
         # -- Render frames ------------------------------------------------------
-        bg_frame_idx = 0
+        bg_pos       = 0      # gelesene Quellframes im aktuellen Durchlauf
+        bg_offset    = 0      # Quellframes aller vorherigen Durchlaeufe
+        out_frame_no = 0      # Nummer des aktuellen Ausgabeframes
         elapsed      = 0.0
         n_segs       = len(segments)
 
@@ -434,24 +453,28 @@ class VideoGenerator:
 
                     # -- Advance / loop background video ----------------------
                     if bg_cap:
-                        # Nur per Frame-Zaehler loopen, wenn die Metadaten
-                        # einen gueltigen Frame-Count liefern (bei manchen
-                        # Containern ist CAP_PROP_FRAME_COUNT 0 oder falsch).
-                        if bg_total > 0 and bg_frame_idx >= bg_total - 1:
-                            bg_cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
-                            bg_frame_idx = 0
-                        ret, bg = bg_cap.read()
-                        if not ret:
-                            bg_cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
-                            bg_frame_idx = 0
-                            ret, bg = bg_cap.read()
-                        if not ret or bg is None:
-                            # Auch der zweite Versuch schlug fehl -> letzten
-                            # gueltigen Frame weiterverwenden statt crashen.
-                            bg = last_bg.copy()
-                        else:
-                            last_bg = bg
-                        bg_frame_idx += 1
+                        # Quellframe nach Zeit statt 1:1 waehlen, damit ein
+                        # 25- oder 60-FPS-Video in Originalgeschwindigkeit
+                        # laeuft (Frames werden wiederholt bzw. uebersprungen).
+                        # Am Dateiende wird von vorn begonnen (Loop).
+                        target = int(out_frame_no * bg_fps / fps) - bg_offset
+                        while bg_pos <= target:
+                            ret, fr = bg_cap.read()
+                            if not ret or fr is None:
+                                if bg_pos == 0:
+                                    break  # Video liefert gar keine Frames
+                                bg_cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+                                bg_offset += bg_pos
+                                target    -= bg_pos
+                                bg_pos     = 0
+                                continue
+                            bg_pos += 1
+                            if fr.shape[0] != h or fr.shape[1] != w:
+                                fr = fr[:h, :w]
+                                if fr.shape[0] != h or fr.shape[1] != w:
+                                    fr = cv2.resize(fr, (w, h))
+                            last_bg = fr
+                        bg = last_bg
                     else:
                         bg = bg_static.copy()
 
@@ -570,6 +593,7 @@ class VideoGenerator:
 
                     write_frame(frame)
                     elapsed   += 1.0 / fps
+                    out_frame_no += 1
                     last_frame = frame
                     self._check_cancel()
 
@@ -595,10 +619,14 @@ class VideoGenerator:
             outro_fade_out   = float(cfg.get("outro_slide_fade_out", 1))
 
             if outro_enabled and outro_text:
+                # Schriftgroesse bezieht sich auf 1080p und skaliert mit der
+                # Ausgabehoehe (wie der Timer), damit das Verhaeltnis bei
+                # anderen Hintergrundvideo-Aufloesungen gleich bleibt.
                 outro_base   = self._draw_outro_slide(
                     outro_text, outro_color,
                     outro_bg_image, outro_bg_color,
-                    outro_font_size, outro_font_path, w, h, get_font)
+                    max(8, int(outro_font_size * h / 1080)),
+                    outro_font_path, w, h, get_font)
                 outro_frames = int(outro_dur * fps)
 
                 for f in range(outro_frames):
@@ -854,8 +882,10 @@ class VideoGenerator:
         sub_enabled      = cfg.get("subtitle_enabled", False)
         sub_lines        = []
         sub_font         = None
-        sub_size         = cfg.get("subtitle_size", 40)
-        sub_offset_lines = int(cfg.get("subtitle_offset", 2))
+        # Groesse bezieht sich auf 1080p und skaliert mit der Ausgabehoehe --
+        # genau wie in der Vorschau. Abstand in (auch halben) Zeilenhoehen.
+        sub_size         = max(10, int(cfg.get("subtitle_size", 40) * h / 1080))
+        sub_offset_lines = float(cfg.get("subtitle_offset", 2))
 
         if sub_enabled:
             raw = cfg.get("subtitle_text", "").strip()
@@ -1128,11 +1158,14 @@ class VideoGenerator:
         if fadeout:
             af_parts.append(f"afade=t=out:st={fade_start:.2f}:d={fade_dur}")
         af_parts.append(f"atrim=0:{audio_sec}")
-        if video_sec > audio_sec:
-            af_parts.append(f"apad=whole_dur={video_sec}")
+        # Immer bis zur Videolaenge mit Stille auffuellen: Ist die Musik ohne
+        # Loop kuerzer als das Video, wuerde -shortest sonst das VIDEO auf die
+        # Musiklaenge kuerzen.
+        af_parts.append(f"apad=whole_dur={video_sec}")
         af_str = ",".join(af_parts)
 
         loop_flag = ["-stream_loop", "-1"] if loop else []
+        mux_path  = _tmp_mux_path(out_path)
         cmd = [
             ffmpeg_path, "-y",
             "-i", tmp_video,
@@ -1147,7 +1180,7 @@ class VideoGenerator:
             "-b:a", "192k",
             "-ac", "2",
             "-ar", "44100",
-            "-shortest", out_path
+            "-shortest", mux_path
         ]
 
         # stderr des Mux-Schritts in eine Log-Datei schreiben (statt verwerfen).
@@ -1156,13 +1189,22 @@ class VideoGenerator:
         log_path = os.path.join(tempfile.gettempdir(),
                                 "IntroMaker_ffmpeg_audio.log")
         try:
+            self._check_cancel()
             with open(log_path, "w", encoding="utf-8", errors="replace") as logf:
                 subprocess.run(
                     cmd, check=True,
                     stdout=subprocess.DEVNULL, stderr=logf,
                     startupinfo=_STARTUPINFO
                 )
+            # Erst jetzt die Zieldatei ersetzen (vorhandene Datei bleibt bis
+            # hierhin unangetastet).
+            os.replace(mux_path, out_path)
         finally:
+            if os.path.isfile(mux_path):
+                try:
+                    os.remove(mux_path)
+                except OSError:
+                    pass
             if loop_unit_path and os.path.isfile(loop_unit_path):
                 try:
                     os.remove(loop_unit_path)
