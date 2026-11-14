@@ -1,0 +1,4 @@
+Copyright notices preserved from the unmodified font files:
+
+Copyright 2023 The Bungee Project Authors (https://github.com/djrrb/Bungee)
+

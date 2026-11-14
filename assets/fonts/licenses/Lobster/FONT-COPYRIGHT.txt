@@ -1,0 +1,4 @@
+Copyright notices preserved from the unmodified font files:
+
+Copyright 2010 The Lobster Project Authors (https://github.com/impallari/The-Lobster-Font), with Reserved Font Name "Lobster".
+

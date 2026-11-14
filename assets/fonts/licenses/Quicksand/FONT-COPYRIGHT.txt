@@ -1,0 +1,4 @@
+Copyright notices preserved from the unmodified font files:
+
+Copyright 2019 The Quicksand Project Authors (https://github.com/andrew-paglinawan/QuicksandFamily.git), with Reserved Font Name "Quicksand"
+

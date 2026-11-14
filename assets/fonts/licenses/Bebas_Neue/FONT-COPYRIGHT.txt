@@ -1,0 +1,4 @@
+Copyright notices preserved from the unmodified font files:
+
+Copyright 2019 The Bebas Neue Project Authors (https://github.com/dharmatype/Bebas-Neue)
+

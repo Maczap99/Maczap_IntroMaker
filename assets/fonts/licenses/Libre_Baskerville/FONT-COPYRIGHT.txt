@@ -1,0 +1,4 @@
+Copyright notices preserved from the unmodified font files:
+
+Copyright 2012 The Libre Baskerville Project Authors (https://github.com/impallari/Libre-Baskerville)
+

@@ -1,0 +1,1944 @@
+{
+  "schemaVersion": 1,
+  "reviewDate": "2026-10-06",
+  "files": [
+    {
+      "file": "AlteDin1451Mittelschrift-gBdP.ttf",
+      "family": "Alte DIN 1451 Mittelschrift",
+      "sha256": "3CDBDD35C7637FF4A15D22BDCB8B952F48AFADD2E41EDB5AB29D80EAAD8D48FD",
+      "licenseStatus": "legacy-evidence-incomplete",
+      "licensePath": null
+    },
+    {
+      "file": "AlteDin1451MittelschriftGepraegt-oMea.ttf",
+      "family": "Alte DIN 1451 Mittelschrift",
+      "sha256": "6D42C6809D51CC9135C6109C2032EC4AE7FFD6059D54828F3EFFCCD7EB582836",
+      "licenseStatus": "legacy-evidence-incomplete",
+      "licensePath": null
+    },
+    {
+      "file": "FetteClassicUnzFraktur-KMne.ttf",
+      "family": "Fette classic UNZ Fraktur",
+      "sha256": "6489C33388BAD938B045A421D2B38FFE3A9201479AB977DB309AC9C2D80C6731",
+      "licenseStatus": "legacy-evidence-incomplete",
+      "licensePath": null
+    },
+    {
+      "file": "Fundamental3DBrigade-ry9K.ttf",
+      "family": "Fundamental Brigade",
+      "sha256": "7CC4555F96AA4689667AA9ECA7586288FE0090EB1AC6F3D89D5C4BCD679AF48F",
+      "licenseStatus": "legacy-evidence-incomplete",
+      "licensePath": null
+    },
+    {
+      "file": "FundamentalBrigade-R3Me.ttf",
+      "family": "Fundamental Brigade",
+      "sha256": "F19C5153F1FC9D1DB2B04B7511C9E51779AD46817FA559F5506E687452FCFDAD",
+      "licenseStatus": "legacy-evidence-incomplete",
+      "licensePath": null
+    },
+    {
+      "file": "FundamentalBrigadeCondensed-B7gn.ttf",
+      "family": "Fundamental Brigade",
+      "sha256": "13CFD9DE6E41D3F6A79B56D61EF60379761654E7FA867698ECA445FA92ADCA26",
+      "licenseStatus": "legacy-evidence-incomplete",
+      "licensePath": null
+    },
+    {
+      "file": "FundamentalBrigadeSchwer-87KA.ttf",
+      "family": "Fundamental Brigade",
+      "sha256": "1F986EC2BCB34A25A6D7B8340074274E9E8161DDAD600915918BA1F2CF9F05C0",
+      "licenseStatus": "legacy-evidence-incomplete",
+      "licensePath": null
+    },
+    {
+      "file": "FundamentalBrigadeScvhlank-YldL.ttf",
+      "family": "Fundamental Brigade",
+      "sha256": "D27A458A1272262E7F44B28C5C194716689CC222192E2140598E2FCBA55BAD13",
+      "licenseStatus": "legacy-evidence-incomplete",
+      "licensePath": null
+    },
+    {
+      "file": "GlNummernschildEng-5m3V.otf",
+      "family": "GL Nummernschild",
+      "sha256": "3393FBA4B89BB89EDB5CD5A8FB8F5646C6A508DE2139A0D26FBD9293CEAFB905",
+      "licenseStatus": "legacy-evidence-incomplete",
+      "licensePath": null
+    },
+    {
+      "file": "GlNummernschildEng-XgWd.ttf",
+      "family": "GL Nummernschild",
+      "sha256": "062A56F653856AA7D4DF7D85754F3E186A4E4C3400FD7709C5F067EE2D80B37C",
+      "licenseStatus": "legacy-evidence-incomplete",
+      "licensePath": null
+    },
+    {
+      "file": "GlNummernschildMtl-6ZgA.otf",
+      "family": "GL Nummernschild",
+      "sha256": "525706618B525F6EA9BDC5EC0389BF40A31BF230E5A274420FF731BA8F925051",
+      "licenseStatus": "legacy-evidence-incomplete",
+      "licensePath": null
+    },
+    {
+      "file": "GlNummernschildMtl-LrZZ.ttf",
+      "family": "GL Nummernschild",
+      "sha256": "BFAC140A15E7202D60E1895CCB326FAE1D65BBB6F32D6B57F48D5928ABFA1224",
+      "licenseStatus": "legacy-evidence-incomplete",
+      "licensePath": null
+    },
+    {
+      "file": "JustBreathe-vO6y.otf",
+      "family": "Just Breathe",
+      "sha256": "BBC92EB48A22A45CE033AD472389B06470444C8F94C3683D9B7067A1AB44088B",
+      "licenseStatus": "legacy-evidence-incomplete",
+      "licensePath": null
+    },
+    {
+      "file": "JustBreatheBold-wO6P.otf",
+      "family": "Just Breathe",
+      "sha256": "55F3365D60A25AF67016423B22CC9BDDE5E18698C2A562E8132D567A3E08E6D7",
+      "licenseStatus": "legacy-evidence-incomplete",
+      "licensePath": null
+    },
+    {
+      "file": "JustBreatheBoldObliqueseven-7vgw.otf",
+      "family": "Just Breathe",
+      "sha256": "7AC354FB7BA9CFB5C4D0DB7BC7DCC76B53EAA062BAD160B809C79B485DE6ED97",
+      "licenseStatus": "legacy-evidence-incomplete",
+      "licensePath": null
+    },
+    {
+      "file": "JustBreatheBoldObliquethree-mOAj.otf",
+      "family": "Just Breathe",
+      "sha256": "9FD9818F60C04369EC274D3980C37A4EA7E8939EA8FBFE5A6AEBA636FC9FDD03",
+      "licenseStatus": "legacy-evidence-incomplete",
+      "licensePath": null
+    },
+    {
+      "file": "JustBreatheObliquefive-dVWg.otf",
+      "family": "Just Breathe",
+      "sha256": "89DAA24F88EDE26C12BA8BF86198EB363EE20AF90064F4DFC2CCEC7377641971",
+      "licenseStatus": "legacy-evidence-incomplete",
+      "licensePath": null
+    },
+    {
+      "file": "JustBreatheObliquefour-PLB2.otf",
+      "family": "Just Breathe",
+      "sha256": "517E4A5137D595A2D8173590A3128A216C906A008B823D6DE863A012DCD4B532",
+      "licenseStatus": "legacy-evidence-incomplete",
+      "licensePath": null
+    },
+    {
+      "file": "JustBreatheObliqueone-L7lG.otf",
+      "family": "Just Breathe",
+      "sha256": "A20C48A050B836DF83BCB0DF9FB88350DE5907E28A390BB937FE51D38A8194CF",
+      "licenseStatus": "legacy-evidence-incomplete",
+      "licensePath": null
+    },
+    {
+      "file": "JustBreatheObliqueseven-Xewa.otf",
+      "family": "Just Breathe",
+      "sha256": "420BF026436460C09A74A8C2D6E7C2CE46FC12D4992653D62C474402809C0A70",
+      "licenseStatus": "legacy-evidence-incomplete",
+      "licensePath": null
+    },
+    {
+      "file": "JustBreatheObliquethree-g5O5.otf",
+      "family": "Just Breathe",
+      "sha256": "A6043431D55CE90D250F2DC038AF7BCF57A902FE64226DF504FCFAE7F22E1CCE",
+      "licenseStatus": "legacy-evidence-incomplete",
+      "licensePath": null
+    },
+    {
+      "file": "JustBreatheObliquetwo-oOVA.otf",
+      "family": "Just Breathe",
+      "sha256": "C5E78EE1BA0ED4778BF443E65F12327AF3BC83DF55409BC96994A3E2B7DC15A3",
+      "licenseStatus": "legacy-evidence-incomplete",
+      "licensePath": null
+    },
+    {
+      "file": "KraftwagenGroteskNbp-Ky1o.ttf",
+      "family": "Kraftwagen Grotesk NBP",
+      "sha256": "A163710C45E345644F8C8BEBF48CE982398F975A2EBF651F64D7B616EFF83D2A",
+      "licenseStatus": "legacy-evidence-incomplete",
+      "licensePath": null
+    },
+    {
+      "file": "KraftwagenGroteskSmallcapsNbp-2rn8.ttf",
+      "family": "Kraftwagen Grotesk NBP",
+      "sha256": "C19C807CC1C30AAD32DB2CC4729EE6161F524916DCA2D169CDCE28E7C04DD8F2",
+      "licenseStatus": "legacy-evidence-incomplete",
+      "licensePath": null
+    },
+    {
+      "file": "AbrilFatface-Regular.ttf",
+      "family": "Abril Fatface",
+      "label": "Abril Fatface · Regular",
+      "sha256": "583D89B4DEE24140D8C2228B55A5B71668C172C06EE2A7C71E1D1892B2EB01D7",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Abril_Fatface/OFL.txt",
+      "licenseSha256": "A1D6B8A71DA2D97436F7DC984744D8D9D4E10E2B740C161D7EE4EC5BBBC9EDF0",
+      "source": "Abril_Fatface/AbrilFatface-Regular.ttf",
+      "copyright": [
+        "Copyright (c) 2011, Copyright (c) 2011, TypeTogether (www.type-together.com), with Reserved Font Names \"Abril\" and \"Abril Fatface\""
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": false
+    },
+    {
+      "file": "Alegreya-Bold.ttf",
+      "family": "Alegreya",
+      "label": "Alegreya · Bold",
+      "sha256": "D0B327CCF3641D24C114AF030D16646694B948DC29DE781A608E3469D1DE957D",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Alegreya/OFL.txt",
+      "licenseSha256": "1306ECF3642CAAED186BD2A79E33BE7888649CD619D8BEE391A179EDA8602227",
+      "source": "Alegreya/static/Alegreya-Bold.ttf",
+      "copyright": [
+        "Copyright 2011 The Alegreya Project Authors (https://github.com/huertatipografica/Alegreya)"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "Alegreya-BoldItalic.ttf",
+      "family": "Alegreya",
+      "label": "Alegreya · Bold Italic",
+      "sha256": "009A22DC34F478EEEBA20F83D4D0509C695D1726F0BC11738D37631A9E826E13",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Alegreya/OFL.txt",
+      "licenseSha256": "1306ECF3642CAAED186BD2A79E33BE7888649CD619D8BEE391A179EDA8602227",
+      "source": "Alegreya/static/Alegreya-BoldItalic.ttf",
+      "copyright": [
+        "Copyright 2011 The Alegreya Project Authors (https://github.com/huertatipografica/Alegreya)"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "Alegreya-Italic.ttf",
+      "family": "Alegreya",
+      "label": "Alegreya · Italic",
+      "sha256": "41568EA72A05E2719CA5FB36C164A39F91B25B4A0EB0DBAF7A227F2B592251B4",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Alegreya/OFL.txt",
+      "licenseSha256": "1306ECF3642CAAED186BD2A79E33BE7888649CD619D8BEE391A179EDA8602227",
+      "source": "Alegreya/static/Alegreya-Italic.ttf",
+      "copyright": [
+        "Copyright 2011 The Alegreya Project Authors (https://github.com/huertatipografica/Alegreya)"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "Alegreya-Regular.ttf",
+      "family": "Alegreya",
+      "label": "Alegreya · Regular",
+      "sha256": "79DED2D9FBB43F5086CE1CD82F199E6AE9819C0974E626FA2042C2BC8081F478",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Alegreya/OFL.txt",
+      "licenseSha256": "1306ECF3642CAAED186BD2A79E33BE7888649CD619D8BEE391A179EDA8602227",
+      "source": "Alegreya/static/Alegreya-Regular.ttf",
+      "copyright": [
+        "Copyright 2011 The Alegreya Project Authors (https://github.com/huertatipografica/Alegreya)"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "Allura-Regular.ttf",
+      "family": "Allura",
+      "label": "Allura · Regular",
+      "sha256": "2AE11AC492A9421060A84BBC2D0F196B55364B1F3AF7F58A848E3ACC93247D6C",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Allura/OFL.txt",
+      "licenseSha256": "A6D7343B13DA727BEC016283E3B90381AA9DB9803E652CE877E904DC40181CBA",
+      "source": "Allura/Allura-Regular.ttf",
+      "copyright": [
+        "Copyright 2010 The Allura Project Authors (https://github.com/googlefonts/allura)"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": false
+    },
+    {
+      "file": "AmaticSC-Bold.ttf",
+      "family": "Amatic SC",
+      "label": "Amatic SC · Bold",
+      "sha256": "5D0655B2D1EF39D26138A2023E4B3BFF466434002E2EF1629D522033314B4528",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Amatic_SC/OFL.txt",
+      "licenseSha256": "27C32E7BACCE387F51EB98931B7A0DF1AAD2E71A9EE1DED3158CB208BE88559E",
+      "source": "Amatic_SC/AmaticSC-Bold.ttf",
+      "copyright": [
+        "Copyright 2015 The Amatic SC Project Authors (https://github.com/googlefonts/AmaticSC)"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "AmaticSC-Regular.ttf",
+      "family": "Amatic SC",
+      "label": "Amatic SC · Regular",
+      "sha256": "F3772587B6B7BAB9D32EE774FF26687EE21BE817720B62CC23D8E113A1B62EF5",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Amatic_SC/OFL.txt",
+      "licenseSha256": "27C32E7BACCE387F51EB98931B7A0DF1AAD2E71A9EE1DED3158CB208BE88559E",
+      "source": "Amatic_SC/AmaticSC-Regular.ttf",
+      "copyright": [
+        "Copyright 2015 The Amatic SC Project Authors (https://github.com/googlefonts/AmaticSC)"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "Barlow-Bold.ttf",
+      "family": "Barlow",
+      "label": "Barlow · Bold",
+      "sha256": "984A0F81F4B34352FDF463D201091F9BE8E5F6BE66277779DDEC6D3644D77ECF",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Barlow/OFL.txt",
+      "licenseSha256": "C29DE481986098C42A346D6A81A90AAF47544F1E0930A471C80C1AA1FEA425E1",
+      "source": "Barlow/Barlow-Bold.ttf",
+      "copyright": [
+        "Copyright 2017 The Barlow Project Authors (https://github.com/jpt/barlow)"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": false
+    },
+    {
+      "file": "Barlow-BoldItalic.ttf",
+      "family": "Barlow",
+      "label": "Barlow · Bold Italic",
+      "sha256": "924426CA24B4B0606774F19AE152F0EBB3DD0314FA4153A60CC7BCBDADF53979",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Barlow/OFL.txt",
+      "licenseSha256": "C29DE481986098C42A346D6A81A90AAF47544F1E0930A471C80C1AA1FEA425E1",
+      "source": "Barlow/Barlow-BoldItalic.ttf",
+      "copyright": [
+        "Copyright 2017 The Barlow Project Authors (https://github.com/jpt/barlow)"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": false
+    },
+    {
+      "file": "Barlow-Italic.ttf",
+      "family": "Barlow",
+      "label": "Barlow · Italic",
+      "sha256": "B4F6FCB952DE98BB75F9754526213F4A8F5BF0878638E60730C8BC947F29CE2A",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Barlow/OFL.txt",
+      "licenseSha256": "C29DE481986098C42A346D6A81A90AAF47544F1E0930A471C80C1AA1FEA425E1",
+      "source": "Barlow/Barlow-Italic.ttf",
+      "copyright": [
+        "Copyright 2017 The Barlow Project Authors (https://github.com/jpt/barlow)"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": false
+    },
+    {
+      "file": "Barlow-Regular.ttf",
+      "family": "Barlow",
+      "label": "Barlow · Regular",
+      "sha256": "77FB1AC54D2CEB980E3EBDFA7A9D0F64E85A66E4FDFB7F914A7B0AA08FB33A5D",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Barlow/OFL.txt",
+      "licenseSha256": "C29DE481986098C42A346D6A81A90AAF47544F1E0930A471C80C1AA1FEA425E1",
+      "source": "Barlow/Barlow-Regular.ttf",
+      "copyright": [
+        "Copyright 2017 The Barlow Project Authors (https://github.com/jpt/barlow)"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": false
+    },
+    {
+      "file": "BebasNeue-Regular.ttf",
+      "family": "Bebas Neue",
+      "label": "Bebas Neue · Regular",
+      "sha256": "830EA186ACFFC2316ED1A4E42319246BA3B46B04E33A211079249BF901193F04",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Bebas_Neue/OFL.txt",
+      "licenseSha256": "5DFB66367E86929261375E6A6CF14410136C3C394962F1A381F0A17CF4C7F81D",
+      "source": "Bebas_Neue/BebasNeue-Regular.ttf",
+      "copyright": [
+        "Copyright 2019 The Bebas Neue Project Authors (https://github.com/dharmatype/Bebas-Neue)"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": false
+    },
+    {
+      "file": "Bitter-Bold.ttf",
+      "family": "Bitter",
+      "label": "Bitter · Bold",
+      "sha256": "391582A3004C7600B7234123C3C810B8C2C5ED3C90AF7F087FE55F003CC075BF",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Bitter/OFL.txt",
+      "licenseSha256": "6473A4D64F2D488206538149BA5299EF4379802B325619AC30A854E5DBEEDFF0",
+      "source": "Bitter/static/Bitter-Bold.ttf",
+      "copyright": [
+        "Copyright 2011 The Bitter Project Authors (https://github.com/solmatas/BitterPro)"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "Bitter-BoldItalic.ttf",
+      "family": "Bitter",
+      "label": "Bitter · Bold Italic",
+      "sha256": "65FAD0650E416AEBB4A7F6893633907F0E10EA153974B0C69F9074B611C259C4",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Bitter/OFL.txt",
+      "licenseSha256": "6473A4D64F2D488206538149BA5299EF4379802B325619AC30A854E5DBEEDFF0",
+      "source": "Bitter/static/Bitter-BoldItalic.ttf",
+      "copyright": [
+        "Copyright 2011 The Bitter Project Authors (https://github.com/solmatas/BitterPro)"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "Bitter-Italic.ttf",
+      "family": "Bitter",
+      "label": "Bitter · Italic",
+      "sha256": "4EDA5CB005B1AF2D5A733E0DCD727F65E2BDDD0EA0466893F6D9259929EF20B2",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Bitter/OFL.txt",
+      "licenseSha256": "6473A4D64F2D488206538149BA5299EF4379802B325619AC30A854E5DBEEDFF0",
+      "source": "Bitter/static/Bitter-Italic.ttf",
+      "copyright": [
+        "Copyright 2011 The Bitter Project Authors (https://github.com/solmatas/BitterPro)"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "Bitter-Regular.ttf",
+      "family": "Bitter",
+      "label": "Bitter · Regular",
+      "sha256": "46A52A6B4E3202563BAC5134C02E4D9DB63685C439104A803A0B4FBF9E8CEAF4",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Bitter/OFL.txt",
+      "licenseSha256": "6473A4D64F2D488206538149BA5299EF4379802B325619AC30A854E5DBEEDFF0",
+      "source": "Bitter/static/Bitter-Regular.ttf",
+      "copyright": [
+        "Copyright 2011 The Bitter Project Authors (https://github.com/solmatas/BitterPro)"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "Bungee-Regular.ttf",
+      "family": "Bungee",
+      "label": "Bungee · Regular",
+      "sha256": "B90C3CA443713B070CB1DEC6A3BB1EF7572C2B565C431D9A85D74BBFA07E24CC",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Bungee/OFL.txt",
+      "licenseSha256": "D5787A50DDE5BE6C6DAECAB9ED459939B1BC37CFF0D0E00257EAF1EC2CF4C16C",
+      "source": "Bungee/Bungee-Regular.ttf",
+      "copyright": [
+        "Copyright 2023 The Bungee Project Authors (https://github.com/djrrb/Bungee)"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": false
+    },
+    {
+      "file": "Caveat-Bold.ttf",
+      "family": "Caveat",
+      "label": "Caveat · Bold",
+      "sha256": "B42CC772F3528D9150C29D6051E2ED3FD472AD4E584C73FE1500EE628D6B1AC0",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Caveat/OFL.txt",
+      "licenseSha256": "106A1FEA143A76B93974B82D15AB2CFCA509913A667B56EB55C6FF162802B1A8",
+      "source": "Caveat/static/Caveat-Bold.ttf",
+      "copyright": [
+        "Copyright 2014 The Caveat Project Authors (https://github.com/googlefonts/caveat)"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "Caveat-Regular.ttf",
+      "family": "Caveat",
+      "label": "Caveat · Regular",
+      "sha256": "271EE7C4A60B1BE2BA13A66990E7475C76C982AC6E906C9DB25139976282F6B8",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Caveat/OFL.txt",
+      "licenseSha256": "106A1FEA143A76B93974B82D15AB2CFCA509913A667B56EB55C6FF162802B1A8",
+      "source": "Caveat/static/Caveat-Regular.ttf",
+      "copyright": [
+        "Copyright 2014 The Caveat Project Authors (https://github.com/googlefonts/caveat)"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "Cinzel-Bold.ttf",
+      "family": "Cinzel",
+      "label": "Cinzel · Bold",
+      "sha256": "F606AB3A8A0A75863022676EA496478BB0F4D520AE8C40B6050DF3D6DBFFAD20",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Cinzel/OFL.txt",
+      "licenseSha256": "F06E9999B32649379C4A9259E6E639DE7714353C539592D22EA7DFADAD1EA68D",
+      "source": "Cinzel/static/Cinzel-Bold.ttf",
+      "copyright": [
+        "Copyright 2020 The Cinzel Project Authors (https://github.com/NDISCOVER/Cinzel)"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": false
+    },
+    {
+      "file": "Cinzel-Regular.ttf",
+      "family": "Cinzel",
+      "label": "Cinzel · Regular",
+      "sha256": "6E67A440D19A22E7A14631E7FB8EFB71CDF43FDE8ADF040B7935AC2B38519AB0",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Cinzel/OFL.txt",
+      "licenseSha256": "F06E9999B32649379C4A9259E6E639DE7714353C539592D22EA7DFADAD1EA68D",
+      "source": "Cinzel/static/Cinzel-Regular.ttf",
+      "copyright": [
+        "Copyright 2020 The Cinzel Project Authors (https://github.com/NDISCOVER/Cinzel)"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": false
+    },
+    {
+      "file": "Comfortaa-Bold.ttf",
+      "family": "Comfortaa",
+      "label": "Comfortaa · Bold",
+      "sha256": "492A6C62D53E4B0C8DBB1F4E53112B73A736537FB6A3A62EEC26E0A6DBF92DEE",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Comfortaa/OFL.txt",
+      "licenseSha256": "765889A48C501B66E07521FF9DA5F6FC4F32A501D3CC9241131B8FB1B0679327",
+      "source": "Comfortaa/static/Comfortaa-Bold.ttf",
+      "copyright": [
+        "Copyright 2011 The Comfortaa Project Authors (https://github.com/alexeiva/comfortaa), with Reserved Font Name \"Comfortaa\"."
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "Comfortaa-Regular.ttf",
+      "family": "Comfortaa",
+      "label": "Comfortaa · Regular",
+      "sha256": "3E24B56FD39DB40CF2ACEC608F0D7D42851273B61144082F7784A41C50026277",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Comfortaa/OFL.txt",
+      "licenseSha256": "765889A48C501B66E07521FF9DA5F6FC4F32A501D3CC9241131B8FB1B0679327",
+      "source": "Comfortaa/static/Comfortaa-Regular.ttf",
+      "copyright": [
+        "Copyright 2011 The Comfortaa Project Authors (https://github.com/alexeiva/comfortaa), with Reserved Font Name \"Comfortaa\"."
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "CormorantGaramond-Bold.ttf",
+      "family": "Cormorant Garamond",
+      "label": "Cormorant Garamond · Bold",
+      "sha256": "8A41A6F966A0D60DAA5065609150AD666347C789432369BB3D7951020A022131",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Cormorant_Garamond/OFL.txt",
+      "licenseSha256": "201278899BD5FC0F479B404A4ABE45E11798887B916D7CBB5FF26B67C8BF2BE8",
+      "source": "Cormorant_Garamond/static/CormorantGaramond-Bold.ttf",
+      "copyright": [
+        "Copyright 2015 The Cormorant Project Authors (github.com/CatharsisFonts/Cormorant)"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "CormorantGaramond-BoldItalic.ttf",
+      "family": "Cormorant Garamond",
+      "label": "Cormorant Garamond · Bold Italic",
+      "sha256": "B4497B87ACB8571D1D245FA763A8EA15DAD3DB5D841C5E08B9A3020ED65CA207",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Cormorant_Garamond/OFL.txt",
+      "licenseSha256": "201278899BD5FC0F479B404A4ABE45E11798887B916D7CBB5FF26B67C8BF2BE8",
+      "source": "Cormorant_Garamond/static/CormorantGaramond-BoldItalic.ttf",
+      "copyright": [
+        "Copyright 2015 The Cormorant Project Authors (github.com/CatharsisFonts/Cormorant)"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "CormorantGaramond-Italic.ttf",
+      "family": "Cormorant Garamond",
+      "label": "Cormorant Garamond · Italic",
+      "sha256": "64AF109BD58506885C366991E35904180112C7E3359BD9AD9945202BFEB949D3",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Cormorant_Garamond/OFL.txt",
+      "licenseSha256": "201278899BD5FC0F479B404A4ABE45E11798887B916D7CBB5FF26B67C8BF2BE8",
+      "source": "Cormorant_Garamond/static/CormorantGaramond-Italic.ttf",
+      "copyright": [
+        "Copyright 2015 The Cormorant Project Authors (github.com/CatharsisFonts/Cormorant)"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "CormorantGaramond-Regular.ttf",
+      "family": "Cormorant Garamond",
+      "label": "Cormorant Garamond · Regular",
+      "sha256": "7B99138FFA3BAAB8616D8491DC6D75961C5AE568B206C5031FBC7BB127385428",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Cormorant_Garamond/OFL.txt",
+      "licenseSha256": "201278899BD5FC0F479B404A4ABE45E11798887B916D7CBB5FF26B67C8BF2BE8",
+      "source": "Cormorant_Garamond/static/CormorantGaramond-Regular.ttf",
+      "copyright": [
+        "Copyright 2015 The Cormorant Project Authors (github.com/CatharsisFonts/Cormorant)"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "CrimsonPro-Bold.ttf",
+      "family": "Crimson Pro",
+      "label": "Crimson Pro · Bold",
+      "sha256": "48F191E38355C8DB100EB3CE157C20F9302A3B9A37B44A660F77ECFCE3986609",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Crimson_Pro/OFL.txt",
+      "licenseSha256": "FD2BC485BC16B876B09F97AB0A218092C0C78F533BE0D7750ACA9E9DF9E3AB7B",
+      "source": "Crimson_Pro/static/CrimsonPro-Bold.ttf",
+      "copyright": [
+        "Copyright 2018 The Crimson Pro Project Authors (https://github.com/Fonthausen/CrimsonPro)"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": false
+    },
+    {
+      "file": "CrimsonPro-BoldItalic.ttf",
+      "family": "Crimson Pro",
+      "label": "Crimson Pro · Bold Italic",
+      "sha256": "D935262878D127F607D7D277C9C804CC0939FB67CBA73D583EEEA3C2A9825D9D",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Crimson_Pro/OFL.txt",
+      "licenseSha256": "FD2BC485BC16B876B09F97AB0A218092C0C78F533BE0D7750ACA9E9DF9E3AB7B",
+      "source": "Crimson_Pro/static/CrimsonPro-BoldItalic.ttf",
+      "copyright": [
+        "Copyright 2018 The Crimson Pro Project Authors (https://github.com/Fonthausen/CrimsonPro)"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": false
+    },
+    {
+      "file": "CrimsonPro-Italic.ttf",
+      "family": "Crimson Pro",
+      "label": "Crimson Pro · Italic",
+      "sha256": "52318DB3526B644E6EFA60BE0B3CA5A50E40FBE8BD026C261E0AA206F0772267",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Crimson_Pro/OFL.txt",
+      "licenseSha256": "FD2BC485BC16B876B09F97AB0A218092C0C78F533BE0D7750ACA9E9DF9E3AB7B",
+      "source": "Crimson_Pro/static/CrimsonPro-Italic.ttf",
+      "copyright": [
+        "Copyright 2018 The Crimson Pro Project Authors (https://github.com/Fonthausen/CrimsonPro)"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": false
+    },
+    {
+      "file": "CrimsonPro-Regular.ttf",
+      "family": "Crimson Pro",
+      "label": "Crimson Pro · Regular",
+      "sha256": "48FAD08CB1917A7B2F2C6FE5135D6C07743A6663CF7631EC4481108AAF081422",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Crimson_Pro/OFL.txt",
+      "licenseSha256": "FD2BC485BC16B876B09F97AB0A218092C0C78F533BE0D7750ACA9E9DF9E3AB7B",
+      "source": "Crimson_Pro/static/CrimsonPro-Regular.ttf",
+      "copyright": [
+        "Copyright 2018 The Crimson Pro Project Authors (https://github.com/Fonthausen/CrimsonPro)"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": false
+    },
+    {
+      "file": "DancingScript-Bold.ttf",
+      "family": "Dancing Script",
+      "label": "Dancing Script · Bold",
+      "sha256": "2BD1F21937334FFD94C3879B6032C04DF6390833432DFC7A79D0020EAE80D038",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Dancing_Script/OFL.txt",
+      "licenseSha256": "37C89EB5635CA0023194B3A2E729AE7AFE9A474C46634982126C4E4DD11B04ED",
+      "source": "Dancing_Script/static/DancingScript-Bold.ttf",
+      "copyright": [
+        "Copyright 2016 The Dancing Script Project Authors (https://github.com/googlefonts/DancingScript), with Reserved Font Name \"Dancing Script\"."
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": false
+    },
+    {
+      "file": "DancingScript-Regular.ttf",
+      "family": "Dancing Script",
+      "label": "Dancing Script · Regular",
+      "sha256": "9EF04A03A7E36872DBB179ED3FBB11FDE004BD01E35416C3270023F7A91DD4F4",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Dancing_Script/OFL.txt",
+      "licenseSha256": "37C89EB5635CA0023194B3A2E729AE7AFE9A474C46634982126C4E4DD11B04ED",
+      "source": "Dancing_Script/static/DancingScript-Regular.ttf",
+      "copyright": [
+        "Copyright 2016 The Dancing Script Project Authors (https://github.com/googlefonts/DancingScript), with Reserved Font Name \"Dancing Script\"."
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": false
+    },
+    {
+      "file": "FiraSans-Bold.ttf",
+      "family": "Fira Sans",
+      "label": "Fira Sans · Bold",
+      "sha256": "74B477A3E2B7C745E6DAC8C01764C8FD82E53763B47EF1ECCD24DCE36D2FF71F",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Fira_Sans/OFL.txt",
+      "licenseSha256": "35EC788CC2563811B2C6547847233F64CF48A8AF86F05DE6316F431D74937300",
+      "source": "Fira_Sans/FiraSans-Bold.ttf",
+      "copyright": [
+        "Digitized data copyright 2012-2016, The Mozilla Foundation and Telefonica S.A."
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "FiraSans-BoldItalic.ttf",
+      "family": "Fira Sans",
+      "label": "Fira Sans · Bold Italic",
+      "sha256": "8049B15EA03DA7982DB1152A9927911C47E0A92DC5ED434FA329B143A99B6ADB",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Fira_Sans/OFL.txt",
+      "licenseSha256": "35EC788CC2563811B2C6547847233F64CF48A8AF86F05DE6316F431D74937300",
+      "source": "Fira_Sans/FiraSans-BoldItalic.ttf",
+      "copyright": [
+        "Digitized data copyright 2012-2016, The Mozilla Foundation and Telefonica S.A."
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "FiraSans-Italic.ttf",
+      "family": "Fira Sans",
+      "label": "Fira Sans · Italic",
+      "sha256": "E48B22BA7F2EAB682501BA01B3DDFDBF65DADFAFA74D9B2EFE1879EB949B5C69",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Fira_Sans/OFL.txt",
+      "licenseSha256": "35EC788CC2563811B2C6547847233F64CF48A8AF86F05DE6316F431D74937300",
+      "source": "Fira_Sans/FiraSans-Italic.ttf",
+      "copyright": [
+        "Digitized data copyright 2012-2016, The Mozilla Foundation and Telefonica S.A."
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "FiraSans-Regular.ttf",
+      "family": "Fira Sans",
+      "label": "Fira Sans · Regular",
+      "sha256": "3DABF3D48BF4599F95CFFD92F99EA426A014D5311F52A5EB5EC3AF265E97CD97",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Fira_Sans/OFL.txt",
+      "licenseSha256": "35EC788CC2563811B2C6547847233F64CF48A8AF86F05DE6316F431D74937300",
+      "source": "Fira_Sans/FiraSans-Regular.ttf",
+      "copyright": [
+        "Digitized data copyright 2012-2016, The Mozilla Foundation and Telefonica S.A."
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "FrederickatheGreat-Regular.ttf",
+      "family": "Fredericka the Great",
+      "label": "Fredericka the Great · Regular",
+      "sha256": "5A98E88EAA06288C4C55DF2E85D611FFF36C23DEE770C9BABCBA12BEF922676A",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Fredericka_the_Great/OFL.txt",
+      "licenseSha256": "DC38CB6F3B462C464DE259BF230D78F92502603D8802AC571FDDE149DBD785E8",
+      "source": "Fredericka_the_Great/FrederickatheGreat-Regular.ttf",
+      "copyright": [
+        "Copyright (c) 2011 by Font Diner, Inc DBA Tart Workshop (diner@fontdiner.com) with Reseved Font Name \"Fredericka the Great\""
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": false
+    },
+    {
+      "file": "GreatVibes-Regular.ttf",
+      "family": "Great Vibes",
+      "label": "Great Vibes · Regular",
+      "sha256": "8671B4332BFF26A2CA32C7388A2929320E0ADE036E460BD76CD1A22ABBD4D5B4",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Great_Vibes/OFL.txt",
+      "licenseSha256": "C5FE3BCB9E31DE028BA7CE6630AE71B9C6D625DCFC11916748DF320BBD22E2DF",
+      "source": "Great_Vibes/GreatVibes-Regular.ttf",
+      "copyright": [
+        "Copyright 2010 The Great Vibes Pro Project Authors (https://github.com/googlefonts/great-vibes)"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "Inter_28pt-Bold.ttf",
+      "family": "Inter",
+      "label": "Inter · Bold",
+      "sha256": "CEEC73BDFC78D352BCC222B9AC28E752A20B4A339DAEFC69BC67F49380425C0C",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Inter/OFL.txt",
+      "licenseSha256": "3C8D13D97EA5EB62868833A377034C6BE6A9833E768D32ABEC2A767A8101E4BC",
+      "source": "Inter/static/Inter_28pt-Bold.ttf",
+      "copyright": [
+        "Copyright 2016 The Inter Project Authors (https://github.com/rsms/inter)"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "Inter_28pt-BoldItalic.ttf",
+      "family": "Inter",
+      "label": "Inter · Bold Italic",
+      "sha256": "4860316543350903CAFA53B3FF6A3F7014D1D718C815602E5474B05B9C938EF1",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Inter/OFL.txt",
+      "licenseSha256": "3C8D13D97EA5EB62868833A377034C6BE6A9833E768D32ABEC2A767A8101E4BC",
+      "source": "Inter/static/Inter_28pt-BoldItalic.ttf",
+      "copyright": [
+        "Copyright 2016 The Inter Project Authors (https://github.com/rsms/inter)"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "Inter_28pt-Italic.ttf",
+      "family": "Inter",
+      "label": "Inter · Italic",
+      "sha256": "D60DF0083AFEB9970B7D619E7C96831B73C22DD39BFAA14821CF921163306D0F",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Inter/OFL.txt",
+      "licenseSha256": "3C8D13D97EA5EB62868833A377034C6BE6A9833E768D32ABEC2A767A8101E4BC",
+      "source": "Inter/static/Inter_28pt-Italic.ttf",
+      "copyright": [
+        "Copyright 2016 The Inter Project Authors (https://github.com/rsms/inter)"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "Inter_28pt-Regular.ttf",
+      "family": "Inter",
+      "label": "Inter · Regular",
+      "sha256": "3081EDE8389F3516E8616D2B2FE60CAC639B341640DFF0250D253D3AAC5E613F",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Inter/OFL.txt",
+      "licenseSha256": "3C8D13D97EA5EB62868833A377034C6BE6A9833E768D32ABEC2A767A8101E4BC",
+      "source": "Inter/static/Inter_28pt-Regular.ttf",
+      "copyright": [
+        "Copyright 2016 The Inter Project Authors (https://github.com/rsms/inter)"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "Lato-Bold.ttf",
+      "family": "Lato",
+      "label": "Lato · Bold",
+      "sha256": "D7F0B7F2570F2F28B504DA1181B4D71B1420B10BE2C4FD690927F1C8EE3B19C3",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Lato/OFL.txt",
+      "licenseSha256": "9D6DC6A70C02D117CCDA1B8CFDBA612742A8D00609B33BD8207DEE06CFBB097D",
+      "source": "Lato/Lato-Bold.ttf",
+      "copyright": [
+        "Copyright (c) 2010-2011 by tyPoland Lukasz Dziedzic with Reserved Font Name \"Lato\". Licensed under the SIL Open Font License, Version 1.1."
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": false
+    },
+    {
+      "file": "Lato-BoldItalic.ttf",
+      "family": "Lato",
+      "label": "Lato · Bold Italic",
+      "sha256": "E38611F4C0FF3251A58FE751991C39784D8F9BE420B004891E0B9277228EC32F",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Lato/OFL.txt",
+      "licenseSha256": "9D6DC6A70C02D117CCDA1B8CFDBA612742A8D00609B33BD8207DEE06CFBB097D",
+      "source": "Lato/Lato-BoldItalic.ttf",
+      "copyright": [
+        "Copyright (c) 2010-2011 by tyPoland Lukasz Dziedzic with Reserved Font Name \"Lato\". Licensed under the SIL Open Font License, Version 1.1."
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": false
+    },
+    {
+      "file": "Lato-Italic.ttf",
+      "family": "Lato",
+      "label": "Lato · Italic",
+      "sha256": "3BE26BF6973F49DF6A7DFD130041017354342BFBB023E6B9610B42DAEBA6DE34",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Lato/OFL.txt",
+      "licenseSha256": "9D6DC6A70C02D117CCDA1B8CFDBA612742A8D00609B33BD8207DEE06CFBB097D",
+      "source": "Lato/Lato-Italic.ttf",
+      "copyright": [
+        "Copyright (c) 2010-2011 by tyPoland Lukasz Dziedzic with Reserved Font Name \"Lato\". Licensed under the SIL Open Font License, Version 1.1."
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": false
+    },
+    {
+      "file": "Lato-Regular.ttf",
+      "family": "Lato",
+      "label": "Lato · Regular",
+      "sha256": "E82542AED8293F49FC83C4AAEA566B1F6B4FC7A9AB5DA11E6FB9BC0973B5324B",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Lato/OFL.txt",
+      "licenseSha256": "9D6DC6A70C02D117CCDA1B8CFDBA612742A8D00609B33BD8207DEE06CFBB097D",
+      "source": "Lato/Lato-Regular.ttf",
+      "copyright": [
+        "Copyright (c) 2010-2011 by tyPoland Lukasz Dziedzic with Reserved Font Name \"Lato\". Licensed under the SIL Open Font License, Version 1.1."
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": false
+    },
+    {
+      "file": "LibreBaskerville-Bold.ttf",
+      "family": "Libre Baskerville",
+      "label": "Libre Baskerville · Bold",
+      "sha256": "4971F68CAC405D51A27D29E248B58CD5F75019F9195278D86D65C940DAA943E9",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Libre_Baskerville/OFL.txt",
+      "licenseSha256": "3624EDDD4C8F8A908130A417AE7CD089C9DA69899C4E0CA1A5217D0A6FAE16FD",
+      "source": "Libre_Baskerville/static/LibreBaskerville-Bold.ttf",
+      "copyright": [
+        "Copyright 2012 The Libre Baskerville Project Authors (https://github.com/impallari/Libre-Baskerville)"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": false
+    },
+    {
+      "file": "LibreBaskerville-BoldItalic.ttf",
+      "family": "Libre Baskerville",
+      "label": "Libre Baskerville · Bold Italic",
+      "sha256": "70921378F96773F5DB31AA14BC2C8E5E93B24A62EBFFB10D9D4A341595456630",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Libre_Baskerville/OFL.txt",
+      "licenseSha256": "3624EDDD4C8F8A908130A417AE7CD089C9DA69899C4E0CA1A5217D0A6FAE16FD",
+      "source": "Libre_Baskerville/static/LibreBaskerville-BoldItalic.ttf",
+      "copyright": [
+        "Copyright 2012 The Libre Baskerville Project Authors (https://github.com/impallari/Libre-Baskerville)"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": false
+    },
+    {
+      "file": "LibreBaskerville-Italic.ttf",
+      "family": "Libre Baskerville",
+      "label": "Libre Baskerville · Italic",
+      "sha256": "78C7F012DB8D0CBA88F63EE7445BB274F9F2EE99C37DA5080FFB971E683B27EA",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Libre_Baskerville/OFL.txt",
+      "licenseSha256": "3624EDDD4C8F8A908130A417AE7CD089C9DA69899C4E0CA1A5217D0A6FAE16FD",
+      "source": "Libre_Baskerville/static/LibreBaskerville-Italic.ttf",
+      "copyright": [
+        "Copyright 2012 The Libre Baskerville Project Authors (https://github.com/impallari/Libre-Baskerville)"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": false
+    },
+    {
+      "file": "LibreBaskerville-Regular.ttf",
+      "family": "Libre Baskerville",
+      "label": "Libre Baskerville · Regular",
+      "sha256": "B93DFB2EC674EF59FD9A1B47498A8D1DB498BB9E64ED22A96F8071082E3D6ADD",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Libre_Baskerville/OFL.txt",
+      "licenseSha256": "3624EDDD4C8F8A908130A417AE7CD089C9DA69899C4E0CA1A5217D0A6FAE16FD",
+      "source": "Libre_Baskerville/static/LibreBaskerville-Regular.ttf",
+      "copyright": [
+        "Copyright 2012 The Libre Baskerville Project Authors (https://github.com/impallari/Libre-Baskerville)"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": false
+    },
+    {
+      "file": "Lobster-Regular.ttf",
+      "family": "Lobster",
+      "label": "Lobster · Regular",
+      "sha256": "CDDD7779FB2E78382A654F91DD5A656218CF133A244E17A2F5D960C06F95D73C",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Lobster/OFL.txt",
+      "licenseSha256": "314771DCAF96E9F87D8A41F2B281F6FF4DFAB8E441D171E0D22D4DEEF2CB9FC5",
+      "source": "Lobster/Lobster-Regular.ttf",
+      "copyright": [
+        "Copyright 2010 The Lobster Project Authors (https://github.com/impallari/The-Lobster-Font), with Reserved Font Name \"Lobster\"."
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "Lora-Bold.ttf",
+      "family": "Lora",
+      "label": "Lora · Bold",
+      "sha256": "7D74015E950C2FB66519C7295B8155621D22200AE2CA2A4C6B43CE3C490CAC87",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Lora/OFL.txt",
+      "licenseSha256": "41CF75BF229A1435B7DF209AC7419622516EFF7E8CAB79260FB0FB9B1CC8CED2",
+      "source": "Lora/static/Lora-Bold.ttf",
+      "copyright": [
+        "Copyright 2011 The Lora Project Authors (https://github.com/cyrealtype/Lora-Cyrillic), with Reserved Font Name \"Lora\"."
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "Lora-BoldItalic.ttf",
+      "family": "Lora",
+      "label": "Lora · Bold Italic",
+      "sha256": "152F87E71F5DDB60D5C57ECD9132807C947E65C42977193C9164E7C5A6690081",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Lora/OFL.txt",
+      "licenseSha256": "41CF75BF229A1435B7DF209AC7419622516EFF7E8CAB79260FB0FB9B1CC8CED2",
+      "source": "Lora/static/Lora-BoldItalic.ttf",
+      "copyright": [
+        "Copyright 2011 The Lora Project Authors (https://github.com/cyrealtype/Lora-Cyrillic), with Reserved Font Name \"Lora\"."
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "Lora-Italic.ttf",
+      "family": "Lora",
+      "label": "Lora · Italic",
+      "sha256": "BE627E595184E8AFE521F08DA0607EEE613F1997D423BC8DADC5798995581377",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Lora/OFL.txt",
+      "licenseSha256": "41CF75BF229A1435B7DF209AC7419622516EFF7E8CAB79260FB0FB9B1CC8CED2",
+      "source": "Lora/static/Lora-Italic.ttf",
+      "copyright": [
+        "Copyright 2011 The Lora Project Authors (https://github.com/cyrealtype/Lora-Cyrillic), with Reserved Font Name \"Lora\"."
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "Lora-Regular.ttf",
+      "family": "Lora",
+      "label": "Lora · Regular",
+      "sha256": "7ED00E7C9CDF16AB7E2FD2361FE45D4F0B61263CD60AAE398B27B7EE08108827",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Lora/OFL.txt",
+      "licenseSha256": "41CF75BF229A1435B7DF209AC7419622516EFF7E8CAB79260FB0FB9B1CC8CED2",
+      "source": "Lora/static/Lora-Regular.ttf",
+      "copyright": [
+        "Copyright 2011 The Lora Project Authors (https://github.com/cyrealtype/Lora-Cyrillic), with Reserved Font Name \"Lora\"."
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "Manrope-Bold.ttf",
+      "family": "Manrope",
+      "label": "Manrope · Bold",
+      "sha256": "4AED5D180A4F41ED21F07E678486F889BB40EB0DDF5F473769B6302F507D1E36",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Manrope/OFL.txt",
+      "licenseSha256": "58D49F25B2CACDFE83739D557AC9319C48BF3ED3E9E33B6678DDB972B475CE7C",
+      "source": "Manrope/static/Manrope-Bold.ttf",
+      "copyright": [
+        "Copyright 2019 The Manrope Project Authors (https://github.com/sharanda/manrope)"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "Manrope-Regular.ttf",
+      "family": "Manrope",
+      "label": "Manrope · Regular",
+      "sha256": "6383BD9F81E56D61139884D8E42CB7B2146A11DDE4EFDE55C8BFF1E4C2C0BBE8",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Manrope/OFL.txt",
+      "licenseSha256": "58D49F25B2CACDFE83739D557AC9319C48BF3ED3E9E33B6678DDB972B475CE7C",
+      "source": "Manrope/static/Manrope-Regular.ttf",
+      "copyright": [
+        "Copyright 2019 The Manrope Project Authors (https://github.com/sharanda/manrope)"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "Merriweather_36pt-Bold.ttf",
+      "family": "Merriweather",
+      "label": "Merriweather · Bold",
+      "sha256": "C12960E997C4EF913CEB83E7E0A85390930F4090B26AA2C7360D815F14FA2932",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Merriweather/OFL.txt",
+      "licenseSha256": "B4363FA08567B8C83D244E2A1F0A1FA1D25F75916E78865D0EE1DD03D05880E0",
+      "source": "Merriweather/static/Merriweather_36pt-Bold.ttf",
+      "copyright": [
+        "Copyright 2024 The Merriweather Project Authors (https://github.com/EbenSorkin/Merriweather4) with Reserved Font Name \"Merriweather\"."
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "Merriweather_36pt-BoldItalic.ttf",
+      "family": "Merriweather",
+      "label": "Merriweather · Bold Italic",
+      "sha256": "6778D971A6E63EB7928E9F4B4B82762587EEFFD6FFF46D5187CA32C452326FBD",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Merriweather/OFL.txt",
+      "licenseSha256": "B4363FA08567B8C83D244E2A1F0A1FA1D25F75916E78865D0EE1DD03D05880E0",
+      "source": "Merriweather/static/Merriweather_36pt-BoldItalic.ttf",
+      "copyright": [
+        "Copyright 2024 The Merriweather Project Authors (https://github.com/EbenSorkin/Merriweather4) with Reserved Font Name \"Merriweather\"."
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "Merriweather_36pt-Italic.ttf",
+      "family": "Merriweather",
+      "label": "Merriweather · Italic",
+      "sha256": "803A82D13E18BBDB5AF8C5C5F3B93B8DE928B78A64C3C7EA0D8AE11225FAEE18",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Merriweather/OFL.txt",
+      "licenseSha256": "B4363FA08567B8C83D244E2A1F0A1FA1D25F75916E78865D0EE1DD03D05880E0",
+      "source": "Merriweather/static/Merriweather_36pt-Italic.ttf",
+      "copyright": [
+        "Copyright 2024 The Merriweather Project Authors (https://github.com/EbenSorkin/Merriweather4) with Reserved Font Name \"Merriweather\"."
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "Merriweather_36pt-Regular.ttf",
+      "family": "Merriweather",
+      "label": "Merriweather · Regular",
+      "sha256": "FAC57F5E8FBA4727551763516BF153C8AB1CE004D1F4A208DB9B8F35432BA3CB",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Merriweather/OFL.txt",
+      "licenseSha256": "B4363FA08567B8C83D244E2A1F0A1FA1D25F75916E78865D0EE1DD03D05880E0",
+      "source": "Merriweather/static/Merriweather_36pt-Regular.ttf",
+      "copyright": [
+        "Copyright 2024 The Merriweather Project Authors (https://github.com/EbenSorkin/Merriweather4) with Reserved Font Name \"Merriweather\"."
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "Montserrat-Bold.ttf",
+      "family": "Montserrat",
+      "label": "Montserrat · Bold",
+      "sha256": "7FA93D7DAA5C2F881A6727229C211782DE6B76008FBD6346B3D7664E8FC83F43",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Montserrat/OFL.txt",
+      "licenseSha256": "77669D97BC1FCEF80D834AC2C1432943D48ED9AE4CDFC80F26E49D1DA84830AC",
+      "source": "Montserrat/static/Montserrat-Bold.ttf",
+      "copyright": [
+        "Copyright 2011 The Montserrat Project Authors (https://github.com/JulietaUla/Montserrat)"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "Montserrat-BoldItalic.ttf",
+      "family": "Montserrat",
+      "label": "Montserrat · Bold Italic",
+      "sha256": "001A59B0F2C541080033B83CA6DFACCE03095D99CAA3594835F51B7C6D9CE758",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Montserrat/OFL.txt",
+      "licenseSha256": "77669D97BC1FCEF80D834AC2C1432943D48ED9AE4CDFC80F26E49D1DA84830AC",
+      "source": "Montserrat/static/Montserrat-BoldItalic.ttf",
+      "copyright": [
+        "Copyright 2011 The Montserrat Project Authors (https://github.com/JulietaUla/Montserrat)"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "Montserrat-Italic.ttf",
+      "family": "Montserrat",
+      "label": "Montserrat · Italic",
+      "sha256": "7E87C0F96B39FBB919B30AEF8991323D0B257649F391E6456BCF03C231448F49",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Montserrat/OFL.txt",
+      "licenseSha256": "77669D97BC1FCEF80D834AC2C1432943D48ED9AE4CDFC80F26E49D1DA84830AC",
+      "source": "Montserrat/static/Montserrat-Italic.ttf",
+      "copyright": [
+        "Copyright 2011 The Montserrat Project Authors (https://github.com/JulietaUla/Montserrat)"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "Montserrat-Regular.ttf",
+      "family": "Montserrat",
+      "label": "Montserrat · Regular",
+      "sha256": "EF9CF99F0175BEF530B88934BD904FCF56F773CEC6FD4DFB8CCAF7CE2BBD395E",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Montserrat/OFL.txt",
+      "licenseSha256": "77669D97BC1FCEF80D834AC2C1432943D48ED9AE4CDFC80F26E49D1DA84830AC",
+      "source": "Montserrat/static/Montserrat-Regular.ttf",
+      "copyright": [
+        "Copyright 2011 The Montserrat Project Authors (https://github.com/JulietaUla/Montserrat)"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "NotoSans-Bold.ttf",
+      "family": "Noto Sans",
+      "label": "Noto Sans · Bold",
+      "sha256": "13A813C49624AE3BA3C5C6E72C5EBFFC4B9E1E6EA32F421C04069B037C6AD431",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Noto_Sans/OFL.txt",
+      "licenseSha256": "BE2F3F8727AC2E18B714AD1C4336D4DDB3F3ADBEB9A7F70BFAB74D21F4D2B3FB",
+      "source": "Noto_Sans/static/NotoSans-Bold.ttf",
+      "copyright": [
+        "Copyright 2022 The Noto Project Authors (https://github.com/notofonts/latin-greek-cyrillic)"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "NotoSans-BoldItalic.ttf",
+      "family": "Noto Sans",
+      "label": "Noto Sans · Bold Italic",
+      "sha256": "7E34616E092593C340449BAF9A259075A054C6419511CCF21FF0D83A1C9DD0D0",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Noto_Sans/OFL.txt",
+      "licenseSha256": "BE2F3F8727AC2E18B714AD1C4336D4DDB3F3ADBEB9A7F70BFAB74D21F4D2B3FB",
+      "source": "Noto_Sans/static/NotoSans-BoldItalic.ttf",
+      "copyright": [
+        "Copyright 2022 The Noto Project Authors (https://github.com/notofonts/latin-greek-cyrillic)"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "NotoSans-Italic.ttf",
+      "family": "Noto Sans",
+      "label": "Noto Sans · Italic",
+      "sha256": "FEB3E57888CE3ACB604F270C278CFB304C674306518771619DDBDEFCA42A066B",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Noto_Sans/OFL.txt",
+      "licenseSha256": "BE2F3F8727AC2E18B714AD1C4336D4DDB3F3ADBEB9A7F70BFAB74D21F4D2B3FB",
+      "source": "Noto_Sans/static/NotoSans-Italic.ttf",
+      "copyright": [
+        "Copyright 2022 The Noto Project Authors (https://github.com/notofonts/latin-greek-cyrillic)"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "NotoSans-Regular.ttf",
+      "family": "Noto Sans",
+      "label": "Noto Sans · Regular",
+      "sha256": "FE8C022F48D8DD29F17B744D16F9346F4357E16F7D4F7BE58B000AE7C291B614",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Noto_Sans/OFL.txt",
+      "licenseSha256": "BE2F3F8727AC2E18B714AD1C4336D4DDB3F3ADBEB9A7F70BFAB74D21F4D2B3FB",
+      "source": "Noto_Sans/static/NotoSans-Regular.ttf",
+      "copyright": [
+        "Copyright 2022 The Noto Project Authors (https://github.com/notofonts/latin-greek-cyrillic)"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "NotoSerif-Bold.ttf",
+      "family": "Noto Serif",
+      "label": "Noto Serif · Bold",
+      "sha256": "1B941681106AAE26EAD3A24C6F15B51F994B1B26ADCE8742A37CE96648F0FE0A",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Noto_Serif/OFL.txt",
+      "licenseSha256": "BE2F3F8727AC2E18B714AD1C4336D4DDB3F3ADBEB9A7F70BFAB74D21F4D2B3FB",
+      "source": "Noto_Serif/static/NotoSerif-Bold.ttf",
+      "copyright": [
+        "Copyright 2022 The Noto Project Authors (https://github.com/notofonts/latin-greek-cyrillic)"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "NotoSerif-BoldItalic.ttf",
+      "family": "Noto Serif",
+      "label": "Noto Serif · Bold Italic",
+      "sha256": "2400339667AD2701320AA671E337D1632731E56B397564AFE14E981124B899C6",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Noto_Serif/OFL.txt",
+      "licenseSha256": "BE2F3F8727AC2E18B714AD1C4336D4DDB3F3ADBEB9A7F70BFAB74D21F4D2B3FB",
+      "source": "Noto_Serif/static/NotoSerif-BoldItalic.ttf",
+      "copyright": [
+        "Copyright 2022 The Noto Project Authors (https://github.com/notofonts/latin-greek-cyrillic)"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "NotoSerif-Italic.ttf",
+      "family": "Noto Serif",
+      "label": "Noto Serif · Italic",
+      "sha256": "15D5F8050FC1F142545E7A26A50BD07A0434ECA535D4D98AAD9D5E8F03741E43",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Noto_Serif/OFL.txt",
+      "licenseSha256": "BE2F3F8727AC2E18B714AD1C4336D4DDB3F3ADBEB9A7F70BFAB74D21F4D2B3FB",
+      "source": "Noto_Serif/static/NotoSerif-Italic.ttf",
+      "copyright": [
+        "Copyright 2022 The Noto Project Authors (https://github.com/notofonts/latin-greek-cyrillic)"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "NotoSerif-Regular.ttf",
+      "family": "Noto Serif",
+      "label": "Noto Serif · Regular",
+      "sha256": "A7E8EA1AB7E7D368B001C892D6148325FFFC849A46E030E55E1BDC597BBE939D",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Noto_Serif/OFL.txt",
+      "licenseSha256": "BE2F3F8727AC2E18B714AD1C4336D4DDB3F3ADBEB9A7F70BFAB74D21F4D2B3FB",
+      "source": "Noto_Serif/static/NotoSerif-Regular.ttf",
+      "copyright": [
+        "Copyright 2022 The Noto Project Authors (https://github.com/notofonts/latin-greek-cyrillic)"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "Nunito-Bold.ttf",
+      "family": "Nunito",
+      "label": "Nunito · Bold",
+      "sha256": "AD443E47990C5FC4B263693B3018B7807868263B8C42CCB1115E030158931960",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Nunito/OFL.txt",
+      "licenseSha256": "66DB16F4D402431D22C354C3E7C740AB550F1BA1EF7CD7B70FF2BA13829734A2",
+      "source": "Nunito/static/Nunito-Bold.ttf",
+      "copyright": [
+        "Copyright 2014 The Nunito Project Authors (https://github.com/googlefonts/nunito)"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "Nunito-BoldItalic.ttf",
+      "family": "Nunito",
+      "label": "Nunito · Bold Italic",
+      "sha256": "D11741A144B015D237AACBF3079B459B768C70F9C241C5825255B30C1FF8A31E",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Nunito/OFL.txt",
+      "licenseSha256": "66DB16F4D402431D22C354C3E7C740AB550F1BA1EF7CD7B70FF2BA13829734A2",
+      "source": "Nunito/static/Nunito-BoldItalic.ttf",
+      "copyright": [
+        "Copyright 2014 The Nunito Project Authors (https://github.com/googlefonts/nunito)"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "Nunito-Italic.ttf",
+      "family": "Nunito",
+      "label": "Nunito · Italic",
+      "sha256": "8DF076E52665FC1B0C603BB50EF33308357B0D79E076AEA17AF85C4A6B80D8D9",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Nunito/OFL.txt",
+      "licenseSha256": "66DB16F4D402431D22C354C3E7C740AB550F1BA1EF7CD7B70FF2BA13829734A2",
+      "source": "Nunito/static/Nunito-Italic.ttf",
+      "copyright": [
+        "Copyright 2014 The Nunito Project Authors (https://github.com/googlefonts/nunito)"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "Nunito-Regular.ttf",
+      "family": "Nunito",
+      "label": "Nunito · Regular",
+      "sha256": "B0885056B60511B29AA9F69198055FE3BAD13E76EC8A9B9E37CD61DA7B4EE1E5",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Nunito/OFL.txt",
+      "licenseSha256": "66DB16F4D402431D22C354C3E7C740AB550F1BA1EF7CD7B70FF2BA13829734A2",
+      "source": "Nunito/static/Nunito-Regular.ttf",
+      "copyright": [
+        "Copyright 2014 The Nunito Project Authors (https://github.com/googlefonts/nunito)"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "OpenSans-Bold.ttf",
+      "family": "Open Sans",
+      "label": "Open Sans · Bold",
+      "sha256": "5F4C6F0C6BEAE94863A099A7A538059C480F91587F1ABFFC06552E9FA3A44F40",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Open_Sans/OFL.txt",
+      "licenseSha256": "6C632858146B13645C7730E2B98881F00F4E545949D2C0368A65B071ED8301DA",
+      "source": "Open_Sans/static/OpenSans-Bold.ttf",
+      "copyright": [
+        "Copyright 2020 The Open Sans Project Authors (https://github.com/googlefonts/opensans)"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "OpenSans-BoldItalic.ttf",
+      "family": "Open Sans",
+      "label": "Open Sans · Bold Italic",
+      "sha256": "C7E0A936FF0F08B6726CF205126A5E6DD6AE1340111325F7E86CBBA1408E82D7",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Open_Sans/OFL.txt",
+      "licenseSha256": "6C632858146B13645C7730E2B98881F00F4E545949D2C0368A65B071ED8301DA",
+      "source": "Open_Sans/static/OpenSans-BoldItalic.ttf",
+      "copyright": [
+        "Copyright 2020 The Open Sans Project Authors (https://github.com/googlefonts/opensans)"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "OpenSans-Italic.ttf",
+      "family": "Open Sans",
+      "label": "Open Sans · Italic",
+      "sha256": "DD74EB2D271B57EF5C382A97403818715BFB6B1D53D7FA6DA9C88336763651FB",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Open_Sans/OFL.txt",
+      "licenseSha256": "6C632858146B13645C7730E2B98881F00F4E545949D2C0368A65B071ED8301DA",
+      "source": "Open_Sans/static/OpenSans-Italic.ttf",
+      "copyright": [
+        "Copyright 2020 The Open Sans Project Authors (https://github.com/googlefonts/opensans)"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "OpenSans-Regular.ttf",
+      "family": "Open Sans",
+      "label": "Open Sans · Regular",
+      "sha256": "33E93BEC67D91C396876DB50694213802A39E43A911BB5C22322F0DBDF4D5E43",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Open_Sans/OFL.txt",
+      "licenseSha256": "6C632858146B13645C7730E2B98881F00F4E545949D2C0368A65B071ED8301DA",
+      "source": "Open_Sans/static/OpenSans-Regular.ttf",
+      "copyright": [
+        "Copyright 2020 The Open Sans Project Authors (https://github.com/googlefonts/opensans)"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "Orbitron-Bold.ttf",
+      "family": "Orbitron",
+      "label": "Orbitron · Bold",
+      "sha256": "69403FFFCA24D8E5D3C588F89FDC832ED75B9E9D3176850B96CE23B27AEEBBB2",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Orbitron/OFL.txt",
+      "licenseSha256": "8EAC52BC8ADA70D211E0CADA8332542248AF55A12E7EC9B32FBF9EBA10BA4819",
+      "source": "Orbitron/static/Orbitron-Bold.ttf",
+      "copyright": [
+        "Copyright 2018 The Orbitron Project Authors (https://github.com/theleagueof/orbitron), with Reserved Font Name: \"Orbitron\"."
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": false
+    },
+    {
+      "file": "Orbitron-Regular.ttf",
+      "family": "Orbitron",
+      "label": "Orbitron · Regular",
+      "sha256": "739162AC8E6FCADB559226F2FEE57F55BAAD126728CEC901B321042C7224088E",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Orbitron/OFL.txt",
+      "licenseSha256": "8EAC52BC8ADA70D211E0CADA8332542248AF55A12E7EC9B32FBF9EBA10BA4819",
+      "source": "Orbitron/static/Orbitron-Regular.ttf",
+      "copyright": [
+        "Copyright 2018 The Orbitron Project Authors (https://github.com/theleagueof/orbitron), with Reserved Font Name: \"Orbitron\"."
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": false
+    },
+    {
+      "file": "Oswald-Bold.ttf",
+      "family": "Oswald",
+      "label": "Oswald · Bold",
+      "sha256": "21843A0CCCA2E97030DA1330961646510ED6E9B8BB39620974C1195B9803034A",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Oswald/OFL.txt",
+      "licenseSha256": "F55DCF1905CA45ACEF56F9E41183C20E66C12FEBA0EF137727358FE58F0DDDC2",
+      "source": "Oswald/static/Oswald-Bold.ttf",
+      "copyright": [
+        "Copyright 2016 The Oswald Project Authors (https://github.com/googlefonts/OswaldFont)"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "Oswald-Regular.ttf",
+      "family": "Oswald",
+      "label": "Oswald · Regular",
+      "sha256": "147373BFE10A9B1E0EB649BCF6408566D0CB7334271845F24D4C224CCA1C4412",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Oswald/OFL.txt",
+      "licenseSha256": "F55DCF1905CA45ACEF56F9E41183C20E66C12FEBA0EF137727358FE58F0DDDC2",
+      "source": "Oswald/static/Oswald-Regular.ttf",
+      "copyright": [
+        "Copyright 2016 The Oswald Project Authors (https://github.com/googlefonts/OswaldFont)"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "Pacifico-Regular.ttf",
+      "family": "Pacifico",
+      "label": "Pacifico · Regular",
+      "sha256": "4DAC9DB3FA9CA072F7861FD916BF04BDCEAC6069D0F3A886F5E523D922E918F1",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Pacifico/OFL.txt",
+      "licenseSha256": "71B847D3774CB3F919713B9D19641E2A1CDD080EC3F4ECA2A36A2A92E9AC22CA",
+      "source": "Pacifico/Pacifico-Regular.ttf",
+      "copyright": [
+        "Copyright 2018 The Pacifico Project Authors (https://github.com/googlefonts/Pacifico)"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "Parisienne-Regular.ttf",
+      "family": "Parisienne",
+      "label": "Parisienne · Regular",
+      "sha256": "F2845F928AB996AF63C900CC58B37CEB64222A7111A90391B3F96E3A34F1A885",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Parisienne/OFL.txt",
+      "licenseSha256": "A64936363ADC7A20D667DFDF4BE72C6A98FF50EA5AD3670D842E7FF1E3A1ECBD",
+      "source": "Parisienne/Parisienne-Regular.ttf",
+      "copyright": [
+        "Copyright (c) 2012 by Brian J. Bonislawsky DBA Astigmatic (AOETI) (astigma@astigmatic.com), with Reserved\rFont Name \"Parisienne\""
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": false
+    },
+    {
+      "file": "PatrickHand-Regular.ttf",
+      "family": "Patrick Hand",
+      "label": "Patrick Hand · Regular",
+      "sha256": "496937DAFCB18BF2C2F624ED02C8F7F4D47BD1E4E6E5646C42B6CFD873C6B13C",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Patrick_Hand/OFL.txt",
+      "licenseSha256": "A2E01A691C77E9215D744D51F5293E5044E67B0076FD52E2E8C68A0B70042C6F",
+      "source": "Patrick_Hand/PatrickHand-Regular.ttf",
+      "copyright": [
+        "Copyright (c) 2012 Patrick Wagesreiter (mail@patrickwagesreiter.at)"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": false
+    },
+    {
+      "file": "PlayfairDisplay-Bold.ttf",
+      "family": "Playfair Display",
+      "label": "Playfair Display · Bold",
+      "sha256": "4F3B87B5AA297EED5E5A48DBD9941356CA0313D4725B02C29A298CB042B7B31B",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Playfair_Display/OFL.txt",
+      "licenseSha256": "4E6BE9D19455D7CB092412984EBF3C55D26B19DD8F8452962BF432EC0A9C9DCB",
+      "source": "Playfair_Display/static/PlayfairDisplay-Bold.ttf",
+      "copyright": [
+        "Copyright 2017 The Playfair Display Project Authors (https://github.com/clauseggers/Playfair-Display), with Reserved Font Name \"Playfair Display\"."
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "PlayfairDisplay-BoldItalic.ttf",
+      "family": "Playfair Display",
+      "label": "Playfair Display · Bold Italic",
+      "sha256": "DB5737059FF617317ACA97E9E35730F8933A2E187C75BBE2DEAF45C4D72F5B1D",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Playfair_Display/OFL.txt",
+      "licenseSha256": "4E6BE9D19455D7CB092412984EBF3C55D26B19DD8F8452962BF432EC0A9C9DCB",
+      "source": "Playfair_Display/static/PlayfairDisplay-BoldItalic.ttf",
+      "copyright": [
+        "Copyright 2017 The Playfair Display Project Authors (https://github.com/clauseggers/Playfair-Display), with Reserved Font Name \"Playfair Display\"."
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "PlayfairDisplay-Italic.ttf",
+      "family": "Playfair Display",
+      "label": "Playfair Display · Italic",
+      "sha256": "40A6AFA92220254C2C426CCEF129D3615DD19E4C591FBFA997E5F28EBBA8302C",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Playfair_Display/OFL.txt",
+      "licenseSha256": "4E6BE9D19455D7CB092412984EBF3C55D26B19DD8F8452962BF432EC0A9C9DCB",
+      "source": "Playfair_Display/static/PlayfairDisplay-Italic.ttf",
+      "copyright": [
+        "Copyright 2017 The Playfair Display Project Authors (https://github.com/clauseggers/Playfair-Display), with Reserved Font Name \"Playfair Display\"."
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "PlayfairDisplay-Regular.ttf",
+      "family": "Playfair Display",
+      "label": "Playfair Display · Regular",
+      "sha256": "861F838D481D28CBBD4793E45DC02F01D04C81E06ED98AB2779CA152ACE9F27B",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Playfair_Display/OFL.txt",
+      "licenseSha256": "4E6BE9D19455D7CB092412984EBF3C55D26B19DD8F8452962BF432EC0A9C9DCB",
+      "source": "Playfair_Display/static/PlayfairDisplay-Regular.ttf",
+      "copyright": [
+        "Copyright 2017 The Playfair Display Project Authors (https://github.com/clauseggers/Playfair-Display), with Reserved Font Name \"Playfair Display\"."
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "Quicksand-Bold.ttf",
+      "family": "Quicksand",
+      "label": "Quicksand · Bold",
+      "sha256": "65561A329DE20024699162EF86BEC0E79A0415C90B30A60EBC301FC00D67F87B",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Quicksand/OFL.txt",
+      "licenseSha256": "192841C2EC18E24B21CF156C443358E30152881D413D5CC9CB37D974D2415E3C",
+      "source": "Quicksand/static/Quicksand-Bold.ttf",
+      "copyright": [
+        "Copyright 2019 The Quicksand Project Authors (https://github.com/andrew-paglinawan/QuicksandFamily.git), with Reserved Font Name \"Quicksand\""
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": false
+    },
+    {
+      "file": "Quicksand-Regular.ttf",
+      "family": "Quicksand",
+      "label": "Quicksand · Regular",
+      "sha256": "7953184F6FCB2191E643B2F5E206B985914B420EFA7F46E63A6093E6810C82B1",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Quicksand/OFL.txt",
+      "licenseSha256": "192841C2EC18E24B21CF156C443358E30152881D413D5CC9CB37D974D2415E3C",
+      "source": "Quicksand/static/Quicksand-Regular.ttf",
+      "copyright": [
+        "Copyright 2019 The Quicksand Project Authors (https://github.com/andrew-paglinawan/QuicksandFamily.git), with Reserved Font Name \"Quicksand\""
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": false
+    },
+    {
+      "file": "Raleway-Bold.ttf",
+      "family": "Raleway",
+      "label": "Raleway · Bold",
+      "sha256": "DC26A12A68CB78A83D13DCEA38848AF687B6D0260FA2DF7ACE13381508516AE1",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Raleway/OFL.txt",
+      "licenseSha256": "61673A6E93553E163C77C0AD65ABC3F9E5C05016F19BE9B5370659A3F6A3110E",
+      "source": "Raleway/static/Raleway-Bold.ttf",
+      "copyright": [
+        "Copyright 2010 The Raleway Project Authors (impallari@gmail.com), with Reserved Font Name \"Raleway\"."
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "Raleway-BoldItalic.ttf",
+      "family": "Raleway",
+      "label": "Raleway · Bold Italic",
+      "sha256": "D16BFD8FFD7B56314A1B3EC80502AE0AE066031B10A596CAC30D77AB4326112C",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Raleway/OFL.txt",
+      "licenseSha256": "61673A6E93553E163C77C0AD65ABC3F9E5C05016F19BE9B5370659A3F6A3110E",
+      "source": "Raleway/static/Raleway-BoldItalic.ttf",
+      "copyright": [
+        "Copyright 2010 The Raleway Project Authors (impallari@gmail.com), with Reserved Font Name \"Raleway\"."
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "Raleway-Italic.ttf",
+      "family": "Raleway",
+      "label": "Raleway · Italic",
+      "sha256": "4F9680EF2FED5C4302D94F874A6199B350332E4719F3967BFAE8035A0BF50F9B",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Raleway/OFL.txt",
+      "licenseSha256": "61673A6E93553E163C77C0AD65ABC3F9E5C05016F19BE9B5370659A3F6A3110E",
+      "source": "Raleway/static/Raleway-Italic.ttf",
+      "copyright": [
+        "Copyright 2010 The Raleway Project Authors (impallari@gmail.com), with Reserved Font Name \"Raleway\"."
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "Raleway-Regular.ttf",
+      "family": "Raleway",
+      "label": "Raleway · Regular",
+      "sha256": "BF386500B0655A15F11A20C06A459AEC2002FA2D1F44E0BC2549A08BB69A8F76",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Raleway/OFL.txt",
+      "licenseSha256": "61673A6E93553E163C77C0AD65ABC3F9E5C05016F19BE9B5370659A3F6A3110E",
+      "source": "Raleway/static/Raleway-Regular.ttf",
+      "copyright": [
+        "Copyright 2010 The Raleway Project Authors (impallari@gmail.com), with Reserved Font Name \"Raleway\"."
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "Righteous-Regular.ttf",
+      "family": "Righteous",
+      "label": "Righteous · Regular",
+      "sha256": "D8127A961758FCEC3FA59DE792A3D4B457B6D62C7007300DAEE3BDD9CA74B8EF",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Righteous/OFL.txt",
+      "licenseSha256": "8F827708D86639631D143B65D473B10166588D0ED76F3093DCFF07EE496B7CB7",
+      "source": "Righteous/Righteous-Regular.ttf",
+      "copyright": [
+        "Copyright (c) 2011 by Brian J. Bonislawsky DBA Astigmatic (AOETI) (astigma@astigmatic.com), with Reserved\rFont Name \"Righteous\""
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": false
+    },
+    {
+      "file": "Sacramento-Regular.ttf",
+      "family": "Sacramento",
+      "label": "Sacramento · Regular",
+      "sha256": "A5B9DE67BE454A826B46D858512E32EEC8C30312BEB4C4F864AEE2390414E9C5",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Sacramento/OFL.txt",
+      "licenseSha256": "53B467C6A8260593E75F2E60E972637EF0B2A27FB3F635B1C0A89680C5BA7FDF",
+      "source": "Sacramento/Sacramento-Regular.ttf",
+      "copyright": [
+        "Copyright (c) 2012 by Brian J. Bonislawsky DBA Astigmatic (AOETI) (astigma@astigmatic.com), with Reserved\rFont Name \"Sacramento\""
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": false
+    },
+    {
+      "file": "SourceSans3-Bold.ttf",
+      "family": "Source Sans 3",
+      "label": "Source Sans 3 · Bold",
+      "sha256": "87B3DAEBD990BA83EE0D7B2A9076C3EDD09AACD5CBB6029797C569A4F740C16F",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Source_Sans_3/OFL.txt",
+      "licenseSha256": "F5CDF59463564E8428C1159D7E7B76EB408C9B5FD4AF049C193533C681880169",
+      "source": "Source_Sans_3/static/SourceSans3-Bold.ttf",
+      "copyright": [
+        "© 2023 Adobe (http://www.adobe.com/), with Reserved Font Name ‘Source’"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "SourceSans3-BoldItalic.ttf",
+      "family": "Source Sans 3",
+      "label": "Source Sans 3 · Bold Italic",
+      "sha256": "B66029C11E09452EAA321ABE93883970BC0F3EACC347A1C9D5828DB9D379CBB0",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Source_Sans_3/OFL.txt",
+      "licenseSha256": "F5CDF59463564E8428C1159D7E7B76EB408C9B5FD4AF049C193533C681880169",
+      "source": "Source_Sans_3/static/SourceSans3-BoldItalic.ttf",
+      "copyright": [
+        "© 2023 Adobe (http://www.adobe.com/), with Reserved Font Name ‘Source’"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "SourceSans3-Italic.ttf",
+      "family": "Source Sans 3",
+      "label": "Source Sans 3 · Italic",
+      "sha256": "F17FACAA9ED293BB38526DB3638E240510B7393C37FFA70E5C48F39575DE44AB",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Source_Sans_3/OFL.txt",
+      "licenseSha256": "F5CDF59463564E8428C1159D7E7B76EB408C9B5FD4AF049C193533C681880169",
+      "source": "Source_Sans_3/static/SourceSans3-Italic.ttf",
+      "copyright": [
+        "© 2023 Adobe (http://www.adobe.com/), with Reserved Font Name ‘Source’"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "SourceSans3-Regular.ttf",
+      "family": "Source Sans 3",
+      "label": "Source Sans 3 · Regular",
+      "sha256": "7CA2B9C4677CE81DAF8A7FEAFB1680F5D228065698B500C5A24E22831E2AE849",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Source_Sans_3/OFL.txt",
+      "licenseSha256": "F5CDF59463564E8428C1159D7E7B76EB408C9B5FD4AF049C193533C681880169",
+      "source": "Source_Sans_3/static/SourceSans3-Regular.ttf",
+      "copyright": [
+        "© 2023 Adobe (http://www.adobe.com/), with Reserved Font Name ‘Source’"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "SourceSerif4-Bold.ttf",
+      "family": "Source Serif 4",
+      "label": "Source Serif 4 · Bold",
+      "sha256": "D135BF6F4D3846B070C63D81AA243172401FC5EB9BFFAFA7441A2475302DFE34",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Source_Serif_4/OFL.txt",
+      "licenseSha256": "07424DB4089211E77DD8A0BCA14FBF46E8801045D6DB9061FBD6CE08E582594E",
+      "source": "Source_Serif_4/static/SourceSerif4-Bold.ttf",
+      "copyright": [
+        "© 2014 - 2021 Adobe Systems Incorporated (http://www.adobe.com/), with Reserved Font Name ‘Source’."
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "SourceSerif4-BoldItalic.ttf",
+      "family": "Source Serif 4",
+      "label": "Source Serif 4 · Bold Italic",
+      "sha256": "C1EEB2E2AA61568D99429D2B509D19F78735ADAF69C400A964CB8B8B56EB5731",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Source_Serif_4/OFL.txt",
+      "licenseSha256": "07424DB4089211E77DD8A0BCA14FBF46E8801045D6DB9061FBD6CE08E582594E",
+      "source": "Source_Serif_4/static/SourceSerif4-BoldItalic.ttf",
+      "copyright": [
+        "© 2014 - 2021 Adobe Systems Incorporated (http://www.adobe.com/), with Reserved Font Name ‘Source’."
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "SourceSerif4-Italic.ttf",
+      "family": "Source Serif 4",
+      "label": "Source Serif 4 · Italic",
+      "sha256": "5E00ADB9A4CEA134611FF94191400B049A8F76A6665BFE1038E98E1C48CB10CF",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Source_Serif_4/OFL.txt",
+      "licenseSha256": "07424DB4089211E77DD8A0BCA14FBF46E8801045D6DB9061FBD6CE08E582594E",
+      "source": "Source_Serif_4/static/SourceSerif4-Italic.ttf",
+      "copyright": [
+        "© 2014 - 2021 Adobe Systems Incorporated (http://www.adobe.com/), with Reserved Font Name ‘Source’."
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "SourceSerif4-Regular.ttf",
+      "family": "Source Serif 4",
+      "label": "Source Serif 4 · Regular",
+      "sha256": "C8F9AD25C4CCB22953933AF7CD50EB0CDAA7D09982F6C999A3727CB27592A6D0",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Source_Serif_4/OFL.txt",
+      "licenseSha256": "07424DB4089211E77DD8A0BCA14FBF46E8801045D6DB9061FBD6CE08E582594E",
+      "source": "Source_Serif_4/static/SourceSerif4-Regular.ttf",
+      "copyright": [
+        "© 2014 - 2021 Adobe Systems Incorporated (http://www.adobe.com/), with Reserved Font Name ‘Source’."
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": true
+    },
+    {
+      "file": "WorkSans-Bold.ttf",
+      "family": "Work Sans",
+      "label": "Work Sans · Bold",
+      "sha256": "240D125FC9F8561363DC1EA3F513501253BD70942F41468F48F0B0CAFB0C82E2",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Work_Sans/OFL.txt",
+      "licenseSha256": "4F8CBAF2A5494148A8064DB9B5EB7C23A0F9098683244803B11C0EEC857B81A9",
+      "source": "Work_Sans/static/WorkSans-Bold.ttf",
+      "copyright": [
+        "Copyright 2019 The Work Sans Project Authors (https://github.com/weiweihuanghuang/Work-Sans)"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": false
+    },
+    {
+      "file": "WorkSans-BoldItalic.ttf",
+      "family": "Work Sans",
+      "label": "Work Sans · Bold Italic",
+      "sha256": "A5B2CAD813DF0AAA7D16621F2E93B5117C25E9BC788BC9A3AD218E9D6348CE34",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Work_Sans/OFL.txt",
+      "licenseSha256": "4F8CBAF2A5494148A8064DB9B5EB7C23A0F9098683244803B11C0EEC857B81A9",
+      "source": "Work_Sans/static/WorkSans-BoldItalic.ttf",
+      "copyright": [
+        "Copyright 2019 The Work Sans Project Authors (https://github.com/weiweihuanghuang/Work-Sans)"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": false
+    },
+    {
+      "file": "WorkSans-Italic.ttf",
+      "family": "Work Sans",
+      "label": "Work Sans · Italic",
+      "sha256": "6B7F7002E0B0C8B261FE878658EF5551E3E59D9F6B609B04EFB90DDE1E2C1ADA",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Work_Sans/OFL.txt",
+      "licenseSha256": "4F8CBAF2A5494148A8064DB9B5EB7C23A0F9098683244803B11C0EEC857B81A9",
+      "source": "Work_Sans/static/WorkSans-Italic.ttf",
+      "copyright": [
+        "Copyright 2019 The Work Sans Project Authors (https://github.com/weiweihuanghuang/Work-Sans)"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": false
+    },
+    {
+      "file": "WorkSans-Regular.ttf",
+      "family": "Work Sans",
+      "label": "Work Sans · Regular",
+      "sha256": "E67985A843DF0D3CDEE51A3D0F329EB1774A344AD9FF0C9AB923751F1577E2A4",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Work_Sans/OFL.txt",
+      "licenseSha256": "4F8CBAF2A5494148A8064DB9B5EB7C23A0F9098683244803B11C0EEC857B81A9",
+      "source": "Work_Sans/static/WorkSans-Regular.ttf",
+      "copyright": [
+        "Copyright 2019 The Work Sans Project Authors (https://github.com/weiweihuanghuang/Work-Sans)"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": false
+    },
+    {
+      "file": "BarlowCondensed-Bold.ttf",
+      "family": "Barlow Condensed",
+      "label": "Barlow Condensed · Bold",
+      "sha256": "53550669F93C07DE6221E051905462F862066459EB50148268B5628104A58A30",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Barlow_Condensed/OFL.txt",
+      "licenseSha256": "C29DE481986098C42A346D6A81A90AAF47544F1E0930A471C80C1AA1FEA425E1",
+      "source": "Barlow_Condensed/BarlowCondensed-Bold.ttf",
+      "copyright": [
+        "Copyright 2017 The Barlow Project Authors (https://github.com/jpt/barlow)"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": false
+    },
+    {
+      "file": "BarlowCondensed-BoldItalic.ttf",
+      "family": "Barlow Condensed",
+      "label": "Barlow Condensed · Bold Italic",
+      "sha256": "3219B6922FC6D3FF63F553450B8C06902AFBFFE50174B51CBDA8CD9790AB94A2",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Barlow_Condensed/OFL.txt",
+      "licenseSha256": "C29DE481986098C42A346D6A81A90AAF47544F1E0930A471C80C1AA1FEA425E1",
+      "source": "Barlow_Condensed/BarlowCondensed-BoldItalic.ttf",
+      "copyright": [
+        "Copyright 2017 The Barlow Project Authors (https://github.com/jpt/barlow)"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": false
+    },
+    {
+      "file": "BarlowCondensed-Italic.ttf",
+      "family": "Barlow Condensed",
+      "label": "Barlow Condensed · Italic",
+      "sha256": "BFC0121F9E960BC378C703BD551F31ACE062F08608035776533FDB9892AF0D41",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Barlow_Condensed/OFL.txt",
+      "licenseSha256": "C29DE481986098C42A346D6A81A90AAF47544F1E0930A471C80C1AA1FEA425E1",
+      "source": "Barlow_Condensed/BarlowCondensed-Italic.ttf",
+      "copyright": [
+        "Copyright 2017 The Barlow Project Authors (https://github.com/jpt/barlow)"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": false
+    },
+    {
+      "file": "BarlowCondensed-Regular.ttf",
+      "family": "Barlow Condensed",
+      "label": "Barlow Condensed · Regular",
+      "sha256": "DD8271EB0CED7ADD028539113155A99000C1E62DEE2DC48A1B2765C00F4862AB",
+      "licenseStatus": "OFL-1.1",
+      "licensePath": "licenses/Barlow_Condensed/OFL.txt",
+      "licenseSha256": "C29DE481986098C42A346D6A81A90AAF47544F1E0930A471C80C1AA1FEA425E1",
+      "source": "Barlow_Condensed/BarlowCondensed-Regular.ttf",
+      "copyright": [
+        "Copyright 2017 The Barlow Project Authors (https://github.com/jpt/barlow)"
+      ],
+      "germanCharacters": true,
+      "russianAlphabet": false
+    }
+  ]
+}
